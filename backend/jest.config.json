@@ -1,0 +1,11 @@
+{
+  "testEnvironment": "node",
+  "transform": {},
+  "moduleFileExtensions": ["js", "json"],
+  "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
+  "testMatch": ["<rootDir>/tests/**/*.test.js"],
+  "collectCoverageFrom": ["src/**/*.js", "!src/server.js", "!src/seed.js"],
+  "coverageDirectory": "coverage",
+  "testTimeout": 30000,
+  "verbose": true
+}
