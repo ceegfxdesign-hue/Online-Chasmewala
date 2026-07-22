@@ -14,6 +14,7 @@ import {
   FiPlus,
   FiBarChart2,
   FiCheck,
+  FiGift,
 } from 'react-icons/fi';
 import { useGetProductBySlugQuery, useGetRelatedProductsQuery } from '@/features/products/productApi';
 import { ProductGallery } from '@/components/product/ProductGallery';
@@ -32,6 +33,7 @@ import { toggleWishlist } from '@/features/wishlist/wishlistSlice';
 import { toggleCompare, selectCompareCount, COMPARE_MAX } from '@/features/compare/compareSlice';
 import { pushRecentlyViewed, selectRecentlyViewed } from '@/features/recentlyViewed/recentlyViewedSlice';
 import { openCartDrawer } from '@/features/ui/uiSlice';
+import { useGetOffersQuery } from '@/features/cart/cartApi';
 import { useToast } from '@/contexts/ToastContext';
 import { formatPrice, titleCase } from '@/lib/format';
 import { absoluteUrl } from '@/lib/seo';
@@ -67,6 +69,7 @@ export default function ProductDetailsPage() {
 
   const { data: product, isLoading, isError } = useGetProductBySlugQuery(slug);
   const { data: related } = useGetRelatedProductsQuery(slug, { skip: !slug });
+  const { data: offers = [] } = useGetOffersQuery();
   const recentlyViewed = useSelector(selectRecentlyViewed);
   const compareCount = useSelector(selectCompareCount);
   const wishlisted = useSelector((s) => product && s.wishlist.items.some((i) => i.productId === product._id));
@@ -77,6 +80,20 @@ export default function ProductDetailsPage() {
   const [qty, setQty] = useState(1);
 
   const lensOptions = useMemo(() => (product ? lensOptionsFor(product) : []), [product]);
+  const featuredOffer = useMemo(() => {
+    if (!product) return null;
+    const productId = String(product._id);
+    const categoryId = String(product.category?._id || '');
+    const brandId = String(product.brand?._id || '');
+    const includes = (items, id) => items?.some((item) => String(item?._id || item) === id);
+
+    return offers.find((offer) =>
+      offer.appliesTo === 'all' ||
+      (offer.appliesTo === 'products' && includes(offer.products, productId)) ||
+      (offer.appliesTo === 'category' && includes(offer.categories, categoryId)) ||
+      (offer.appliesTo === 'brand' && includes(offer.brands, brandId))
+    );
+  }, [offers, product]);
 
   // Record recently-viewed once the product loads.
   useEffect(() => {
@@ -182,6 +199,14 @@ export default function ProductDetailsPage() {
     }
   };
 
+  const onFindStore = () => {
+    window.open(
+      'https://www.google.com/maps/search/?api=1&query=eyewear+store+near+me',
+      '_blank',
+      'noopener,noreferrer'
+    );
+  };
+
   const specsTab = (
     <div className="max-w-xl">
       <Spec label="Brand" value={product.brand?.name} />
@@ -241,16 +266,33 @@ export default function ProductDetailsPage() {
           ]}
         />
 
-        <div className="grid gap-8 lg:grid-cols-2">
-          <ProductGallery images={galleryImages} alt={product.name} />
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
+          <ProductGallery
+            images={galleryImages}
+            alt={product.name}
+            rating={product.rating}
+            reviewCount={product.numReviews}
+            onFindStore={onFindStore}
+            onCompare={onCompare}
+          />
 
-          <div>
-            {product.brand?.name && (
-              <Link to={`${ROUTES.products}?brand=${product.brand.slug}`} className="text-sm font-medium uppercase tracking-wide text-brand-600">
-                {product.brand.name}
-              </Link>
-            )}
-            <h1 className="mt-1 text-h2 text-navy-900">{product.name}</h1>
+          <div className="h-fit rounded-2xl bg-surface p-5 shadow-card xl:sticky xl:top-24 xl:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                {product.brand?.name && (
+                  <Link to={`${ROUTES.products}?brand=${product.brand.slug}`} className="text-sm font-medium uppercase tracking-wide text-brand-600">
+                    {product.brand.name}
+                  </Link>
+                )}
+                <h1 className="mt-1 text-h3 text-navy-900">{product.name}</h1>
+              </div>
+              <div className="flex shrink-0 gap-1">
+                <Button variant="ghost" size="icon" onClick={onShare} aria-label="Share product"><FiShare2 /></Button>
+                <Button variant="ghost" size="icon" onClick={onWishlist} aria-label="Add to wishlist">
+                  <FiHeart className={cn(wishlisted && 'fill-current text-error')} />
+                </Button>
+              </div>
+            </div>
 
             <div className="mt-2 flex items-center gap-3">
               <RatingStars value={product.rating} showValue />
@@ -269,6 +311,24 @@ export default function ProductDetailsPage() {
               )}
             </div>
             <p className="mt-1 text-xs text-navy-400">Inclusive of all taxes</p>
+
+            {(featuredOffer || product.discountPercent > 0) && (
+              <div className="mt-5 overflow-hidden rounded-xl border border-brand-100">
+                <div className="flex items-center gap-2 bg-brand-50 px-4 py-2 text-sm font-bold text-navy-800">
+                  <FiGift className="h-4 w-4 text-brand-600" /> Limited period offer
+                </div>
+                <div className="px-4 py-3 text-sm text-navy-600">
+                  {featuredOffer ? (
+                    <>
+                      <p className="font-medium text-navy-800">{featuredOffer.title}</p>
+                      <p className="mt-0.5 text-xs">{featuredOffer.subtitle || featuredOffer.badge}</p>
+                    </>
+                  ) : (
+                    <p>Save {formatPrice(Math.max(product.mrp - product.price, 0))} on this frame today.</p>
+                  )}
+                </div>
+              </div>
+            )}
 
             <p className="mt-5 text-sm leading-relaxed text-navy-600">{product.description}</p>
 
@@ -301,7 +361,7 @@ export default function ProductDetailsPage() {
             {/* Lens options */}
             {lensOptions.length > 0 && (
               <div className="mt-6">
-                <p className="mb-2 text-sm font-semibold text-navy-900">Lens type</p>
+                <p className="mb-2 text-sm font-semibold text-navy-900">Product type</p>
                 <div className="flex flex-wrap gap-2">
                   {lensOptions.map((opt) => (
                     <button
@@ -309,19 +369,45 @@ export default function ProductDetailsPage() {
                       type="button"
                       onClick={() => setLens(lens?.type === opt.type ? null : opt)}
                       className={cn(
-                        'rounded-xl border px-3 py-2 text-sm transition-colors',
+                        'min-w-[132px] rounded-xl border px-3 py-2.5 text-left text-sm transition-colors',
                         lens?.type === opt.type
                           ? 'border-brand-500 bg-brand-50 text-brand-700'
                           : 'border-navy-200 text-navy-600 hover:border-navy-300'
                       )}
                     >
-                      {opt.label}
-                      {opt.price > 0 && <span className="ml-1 text-xs text-navy-400">+{formatPrice(opt.price)}</span>}
+                      <span className="block font-semibold">{opt.label}</span>
+                      <span className="mt-0.5 block text-xs text-navy-400">
+                        {opt.price > 0 ? `Add ${formatPrice(opt.price)}` : 'Included with frame'}
+                      </span>
                     </button>
                   ))}
                 </div>
               </div>
             )}
+
+            <div className="mt-6">
+              <p className="mb-2 text-sm font-semibold text-navy-900">Frame size</p>
+              <div className="flex gap-2">
+                {['small', 'medium', 'large'].map((size) => {
+                  const available = size === product.frameSize;
+                  return (
+                    <button
+                      key={size}
+                      type="button"
+                      disabled={!available}
+                      title={available ? `${titleCase(size)} fit selected` : `${titleCase(size)} fit unavailable for this frame`}
+                      className={cn(
+                        'h-9 min-w-10 rounded-full border px-3 text-xs font-semibold uppercase',
+                        available ? 'border-brand-500 bg-brand-50 text-brand-700' : 'cursor-not-allowed border-navy-100 text-navy-300'
+                      )}
+                    >
+                      {size.charAt(0)}
+                    </button>
+                  );
+                })}
+                <span className="self-center text-xs text-navy-400">{titleCase(product.frameSize)} fit</span>
+              </div>
+            </div>
 
             {/* Quantity + actions */}
             <div className="mt-6 flex items-center gap-4">
@@ -350,14 +436,8 @@ export default function ProductDetailsPage() {
             </div>
 
             <div className="mt-3 flex gap-3">
-              <Button variant="outline" onClick={onWishlist} leftIcon={<FiHeart className={cn(wishlisted && 'fill-current text-error')} />}>
-                {wishlisted ? 'Wishlisted' : 'Wishlist'}
-              </Button>
               <Button variant="ghost" onClick={onCompare} leftIcon={inCompare ? <FiCheck /> : <FiBarChart2 />}>
                 {inCompare ? 'In compare' : 'Compare'}
-              </Button>
-              <Button variant="ghost" onClick={onShare} leftIcon={<FiShare2 />} aria-label="Share">
-                Share
               </Button>
             </div>
 
