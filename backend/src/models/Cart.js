@@ -15,6 +15,8 @@ const cartItemSchema = new mongoose.Schema(
       price: { type: Number, default: 0 },
     },
     prescription: {
+      method: { type: String, enum: ['manual', 'later', 'upload'] },
+      fileName: { type: String },
       leftEye: { sph: String, cyl: String, axis: String },
       rightEye: { sph: String, cyl: String, axis: String },
       pd: String,

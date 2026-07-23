@@ -56,7 +56,7 @@ const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPasswordPage'));
 const adminPage = (name) => lazy(() => import('@/pages/admin/AdminPages').then((module) => ({ default: module[name] })));
 const DashboardPage = adminPage('DashboardPage');
 const AdminOrdersPage = adminPage('OrdersPage');
-const AdminProductsPage = adminPage('ProductsPage');
+const AdminProductsPage = lazy(() => import('@/pages/admin/AdminProductsPage'));
 const CategoriesPage = adminPage('CategoriesPage');
 const BrandsPage = adminPage('BrandsPage');
 const AdminCouponsPage = adminPage('CouponsPage');

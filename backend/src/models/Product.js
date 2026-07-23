@@ -21,6 +21,16 @@ const variantSchema = new mongoose.Schema(
   { _id: true }
 );
 
+const lensOptionSchema = new mongoose.Schema(
+  {
+    type: { type: String, required: true },
+    label: { type: String, required: true },
+    subtitle: { type: String },
+    price: { type: Number, default: 0, min: 0 },
+  },
+  { _id: false }
+);
+
 const productSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -53,6 +63,7 @@ const productSchema = new mongoose.Schema(
     lensWidth: { type: Number }, // mm
     lensType: { type: String, enum: LENS_TYPES, index: true },
     lensThickness: { type: String },
+    lensOptions: [lensOptionSchema],
     suitableFaceShapes: [{ type: String, enum: FACE_SHAPES }],
 
     // Feature flags for lenses

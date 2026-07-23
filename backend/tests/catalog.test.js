@@ -133,17 +133,27 @@ describe('Catalog admin CRUD', () => {
         category: categoryId,
         brand: brandId,
         images: ['https://example.com/x.jpg'],
+        frameColor: 'Crystal Clear',
+        frameSize: 'wide',
+        rimType: 'full-rim',
+        lensThickness: '1.56 index',
+        powered: true,
+        lensOptions: [{ type: 'zero-power', label: 'Zero Power', subtitle: 'Screen glasses', price: 0 }],
       });
     expect(created.status).toBe(201);
     expect(created.body.data.discountPercent).toBe(50);
+    expect(created.body.data.frameSize).toBe('wide');
+    expect(created.body.data.lensOptions).toHaveLength(1);
     const id = created.body.data._id;
 
     const updated = await request(app)
       .patch(`/api/v1/products/${id}`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ price: 1500 });
+      .send({ price: 1500, frameSize: 'medium', powered: false });
     expect(updated.status).toBe(200);
     expect(updated.body.data.discountPercent).toBe(25);
+    expect(updated.body.data.frameSize).toBe('medium');
+    expect(updated.body.data.powered).toBe(false);
 
     const removed = await request(app)
       .delete(`/api/v1/products/${id}`)

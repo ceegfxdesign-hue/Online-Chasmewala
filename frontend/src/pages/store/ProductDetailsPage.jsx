@@ -18,6 +18,7 @@ import {
 } from 'react-icons/fi';
 import { useGetProductBySlugQuery, useGetRelatedProductsQuery } from '@/features/products/productApi';
 import { ProductGallery } from '@/components/product/ProductGallery';
+import { LensSelectionDrawer } from '@/components/product/LensSelectionDrawer';
 import { ReviewsSection } from '@/components/product/ReviewsSection';
 import { ProductCarousel } from '@/components/product/ProductCarousel';
 import { PincodeChecker } from '@/components/product/PincodeChecker';
@@ -43,6 +44,7 @@ import { cn } from '@/utils/cn';
 /** Build lens options for powered frames. */
 function lensOptionsFor(product) {
   if (!product.powered) return [];
+  if (product.lensOptions?.length) return product.lensOptions;
   return [
     { type: 'single-vision', label: 'Single Vision', price: 0 },
     { type: 'zero-power', label: 'Zero Power', price: 0 },
@@ -77,6 +79,8 @@ export default function ProductDetailsPage() {
 
   const [variantIdx, setVariantIdx] = useState(0);
   const [lens, setLens] = useState(null);
+  const [prescription, setPrescription] = useState(null);
+  const [lensDrawerOpen, setLensDrawerOpen] = useState(false);
   const [qty, setQty] = useState(1);
 
   const lensOptions = useMemo(() => (product ? lensOptionsFor(product) : []), [product]);
@@ -115,6 +119,8 @@ export default function ProductDetailsPage() {
       );
       setVariantIdx(0);
       setLens(null);
+      setPrescription(null);
+      setLensDrawerOpen(false);
       setQty(1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -146,6 +152,7 @@ export default function ProductDetailsPage() {
     color: variant?.color,
     variantId: variant?._id,
     lensOption: lens || undefined,
+    prescription: lens ? prescription || undefined : undefined,
     quantity: qty,
   });
 
@@ -367,21 +374,30 @@ export default function ProductDetailsPage() {
                     <button
                       key={opt.type}
                       type="button"
-                      onClick={() => setLens(lens?.type === opt.type ? null : opt)}
+                      onClick={() => {
+                        const selected = lens?.baseType === opt.type || lens?.type === opt.type;
+                        setLens(selected ? null : opt);
+                        setPrescription(null);
+                      }}
                       className={cn(
                         'min-w-[132px] rounded-xl border px-3 py-2.5 text-left text-sm transition-colors',
-                        lens?.type === opt.type
+                        lens?.baseType === opt.type || lens?.type === opt.type
                           ? 'border-brand-500 bg-brand-50 text-brand-700'
                           : 'border-navy-200 text-navy-600 hover:border-navy-300'
                       )}
                     >
                       <span className="block font-semibold">{opt.label}</span>
                       <span className="mt-0.5 block text-xs text-navy-400">
-                        {opt.price > 0 ? `Add ${formatPrice(opt.price)}` : 'Included with frame'}
+                        {opt.subtitle ? `${opt.subtitle}${opt.price > 0 ? ` · Add ${formatPrice(opt.price)}` : ''}` : (opt.price > 0 ? `Add ${formatPrice(opt.price)}` : 'Included with frame')}
                       </span>
                     </button>
                   ))}
                 </div>
+                {lens && (
+                  <Button className="mt-3" variant="secondary" onClick={() => setLensDrawerOpen(true)}>
+                    {lens.packageId ? 'Edit lenses' : 'Select lenses'}
+                  </Button>
+                )}
               </div>
             )}
 
@@ -492,6 +508,17 @@ export default function ProductDetailsPage() {
       {recentlyViewed.filter((p) => p._id !== product._id).length > 0 && (
         <ProductCarousel title="Recently viewed" products={recentlyViewed.filter((p) => p._id !== product._id)} />
       )}
+
+      <LensSelectionDrawer
+        open={lensDrawerOpen}
+        onClose={() => setLensDrawerOpen(false)}
+        options={lensOptions}
+        selectedOption={lens}
+        onComplete={({ lensOption, prescription: selectedPrescription }) => {
+          setLens(lensOption);
+          setPrescription(selectedPrescription || null);
+        }}
+      />
 
       {/* Sticky add-to-cart (mobile) */}
       <div className="sticky bottom-0 z-30 border-t border-navy-100 bg-surface/95 p-3 backdrop-blur lg:hidden">

@@ -4,8 +4,10 @@ import {
   FRAME_SHAPES,
   FRAME_TYPES,
   FRAME_MATERIALS,
+  FRAME_SIZES,
   LENS_TYPES,
   FACE_SHAPES,
+  RIM_TYPES,
 } from '../constants/index.js';
 
 const csv = z
@@ -67,6 +69,13 @@ const variantSchema = z.object({
   sku: z.string().optional(),
 });
 
+const lensOptionSchema = z.object({
+  type: z.string().trim().min(1),
+  label: z.string().trim().min(1),
+  subtitle: z.string().trim().optional(),
+  price: z.number().min(0).optional(),
+});
+
 export const createProductSchema = {
   body: z.object({
     name: z.string().trim().min(2),
@@ -83,7 +92,12 @@ export const createProductSchema = {
     frameShape: z.enum(FRAME_SHAPES).optional(),
     frameType: z.enum(FRAME_TYPES).optional(),
     frameMaterial: z.enum(FRAME_MATERIALS).optional(),
+    frameColor: z.string().trim().optional(),
+    frameSize: z.enum(FRAME_SIZES).optional(),
+    rimType: z.enum(RIM_TYPES).optional(),
     lensType: z.enum(LENS_TYPES).optional(),
+    lensThickness: z.string().trim().optional(),
+    lensOptions: z.array(lensOptionSchema).optional(),
     suitableFaceShapes: z.array(z.enum(FACE_SHAPES)).optional(),
     frameWidth: z.number().optional(),
     templeSize: z.number().optional(),
@@ -92,6 +106,7 @@ export const createProductSchema = {
     blueLightFilter: z.boolean().optional(),
     polarized: z.boolean().optional(),
     uvProtection: z.boolean().optional(),
+    powered: z.boolean().optional(),
     stock: z.number().int().min(0).optional(),
     lowStockThreshold: z.number().int().min(0).optional(),
     warrantyMonths: z.number().int().min(0).optional(),
