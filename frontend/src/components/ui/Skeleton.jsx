@@ -19,13 +19,15 @@ export function Skeleton({ variant = 'block', className, ...props }) {
 /** Product card skeleton, matching ProductCard layout. */
 export function ProductCardSkeleton() {
   return (
-    <div className="rounded-2xl bg-surface p-4 shadow-card">
-      <Skeleton variant="thumb" className="mb-4" />
-      <Skeleton variant="text" className="mb-2 w-1/3" />
-      <Skeleton variant="text" className="mb-3 w-4/5" />
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-5 w-20" />
-        <Skeleton className="h-8 w-8 rounded-full" />
+    <div className="h-full overflow-hidden rounded-2xl bg-surface shadow-card">
+      <Skeleton variant="thumb" className="rounded-none" />
+      <div className="flex min-h-[148px] flex-col p-4">
+        <Skeleton variant="text" className="mb-2 w-1/3" />
+        <Skeleton variant="text" className="mb-3 w-4/5" />
+        <Skeleton className="h-3.5 w-24" />
+        <div className="mt-auto pt-3">
+          <Skeleton className="h-5 w-20" />
+        </div>
       </div>
     </div>
   );

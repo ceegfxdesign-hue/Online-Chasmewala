@@ -17,7 +17,7 @@ import { cn } from '@/utils/cn';
  * Product card used across listings, carousels and search. The whole card links
  * to the product; wishlist and quick-add are separate controls.
  */
-function ProductCardBase({ product, className }) {
+function ProductCardBase({ product, className, priority = false }) {
   const dispatch = useDispatch();
   const toast = useToast();
   const wishlisted = useSelector((s) => s.wishlist.items.some((i) => i.productId === product._id));
@@ -72,7 +72,8 @@ function ProductCardBase({ product, className }) {
               width="480"
               height="480"
               alt={product.name}
-              loading="lazy"
+              loading={priority ? 'eager' : 'lazy'}
+              fetchPriority={priority ? 'high' : 'auto'}
               decoding="async"
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
@@ -115,7 +116,7 @@ function ProductCardBase({ product, className }) {
           )}
         </div>
 
-        <div className="flex flex-1 flex-col p-4">
+        <div className="flex min-h-[148px] flex-1 flex-col p-4">
           {brandName && <p className="text-xs font-medium uppercase tracking-wide text-navy-400">{brandName}</p>}
           <h3 className="mt-1 line-clamp-2 text-sm font-medium text-navy-900">{product.name}</h3>
 

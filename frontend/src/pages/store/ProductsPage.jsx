@@ -1,29 +1,32 @@
-import { useMemo, useState, useCallback } from 'react';
+import { lazy, Suspense, useMemo, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { motion } from 'framer-motion';
 import { FiSliders, FiChevronDown } from 'react-icons/fi';
 import { useGetProductsQuery, useGetProductFacetsQuery } from '@/features/products/productApi';
 import { ProductCard } from '@/components/product/ProductCard';
-import { FilterSidebar } from '@/components/product/FilterSidebar';
 import { ProductCardSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Pagination } from '@/components/ui/Pagination';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { Chip } from '@/components/ui/Chip';
-import { Drawer } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
 import { SORT_OPTIONS, PRICE_BOUNDS } from '@/constants/filters';
-import { staggerContainer } from '@/lib/motion';
 import { titleCase } from '@/lib/format';
 import { absoluteUrl } from '@/lib/seo';
 import { ROUTES } from '@/constants/routes';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+
+// Keep the filter controls and their animation library out of the initial
+// mobile catalog download. They are loaded only when the customer needs them.
+const FilterSidebar = lazy(() => import('@/components/product/FilterSidebar'));
+const Drawer = lazy(() => import('@/components/ui/Drawer'));
 
 const NON_FILTER_KEYS = new Set(['page', 'sort', 'q']);
 
 export default function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
 
   const filters = useMemo(() => Object.fromEntries(searchParams.entries()), [searchParams]);
   const queryParams = useMemo(() => {
@@ -34,7 +37,8 @@ export default function ProductsPage() {
   }, [filters]);
 
   const { data, isFetching, isError } = useGetProductsQuery(queryParams);
-  const { data: facets } = useGetProductFacetsQuery(filters);
+  const shouldLoadFilters = isDesktop || mobileFiltersOpen;
+  const { data: facets } = useGetProductFacetsQuery(filters, { skip: !shouldLoadFilters });
 
   const update = useCallback(
     (mutator) => {
@@ -117,18 +121,20 @@ export default function ProductsPage() {
   const meta = data?.meta;
   const title = filters.category ? titleCase(filters.category) : 'All Eyewear';
 
-  const sidebar = (
-    <FilterSidebar
-      filters={filters}
-      facets={facets}
-      onSet={onSet}
-      onToggleMulti={onToggleMulti}
-      onPrice={onPrice}
-      onClear={onClear}
-      onCloseMobile={() => setMobileFiltersOpen(false)}
-      activeCount={activeCount}
-    />
-  );
+  const sidebar = shouldLoadFilters ? (
+    <Suspense fallback={<div className="h-96 animate-pulse rounded-2xl bg-surface-subtle" />}>
+      <FilterSidebar
+        filters={filters}
+        facets={facets}
+        onSet={onSet}
+        onToggleMulti={onToggleMulti}
+        onPrice={onPrice}
+        onClear={onClear}
+        onCloseMobile={() => setMobileFiltersOpen(false)}
+        activeCount={activeCount}
+      />
+    </Suspense>
+  ) : null;
 
   return (
     <>
@@ -201,7 +207,7 @@ export default function ProductsPage() {
 
         <div className="flex gap-8">
           {/* Desktop sidebar */}
-          <aside className="hidden w-64 shrink-0 lg:block">{sidebar}</aside>
+          {isDesktop && <aside className="w-64 shrink-0">{sidebar}</aside>}
 
           {/* Results */}
           <div className="min-w-0 flex-1">
@@ -222,16 +228,11 @@ export default function ProductsPage() {
               />
             ) : (
               <>
-                <motion.div
-                  variants={staggerContainer(0.04)}
-                  initial="initial"
-                  animate="animate"
-                  className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4"
-                >
-                  {items.map((p) => (
-                    <ProductCard key={p._id} product={p} />
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+                  {items.map((p, index) => (
+                    <ProductCard key={p._id} product={p} priority={index === 0} />
                   ))}
-                </motion.div>
+                </div>
 
                 {meta && (
                   <Pagination
@@ -247,9 +248,13 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      <Drawer open={mobileFiltersOpen} onClose={() => setMobileFiltersOpen(false)} side="left" title="Filters">
-        <div className="px-5">{sidebar}</div>
-      </Drawer>
+      {mobileFiltersOpen && (
+        <Suspense fallback={null}>
+          <Drawer open onClose={() => setMobileFiltersOpen(false)} side="left" title="Filters">
+            <div className="px-5">{sidebar}</div>
+          </Drawer>
+        </Suspense>
+      )}
     </>
   );
 }
