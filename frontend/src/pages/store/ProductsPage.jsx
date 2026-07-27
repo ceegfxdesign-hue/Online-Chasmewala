@@ -160,11 +160,11 @@ export default function ProductsPage() {
             {meta && <p className="mt-1 text-sm text-navy-400">{meta.total} products</p>}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center gap-2 sm:w-auto">
             <button
               type="button"
               onClick={() => setMobileFiltersOpen(true)}
-              className="inline-flex items-center gap-2 rounded-xl border border-navy-200 px-4 py-2.5 text-sm font-medium text-navy-700 lg:hidden"
+              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-navy-200 px-3 text-sm font-medium text-navy-700 sm:flex-none sm:px-4 lg:hidden"
             >
               <FiSliders className="h-4 w-4" /> Filters
               {activeCount > 0 && (
@@ -174,12 +174,12 @@ export default function ProductsPage() {
               )}
             </button>
 
-            <div className="relative">
+            <div className="relative min-w-0 flex-1 sm:flex-none">
               <select
                 value={filters.sort || 'relevance'}
                 onChange={setSort}
                 aria-label="Sort products"
-                className="h-11 appearance-none rounded-xl border border-navy-200 bg-surface pl-4 pr-10 text-sm font-medium text-navy-700 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                className="h-11 w-full appearance-none rounded-xl border border-navy-200 bg-surface pl-4 pr-10 text-sm font-medium text-navy-700 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40 sm:w-auto"
               >
                 {SORT_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -214,7 +214,7 @@ export default function ProductsPage() {
             {isError ? (
               <EmptyState title="Couldn’t load products" description="Please try again in a moment." />
             ) : isFetching ? (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 min-[375px]:grid-cols-2 sm:grid-cols-3 xl:grid-cols-4">
                 {Array.from({ length: 8 }).map((_, i) => (
                   // eslint-disable-next-line react/no-array-index-key
                   <ProductCardSkeleton key={i} />
@@ -228,7 +228,7 @@ export default function ProductsPage() {
               />
             ) : (
               <>
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-4 min-[375px]:grid-cols-2 sm:grid-cols-3 xl:grid-cols-4">
                   {items.map((p, index) => (
                     <ProductCard key={p._id} product={p} priority={index === 0} />
                   ))}

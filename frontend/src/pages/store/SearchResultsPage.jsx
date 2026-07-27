@@ -72,7 +72,7 @@ export default function SearchResultsPage() {
             </div>
 
             {isFetching ? (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 min-[375px]:grid-cols-2 sm:grid-cols-3 xl:grid-cols-4">
                 {Array.from({ length: 8 }).map((_, i) => (
                   // eslint-disable-next-line react/no-array-index-key
                   <ProductCardSkeleton key={i} />
@@ -91,7 +91,7 @@ export default function SearchResultsPage() {
                   variants={staggerContainer(0.04)}
                   initial="initial"
                   animate="animate"
-                  className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4"
+                  className="grid grid-cols-1 gap-4 min-[375px]:grid-cols-2 sm:grid-cols-3 xl:grid-cols-4"
                 >
                   {items.map((p) => (
                     <ProductCard key={p._id} product={p} />

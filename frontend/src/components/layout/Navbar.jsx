@@ -15,7 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useOnClickOutside } from '@/hooks/useOnClickOutside';
 import { cn } from '@/utils/cn';
 
-function IconButton({ icon, label, count, onClick, to }) {
+function IconButton({ icon, label, count, onClick, to, className }) {
   const Comp = to ? Link : 'button';
   return (
     <Comp
@@ -23,7 +23,7 @@ function IconButton({ icon, label, count, onClick, to }) {
       type={to ? undefined : 'button'}
       onClick={onClick}
       aria-label={label}
-      className="relative flex h-10 w-10 items-center justify-center rounded-full text-navy-700 transition-colors hover:bg-navy-100"
+      className={cn('relative flex h-9 w-9 items-center justify-center rounded-full text-navy-700 transition-colors hover:bg-navy-100 sm:h-10 sm:w-10', className)}
     >
       {icon}
       {count > 0 && (
@@ -49,20 +49,20 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-navy-100 bg-surface/95 backdrop-blur">
-      <div className="container-page">
-        <div className="flex h-16 items-center gap-4">
+      <div className="container-page px-3 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center gap-2 sm:gap-4">
           {/* Mobile menu toggle */}
           <button
             type="button"
             onClick={() => dispatch(toggleMobileMenu())}
             aria-label="Open menu"
-            className="flex h-10 w-10 items-center justify-center rounded-full text-navy-700 hover:bg-navy-100 lg:hidden"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-navy-700 hover:bg-navy-100 sm:h-10 sm:w-10 lg:hidden"
           >
             <FiMenu className="h-5 w-5" />
           </button>
 
           <Link to={ROUTES.home} aria-label="Online Chasmewala Premium Eyewear — Home" className="shrink-0">
-            <Logo />
+            <Logo compactOnMobile />
           </Link>
 
           {/* Desktop nav */}
@@ -106,6 +106,7 @@ export function Navbar() {
               label="Wishlist"
               count={wishlistCount}
               icon={<FiHeart className="h-5 w-5" />}
+              className="max-[420px]:hidden"
             />
             <IconButton
               label="Cart"
@@ -121,7 +122,7 @@ export function Navbar() {
                 onClick={() => setAccountOpen((o) => !o)}
                 aria-label="Account menu"
                 aria-expanded={accountOpen}
-                className="flex h-10 items-center gap-1.5 rounded-full px-2 text-navy-700 transition-colors hover:bg-navy-100"
+                className="flex h-9 items-center gap-1.5 rounded-full px-1 text-navy-700 transition-colors hover:bg-navy-100 sm:h-10 sm:px-2"
               >
                 <FiUser className="h-5 w-5" />
                 <span className="hidden text-sm font-medium xl:inline">

@@ -67,7 +67,7 @@ export function ProductGallery({ images = [], alt, rating = 0, reviewCount = 0, 
   return (
     <div className="flex flex-col-reverse gap-3 md:flex-row">
       {/* Thumbnails */}
-      <div className="flex gap-2 md:flex-col">
+      <div className="flex max-w-full gap-2 overflow-x-auto pb-1 md:max-h-[32rem] md:flex-col md:overflow-y-auto md:pb-0">
         {safeImages.map((img, i) => (
           <button
             key={`${img}-${i}`}
