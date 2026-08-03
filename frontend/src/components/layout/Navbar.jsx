@@ -110,7 +110,7 @@ export function Navbar() {
           </nav>
 
           {/* Search */}
-          <SearchBar className="ml-auto hidden w-[280px] shrink-0 md:block xl:w-[320px] 2xl:w-[430px]" />
+          <SearchBar className="ml-auto hidden w-[240px] shrink-0 md:block xl:w-[280px] 2xl:w-[320px]" />
 
           {/* Actions */}
           <div className={cn('ml-auto flex shrink-0 items-center gap-1', 'md:ml-0')}>
@@ -135,13 +135,13 @@ export function Navbar() {
             />
 
             {/* Account */}
-            <div className="relative" ref={accountRef}>
+            <div className="relative shrink-0" ref={accountRef}>
               <button
                 type="button"
                 onClick={() => setAccountOpen((o) => !o)}
                 aria-label="Account menu"
                 aria-expanded={accountOpen}
-                className="flex h-9 items-center gap-1.5 rounded-full px-1 text-navy-700 transition-colors hover:bg-navy-100 sm:h-10 sm:px-2"
+                className="flex h-9 min-w-10 items-center gap-1.5 rounded-full px-1 text-navy-700 transition-colors hover:bg-navy-100 sm:h-10 sm:px-2"
               >
                 <FiUser className="h-5 w-5" />
                 <span className="hidden text-sm font-medium xl:inline">
