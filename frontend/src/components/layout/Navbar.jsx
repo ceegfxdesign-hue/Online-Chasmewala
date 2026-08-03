@@ -55,8 +55,7 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-navy-100 bg-surface/95 backdrop-blur">
-      <div className="container-page px-3 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center gap-2 sm:gap-4 lg:gap-5">
+      <div className="flex h-[72px] w-full items-center gap-3 px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
           {/* Mobile menu toggle */}
           <button
             type="button"
@@ -72,14 +71,14 @@ export function Navbar() {
           </Link>
 
           {/* Desktop nav */}
-          <nav className="ml-3 hidden lg:block xl:ml-5" onMouseLeave={() => setActiveMenu(null)}>
-            <ul className="flex items-center gap-4 xl:gap-5 2xl:gap-6">
+          <nav className="ml-5 hidden lg:block xl:ml-7" onMouseLeave={() => setActiveMenu(null)}>
+            <ul className="flex items-center gap-6 xl:gap-7 2xl:gap-9">
               {MEGA_MENU.map((item) => (
                 <li key={item.slug} onMouseEnter={() => setActiveMenu(item.slug)}>
                   <Link
                     to={`/products?category=${item.slug}`}
                     className={cn(
-                      'flex h-16 items-center whitespace-nowrap px-0 text-[15px] font-semibold transition-colors',
+                      'flex h-[72px] items-center whitespace-nowrap px-0 text-[15px] font-semibold transition-colors',
                       activeMenu === item.slug ? 'text-brand-600' : 'text-navy-700 hover:text-brand-600'
                     )}
                   >
@@ -87,14 +86,14 @@ export function Navbar() {
                   </Link>
                 </li>
               ))}
-              {PAGE_LINKS.map((item, index) => (
+              {PAGE_LINKS.map((item) => (
                 <li
                   key={item.to}
-                  className={cn('hidden xl:block', index === 0 && 'ml-2 border-l border-navy-100 pl-5')}
+                  className="hidden 2xl:block"
                 >
                   <Link
                     to={item.to}
-                    className="flex h-16 items-center whitespace-nowrap px-0 text-[15px] font-semibold text-navy-700 transition-colors hover:text-brand-600"
+                    className="flex h-[72px] items-center whitespace-nowrap px-0 text-[15px] font-semibold text-navy-700 transition-colors hover:text-brand-600"
                   >
                     {item.label}
                   </Link>
@@ -111,10 +110,10 @@ export function Navbar() {
           </nav>
 
           {/* Search */}
-          <SearchBar className="ml-auto hidden max-w-xs flex-1 md:block" />
+          <SearchBar className="ml-auto hidden w-[280px] shrink-0 md:block xl:w-[320px] 2xl:w-[430px]" />
 
           {/* Actions */}
-          <div className={cn('flex items-center gap-0.5', 'md:ml-0 ml-auto')}>
+          <div className={cn('ml-auto flex shrink-0 items-center gap-1', 'md:ml-0')}>
             <IconButton
               to={ROUTES.search}
               label="Search"
@@ -164,7 +163,6 @@ export function Navbar() {
               )}
             </div>
           </div>
-        </div>
       </div>
     </header>
   );
