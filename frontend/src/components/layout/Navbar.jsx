@@ -56,7 +56,7 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b border-navy-100 bg-surface/95 backdrop-blur">
       <div className="container-page px-3 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center gap-2 sm:gap-4">
+        <div className="flex h-16 items-center gap-2 sm:gap-4 lg:gap-5">
           {/* Mobile menu toggle */}
           <button
             type="button"
@@ -72,14 +72,14 @@ export function Navbar() {
           </Link>
 
           {/* Desktop nav */}
-          <nav className="ml-2 hidden lg:block" onMouseLeave={() => setActiveMenu(null)}>
-            <ul className="flex items-center">
+          <nav className="ml-3 hidden lg:block xl:ml-5" onMouseLeave={() => setActiveMenu(null)}>
+            <ul className="flex items-center gap-4 xl:gap-5 2xl:gap-6">
               {MEGA_MENU.map((item) => (
                 <li key={item.slug} onMouseEnter={() => setActiveMenu(item.slug)}>
                   <Link
                     to={`/products?category=${item.slug}`}
                     className={cn(
-                      'flex h-16 items-center px-3.5 text-sm font-medium transition-colors',
+                      'flex h-16 items-center whitespace-nowrap px-0 text-[15px] font-semibold transition-colors',
                       activeMenu === item.slug ? 'text-brand-600' : 'text-navy-700 hover:text-brand-600'
                     )}
                   >
@@ -87,11 +87,14 @@ export function Navbar() {
                   </Link>
                 </li>
               ))}
-              {PAGE_LINKS.map((item) => (
-                <li key={item.to} className="hidden xl:block">
+              {PAGE_LINKS.map((item, index) => (
+                <li
+                  key={item.to}
+                  className={cn('hidden xl:block', index === 0 && 'ml-2 border-l border-navy-100 pl-5')}
+                >
                   <Link
                     to={item.to}
-                    className="flex h-16 items-center px-3 text-sm font-medium text-navy-700 transition-colors hover:text-brand-600"
+                    className="flex h-16 items-center whitespace-nowrap px-0 text-[15px] font-semibold text-navy-700 transition-colors hover:text-brand-600"
                   >
                     {item.label}
                   </Link>
