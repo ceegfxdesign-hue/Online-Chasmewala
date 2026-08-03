@@ -1,0 +1,108 @@
+import { Link } from 'react-router-dom';
+import { FiDroplet, FiEye, FiMonitor, FiShoppingBag, FiSun, FiTag, FiUser, FiZap } from 'react-icons/fi';
+import { ROUTES } from '@/constants/routes';
+
+const GROUPS = [
+  {
+    title: 'Eyeglasses',
+    badge: 'With power',
+    items: [
+      { label: 'Men', to: `${ROUTES.products}?category=eyeglasses&gender=men`, image: 'oc-eyeglasses-men' },
+      { label: 'Women', to: `${ROUTES.products}?category=eyeglasses&gender=women`, image: 'oc-eyeglasses-women' },
+      { label: 'Kids', to: `${ROUTES.products}?category=eyeglasses&gender=kids`, image: 'oc-eyeglasses-kids' },
+      { label: 'On sale', to: `${ROUTES.products}?category=eyeglasses&onOffer=true`, icon: FiTag, tint: 'bg-brand-50 text-brand-600' },
+    ],
+  },
+  {
+    title: 'Sunglasses',
+    badge: 'UV protected',
+    items: [
+      { label: 'Men', to: `${ROUTES.products}?category=sunglasses&gender=men`, image: 'oc-sunglasses-men' },
+      { label: 'Women', to: `${ROUTES.products}?category=sunglasses&gender=women`, image: 'oc-sunglasses-women' },
+      { label: 'Kids', to: `${ROUTES.products}?category=sunglasses&gender=kids`, image: 'oc-sunglasses-kids' },
+      { label: 'On sale', to: `${ROUTES.products}?category=sunglasses&onOffer=true`, icon: FiSun, tint: 'bg-warning-light text-warning-dark' },
+    ],
+  },
+  {
+    title: 'Computer Glasses',
+    badge: 'Blue-light ready',
+    items: [
+      { label: 'Blue-light', to: `${ROUTES.products}?category=computer-glasses&blueLightFilter=true`, icon: FiMonitor, tint: 'bg-brand-50 text-brand-600' },
+      { label: 'Zero power', to: `${ROUTES.products}?category=computer-glasses&lensType=zero-power`, icon: FiEye, tint: 'bg-accent-400/15 text-brand-700' },
+      { label: 'For work', to: `${ROUTES.products}?category=computer-glasses`, icon: FiUser, tint: 'bg-navy-100 text-navy-700' },
+      { label: 'Gaming', to: `${ROUTES.products}?category=computer-glasses&blueLightFilter=true`, icon: FiZap, tint: 'bg-warning-light text-warning-dark' },
+    ],
+  },
+  {
+    title: 'Contact Lenses',
+    badge: 'Daily comfort',
+    items: [
+      { label: 'Clear', to: `${ROUTES.products}?category=contact-lenses`, icon: FiEye, tint: 'bg-brand-50 text-brand-600' },
+      { label: 'Color', to: `${ROUTES.products}?category=contact-lenses&sort=newest`, icon: FiDroplet, tint: 'bg-accent-400/15 text-brand-700' },
+      { label: 'Solutions', to: `${ROUTES.products}?category=accessories`, icon: FiShoppingBag, tint: 'bg-navy-100 text-navy-700' },
+      { label: 'Trial packs', to: `${ROUTES.products}?category=contact-lenses&onOffer=true`, icon: FiTag, tint: 'bg-warning-light text-warning-dark' },
+    ],
+  },
+];
+
+function CategoryCard({ item }) {
+  const Icon = item.icon;
+
+  return (
+    <Link
+      to={item.to}
+      className="group relative flex min-h-40 flex-col items-center justify-center overflow-hidden rounded-3xl border border-navy-100 bg-surface px-4 py-5 text-center shadow-soft transition-all duration-300 hover:-translate-y-1 hover:border-brand-200 hover:shadow-card sm:min-h-44"
+    >
+      <span className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-surface-subtle shadow-soft sm:h-24 sm:w-24">
+        {item.image ? (
+          <img
+            src={`https://picsum.photos/seed/${item.image}/192/192`}
+            width="192"
+            height="192"
+            alt=""
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+          />
+        ) : (
+          <span className={`flex h-full w-full items-center justify-center ${item.tint}`}>
+            <Icon className="h-8 w-8 sm:h-9 sm:w-9" aria-hidden="true" />
+          </span>
+        )}
+      </span>
+      <span className="mt-4 text-xs font-bold uppercase tracking-[0.14em] text-navy-900">{item.label}</span>
+    </Link>
+  );
+}
+
+/** Grouped category shortcuts for the home page. */
+export function ShopByCategory() {
+  return (
+    <section className="container-page py-14 sm:py-20">
+      <div className="border-b border-navy-200 pb-6">
+        <span className="inline-flex rounded-full bg-brand-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-brand-700">
+          Curated eyewear styles
+        </span>
+        <h2 className="mt-3 text-h2 uppercase text-navy-900">Shop by category</h2>
+        <p className="mt-2 max-w-2xl text-navy-500">Browse popular segments to find your fit, lens type and everyday style.</p>
+      </div>
+
+      <div className="divide-y divide-navy-100">
+        {GROUPS.map((group) => (
+          <div key={group.title} className="py-8 first:pt-8 sm:py-10">
+            <div className="mb-5 flex flex-wrap items-center gap-2">
+              <h3 className="text-h3 text-navy-900">{group.title}</h3>
+              <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-bold uppercase tracking-[0.12em] text-brand-700">
+                {group.badge}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              {group.items.map((item) => <CategoryCard key={item.label} item={item} />)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export default ShopByCategory;
