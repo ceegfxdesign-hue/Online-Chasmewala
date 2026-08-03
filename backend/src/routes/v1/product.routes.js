@@ -20,6 +20,7 @@ router.get('/', validate(listProductsSchema), productController.list);
 router.get('/facets', validate(listProductsSchema), productController.facets);
 router.get('/collections', productController.collections);
 router.get('/suggest', productController.suggest);
+router.get('/media/:id/:index', productController.image);
 
 // ── Admin (place before /:slug to avoid capture) ────────────────────────────
 router.get('/admin', protect, authorize(ROLES.ADMIN), productController.adminList);

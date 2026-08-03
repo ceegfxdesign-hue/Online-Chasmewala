@@ -11,6 +11,7 @@ import { addToCart } from '@/features/cart/cartSlice';
 import { openCartDrawer } from '@/features/ui/uiSlice';
 import { staggerContainer, staggerItem } from '@/lib/motion';
 import { formatPrice } from '@/lib/format';
+import { getOptimizedImageUrl } from '@/lib/images';
 import { ROUTES } from '@/constants/routes';
 
 export default function WishlistPage() {
@@ -59,7 +60,7 @@ export default function WishlistPage() {
             {items.map((item) => (
               <motion.div key={item.productId} variants={staggerItem} className="overflow-hidden rounded-2xl bg-surface shadow-card">
                 <Link to={ROUTES.product(item.slug)} className="block aspect-square overflow-hidden bg-surface-subtle">
-                  <img src={item.image} alt={item.name} className="h-full w-full object-cover transition-transform duration-500 hover:scale-105" />
+                  <img src={getOptimizedImageUrl(item.image, 480)} alt={item.name} className="h-full w-full object-cover transition-transform duration-500 hover:scale-105" />
                 </Link>
                 <div className="p-4">
                   <Link to={ROUTES.product(item.slug)} className="line-clamp-2 text-sm font-medium text-navy-900 hover:text-brand-600">

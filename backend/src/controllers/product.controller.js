@@ -23,6 +23,12 @@ export const productController = {
     return sendSuccess(res, { data });
   }),
 
+  image: asyncHandler(async (req, res) => {
+    const image = await productService.getImage(req.params.id, Number(req.params.index));
+    res.set('Cache-Control', 'public, max-age=31536000, immutable');
+    return res.type(image.contentType).send(image.buffer);
+  }),
+
   getBySlug: asyncHandler(async (req, res) => {
     const data = await productService.getBySlug(req.params.slug);
     return sendSuccess(res, { data });

@@ -9,6 +9,7 @@ import { Card, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/contexts/ToastContext';
 import { formatDate } from '@/lib/format';
+import { getOptimizedImageUrl } from '@/lib/images';
 import { ROUTES } from '@/constants/routes';
 
 export default function MyReviewsPage() {
@@ -54,7 +55,7 @@ export default function MyReviewsPage() {
                 <div className="flex gap-4">
                   {r.product?.images?.[0] && (
                     <Link to={ROUTES.product(r.product.slug)} className="shrink-0">
-                      <img src={r.product.images[0]} alt="" className="h-16 w-16 rounded-xl bg-surface-subtle object-cover" />
+                      <img src={getOptimizedImageUrl(r.product.images[0], 128)} alt="" className="h-16 w-16 rounded-xl bg-surface-subtle object-cover" />
                     </Link>
                   )}
                   <div className="min-w-0 flex-1">

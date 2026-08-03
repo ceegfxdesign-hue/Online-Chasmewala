@@ -20,6 +20,7 @@ import {
 } from '@/features/cart/cartSlice';
 import { selectIsAuthenticated } from '@/features/auth/authSlice';
 import { formatPrice, discountPercent } from '@/lib/format';
+import { getOptimizedImageUrl } from '@/lib/images';
 import { ROUTES } from '@/constants/routes';
 
 const FREE_SHIPPING = 999;
@@ -89,7 +90,7 @@ export default function CartPage() {
                 return (
                   <li key={key} className="flex gap-4 rounded-2xl bg-surface p-4 shadow-card">
                     <Link to={ROUTES.product(item.slug)} className="shrink-0">
-                      <img src={item.image} alt={item.name} className="h-24 w-24 rounded-xl bg-surface-subtle object-cover" />
+                      <img src={getOptimizedImageUrl(item.image, 192)} alt={item.name} className="h-24 w-24 rounded-xl bg-surface-subtle object-cover" />
                     </Link>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-3">

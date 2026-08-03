@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Button, Input, Modal, Select, Textarea } from '@/components/ui';
 import { useToast } from '@/contexts/ToastContext';
 import { cn } from '@/utils/cn';
+import { getOptimizedImageUrl } from '@/lib/images';
 
 const FRAME_SHAPES = ['rectangle', 'square', 'round', 'oval', 'cat-eye', 'aviator', 'wayfarer', 'geometric', 'clubmaster'];
 const FRAME_TYPES = ['full-rim', 'half-rim', 'rimless'];
@@ -322,7 +323,7 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
             <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-5">
               {images.map((image, index) => (
                 <div key={`${image.slice(0, 48)}-${index}`} className="relative aspect-square overflow-hidden rounded-xl border border-navy-100 bg-surface-subtle">
-                  <img src={image} alt={`Product gallery ${index + 1}`} className="h-full w-full object-cover" />
+                  <img src={getOptimizedImageUrl(image, 240)} alt={`Product gallery ${index + 1}`} className="h-full w-full object-cover" />
                   <button type="button" onClick={() => setImages((current) => current.filter((_, itemIndex) => itemIndex !== index))} className="absolute right-1 top-1 rounded-full bg-navy-900/80 px-2 py-1 text-xs font-bold text-white" aria-label={`Remove image ${index + 1}`}>x</button>
                   {index === 0 && <span className="absolute bottom-1 left-1 rounded bg-brand-500 px-1.5 py-0.5 text-[10px] font-bold text-white">MAIN</span>}
                 </div>

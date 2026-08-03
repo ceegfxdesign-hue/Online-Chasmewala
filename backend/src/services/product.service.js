@@ -24,6 +24,34 @@ const SORT_MAP = {
 const asArray = (val) =>
   Array.isArray(val) ? val : typeof val === 'string' ? val.split(',').map((v) => v.trim()) : [];
 
+const inlineImagePattern = /^data:(image\/[a-z0-9.+-]+);base64,([a-z0-9+/=]+)$/i;
+const imageReferencePattern = /^oc-product-image:\/\/([^/]+)\/(\d+)$/;
+
+const isInlineImage = (image) => typeof image === 'string' && inlineImagePattern.test(image);
+const imageReference = (productId, index) => `oc-product-image://${productId}/${index}`;
+
+/**
+ * Do not include base64 image bytes in catalog JSON responses. Card rows only
+ * need a small reference; the browser fetches the actual image when it is shown.
+ */
+function serializeImages(product) {
+  if (!product) return product;
+  const result = { ...product };
+  result.images = (product.images || []).map((image, index) =>
+    isInlineImage(image) ? imageReference(product._id, index) : image
+  );
+  return result;
+}
+
+function restoreImageReferences(product, images = []) {
+  return images.map((image) => {
+    const match = typeof image === 'string' ? image.match(imageReferencePattern) : null;
+    if (!match || String(match[1]) !== String(product._id)) return image;
+    const storedImage = product.images?.[Number(match[2])];
+    return storedImage || image;
+  });
+}
+
 /** Resolve a comma-separated list of slugs (or ids) to ObjectIds. */
 async function resolveRefs(repo, value) {
   const tokens = asArray(value).filter(Boolean);
@@ -101,13 +129,13 @@ export const productService = {
       .lean();
 
     const [data, total] = await Promise.all([q.exec(), productRepository.count(filter)]);
-    return { data, meta: buildMeta({ page, limit, total }) };
+    return { data: data.map(serializeImages), meta: buildMeta({ page, limit, total }) };
   },
 
   async getBySlug(slug) {
     const product = await productRepository.findBySlug(slug).lean();
     if (!product) throw ApiError.notFound('Product not found');
-    return product;
+    return serializeImages(product);
   },
 
   async getById(id) {
@@ -124,7 +152,7 @@ export const productService = {
       { _id: { $ne: product._id }, category: product.category, isActive: true },
       { sort: { soldCount: -1 }, limit, populate: 'brand', lean: true }
     );
-    return data;
+    return data.map(serializeImages);
   },
 
   /**
@@ -177,7 +205,12 @@ export const productService = {
       pick({ isNewArrival: true }, { createdAt: -1 }),
       pick({ isFeatured: true }, { rating: -1 }),
     ]);
-    return { bestSellers, trending, newArrivals, featured };
+    return {
+      bestSellers: bestSellers.map(serializeImages),
+      trending: trending.map(serializeImages),
+      newArrivals: newArrivals.map(serializeImages),
+      featured: featured.map(serializeImages),
+    };
   },
 
   /** Instant-search suggestions (lightweight). */
@@ -192,22 +225,24 @@ export const productService = {
       brandRepository.find({ name: rx }, { select: 'name slug', limit: 4, lean: true }),
       categoryRepository.find({ name: rx }, { select: 'name slug', limit: 4, lean: true }),
     ]);
-    return { products, brands, categories };
+    return { products: products.map(serializeImages), brands, categories };
   },
 
   // ── Admin CRUD ─────────────────────────────────────────────────────────────
   async create(data) {
     if (data.mrp < data.price) throw ApiError.badRequest('MRP cannot be less than price');
-    return productRepository.create(data);
+    const product = await productRepository.create(data);
+    return serializeImages(product.toObject());
   },
 
   async update(id, data) {
     const product = await productRepository.findById(id);
     if (!product) throw ApiError.notFound('Product not found');
+    if (data.images) data.images = restoreImageReferences(product, data.images);
     Object.assign(product, data);
     if (product.mrp < product.price) throw ApiError.badRequest('MRP cannot be less than price');
     await product.save(); // triggers slug + discountPercent hooks + validation
-    return product;
+    return serializeImages(product.toObject());
   },
 
   async remove(id) {
@@ -234,7 +269,19 @@ export const productService = {
         { path: 'brand', select: 'name' },
       ],
     });
-    return { data, meta: buildMeta({ page, limit, total }) };
+    return { data: data.map(serializeImages), meta: buildMeta({ page, limit, total }) };
+  },
+
+  /** Return an uploaded inline image as image bytes, outside the catalog JSON. */
+  async getImage(id, index) {
+    if (!mongoose.isValidObjectId(id) || !Number.isInteger(index) || index < 0) {
+      throw ApiError.notFound('Product image not found');
+    }
+    const product = await productRepository.model.findOne({ _id: id, isActive: true }).select('images').lean();
+    const image = product?.images?.[index];
+    const match = typeof image === 'string' ? image.match(inlineImagePattern) : null;
+    if (!match) throw ApiError.notFound('Product image not found');
+    return { contentType: match[1], buffer: Buffer.from(match[2], 'base64') };
   },
 };
 

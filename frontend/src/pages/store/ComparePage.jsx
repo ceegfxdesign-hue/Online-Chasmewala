@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { RatingStars } from '@/components/ui/RatingStars';
 import { formatPrice, titleCase } from '@/lib/format';
+import { getOptimizedImageUrl } from '@/lib/images';
 import { ROUTES } from '@/constants/routes';
 
 const ROWS = [
@@ -66,7 +67,7 @@ export default function ComparePage() {
                         </button>
                         <Link to={ROUTES.product(p.slug)}>
                           <img
-                            src={p.images?.[0]}
+                            src={getOptimizedImageUrl(p.images?.[0], 224)}
                             alt={p.name}
                             className="mx-auto h-28 w-28 rounded-xl object-cover"
                           />

@@ -208,7 +208,7 @@ export function ProductGallery({ images = [], alt, rating = 0, reviewCount = 0, 
                 key={active}
                 initial={{ opacity: 0, scale: 0.97 }}
                 animate={{ opacity: 1, scale: 1 }}
-                src={current}
+                src={getOptimizedImageUrl(current, 1200)}
                 alt={alt}
                 onClick={(e) => e.stopPropagation()}
                 className="max-h-[85vh] max-w-[85vw] rounded-2xl object-contain"

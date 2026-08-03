@@ -14,6 +14,7 @@ import {
 } from '@/features/cart/cartSlice';
 import { ROUTES } from '@/constants/routes';
 import { formatPrice } from '@/lib/format';
+import { getOptimizedImageUrl } from '@/lib/images';
 
 /** Slide-in cart summary with quantity controls and a checkout CTA. */
 export function CartDrawer() {
@@ -65,7 +66,7 @@ export function CartDrawer() {
             return (
               <li key={key} className="flex gap-3 p-4">
                 <img
-                  src={item.image}
+                  src={getOptimizedImageUrl(item.image, 160)}
                   alt={item.name}
                   className="h-20 w-20 shrink-0 rounded-xl bg-surface-subtle object-cover"
                   loading="lazy"

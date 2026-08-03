@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { Helmet } from 'react-helmet-async';
@@ -18,6 +19,7 @@ import { TrendingCatalogHero } from '@/components/home/TrendingCatalogHero';
 import { useGetCollectionsQuery } from '@/features/products/productApi';
 import { selectRecentlyViewed } from '@/features/recentlyViewed/recentlyViewedSlice';
 import { absoluteUrl } from '@/lib/seo';
+import { loadState, saveState } from '@/lib/storage';
 import { ROUTES } from '@/constants/routes';
 
 const VALUE_PROPS = [
@@ -27,9 +29,20 @@ const VALUE_PROPS = [
   { icon: FiHeadphones, title: 'Expert support', text: 'Help choosing the right fit' },
 ];
 
+const HOME_COLLECTIONS_CACHE_KEY = 'homeProductCollections';
+
 export default function HomePage() {
   const { data: collections, isLoading: collectionsLoading } = useGetCollectionsQuery();
   const recentlyViewed = useSelector(selectRecentlyViewed);
+  const [cachedCollections, setCachedCollections] = useState(() => loadState(HOME_COLLECTIONS_CACHE_KEY, null));
+  const displayCollections = collections || cachedCollections;
+  const showCollectionSkeletons = collectionsLoading && !displayCollections;
+
+  useEffect(() => {
+    if (!collections) return;
+    setCachedCollections(collections);
+    saveState(HOME_COLLECTIONS_CACHE_KEY, collections);
+  }, [collections]);
 
   return (
     <>
@@ -55,8 +68,8 @@ export default function HomePage() {
         title="Best sellers"
         subtitle="Our customers’ favourite frames this season."
         action={{ label: 'View all', to: `${ROUTES.products}?sort=popular` }}
-        products={collections?.bestSellers || []}
-        loading={collectionsLoading}
+        products={displayCollections?.bestSellers || []}
+        loading={showCollectionSkeletons}
       />
 
       <ShopByFaceShape />
@@ -66,8 +79,8 @@ export default function HomePage() {
           eyebrow="Hot right now"
           title="Trending now"
           action={{ label: 'View all', to: `${ROUTES.products}?sort=newest` }}
-          products={collections?.trending || []}
-          loading={collectionsLoading}
+          products={displayCollections?.trending || []}
+          loading={showCollectionSkeletons}
         />
       </div>
 
@@ -77,8 +90,8 @@ export default function HomePage() {
         eyebrow="Just landed"
         title="New arrivals"
         action={{ label: 'View all', to: `${ROUTES.products}` }}
-        products={collections?.newArrivals || []}
-        loading={collectionsLoading}
+        products={displayCollections?.newArrivals || []}
+        loading={showCollectionSkeletons}
       />
 
       <section className="border-y border-navy-100 bg-surface">

@@ -6,6 +6,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { useOnClickOutside } from '@/hooks/useOnClickOutside';
 import { loadState, saveState } from '@/lib/storage';
 import { formatPrice } from '@/lib/format';
+import { getOptimizedImageUrl } from '@/lib/images';
 import { ROUTES } from '@/constants/routes';
 import { cn } from '@/utils/cn';
 
@@ -86,7 +87,7 @@ export function SearchBar({ className, onNavigate }) {
                       onClick={() => { setOpen(false); onNavigate?.(); }}
                       className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-navy-100"
                     >
-                      <img src={p.images?.[0]} alt="" className="h-10 w-10 rounded-lg object-cover" />
+                      <img src={getOptimizedImageUrl(p.images?.[0], 80)} alt="" className="h-10 w-10 rounded-lg object-cover" />
                       <span className="flex-1 truncate text-sm text-navy-800">{p.name}</span>
                       <span className="text-sm font-semibold text-navy-900">{formatPrice(p.price)}</span>
                     </Link>
