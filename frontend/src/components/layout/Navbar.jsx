@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { FiSearch, FiHeart, FiShoppingBag, FiUser, FiMenu, FiLogOut, FiGrid, FiChevronDown } from 'react-icons/fi';
+import { FiSearch, FiHeart, FiShoppingBag, FiUser, FiMenu, FiLogOut, FiGrid } from 'react-icons/fi';
 import { Logo } from '@/components/common/Logo';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { MegaMenu } from './MegaMenu';
@@ -21,6 +21,10 @@ const PAGE_LINKS = [
   { label: 'About', to: ROUTES.about },
   { label: 'Find Us', to: ROUTES.findUs },
 ];
+
+// Computer Glasses and Kids remain available through search and the mobile
+// menu, while the desktop header focuses on the primary shopping sections.
+const DESKTOP_SHOP_LINKS = MEGA_MENU.filter((item) => !['computer-glasses', 'kids-glasses'].includes(item.slug));
 
 function IconButton({ icon, label, count, onClick, to, className }) {
   const Comp = to ? Link : 'button';
@@ -62,7 +66,7 @@ export function Navbar() {
             type="button"
             onClick={() => dispatch(toggleMobileMenu())}
             aria-label="Open menu"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-navy-700 hover:bg-navy-100 sm:h-10 sm:w-10 lg:hidden"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-navy-700 hover:bg-navy-100 sm:h-10 sm:w-10 xl:hidden"
           >
             <FiMenu className="h-5 w-5" />
           </button>
@@ -72,9 +76,9 @@ export function Navbar() {
           </Link>
 
           {/* Desktop nav */}
-          <nav className="ml-5 hidden lg:block xl:ml-7" onMouseLeave={() => setActiveMenu(null)}>
+          <nav className="ml-5 hidden xl:block xl:ml-7" onMouseLeave={() => setActiveMenu(null)}>
             <ul className="flex items-center gap-6 xl:gap-7 2xl:gap-9">
-              {MEGA_MENU.map((item) => (
+              {DESKTOP_SHOP_LINKS.map((item) => (
                 <li key={item.slug} onMouseEnter={() => setActiveMenu(item.slug)}>
                   <Link
                     to={`/products?category=${item.slug}`}
@@ -88,10 +92,7 @@ export function Navbar() {
                 </li>
               ))}
               {PAGE_LINKS.map((item) => (
-                <li
-                  key={item.to}
-                  className="hidden min-[1800px]:block"
-                >
+                <li key={item.to}>
                   <Link
                     to={item.to}
                     className="flex h-[72px] items-center whitespace-nowrap px-0 text-[15px] font-semibold text-navy-700 transition-colors hover:text-brand-600"
@@ -100,29 +101,11 @@ export function Navbar() {
                   </Link>
                 </li>
               ))}
-              <li className="relative hidden min-[1800px]:hidden xl:block">
-                <details className="group">
-                  <summary className="flex h-[72px] cursor-pointer list-none items-center gap-1 whitespace-nowrap px-0 text-[15px] font-semibold text-navy-700 transition-colors hover:text-brand-600 [&::-webkit-details-marker]:hidden">
-                    More <FiChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
-                  </summary>
-                  <div className="absolute left-1/2 top-[62px] z-50 w-44 -translate-x-1/2 rounded-2xl border border-navy-100 bg-surface p-2 shadow-elevated">
-                    {PAGE_LINKS.map((item) => (
-                      <Link
-                        key={item.to}
-                        to={item.to}
-                        className="block rounded-xl px-3 py-2.5 text-sm font-medium text-navy-700 transition-colors hover:bg-navy-100 hover:text-brand-600"
-                      >
-                        {item.label}
-                      </Link>
-                    ))}
-                  </div>
-                </details>
-              </li>
             </ul>
 
             {activeMenu && (
               <MegaMenu
-                item={MEGA_MENU.find((m) => m.slug === activeMenu)}
+                item={DESKTOP_SHOP_LINKS.find((m) => m.slug === activeMenu)}
                 onNavigate={() => setActiveMenu(null)}
               />
             )}
