@@ -99,7 +99,8 @@ export function Navbar() {
             <IconButton
               to={ROUTES.search}
               label="Search"
-              icon={<FiSearch className="h-5 w-5 md:hidden" />}
+              icon={<FiSearch className="h-5 w-5" />}
+              className="md:hidden"
             />
             <IconButton
               to={ROUTES.wishlist}
