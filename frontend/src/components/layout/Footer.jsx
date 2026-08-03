@@ -1,69 +1,88 @@
 import { Link } from 'react-router-dom';
-import { FiInstagram, FiFacebook, FiTwitter, FiYoutube, FiMail } from 'react-icons/fi';
+import { FiClock, FiMail, FiMapPin, FiMessageCircle, FiPhone } from 'react-icons/fi';
 import { Logo } from '@/components/common/Logo';
-import { Newsletter } from '@/components/common/Newsletter';
 import { FOOTER_LINKS } from '@/constants/navigation';
+import { ROUTES } from '@/constants/routes';
 
-const SOCIALS = [
-  { icon: FiInstagram, href: 'https://instagram.com', label: 'Instagram' },
-  { icon: FiFacebook, href: 'https://facebook.com', label: 'Facebook' },
-  { icon: FiTwitter, href: 'https://twitter.com', label: 'Twitter' },
-  { icon: FiYoutube, href: 'https://youtube.com', label: 'YouTube' },
+const STYLES = [
+  { label: 'Wayfarer frames', to: `${ROUTES.products}?frameShape=wayfarer` },
+  { label: 'Rectangle frames', to: `${ROUTES.products}?frameShape=rectangle` },
+  { label: 'Round frames', to: `${ROUTES.products}?frameShape=round` },
+  { label: 'Cat-eye frames', to: `${ROUTES.products}?frameShape=cat-eye` },
 ];
 
-/** Global site footer with newsletter, link columns and social links. */
+const NAVIGATION = FOOTER_LINKS.find((column) => column.title === 'Shop')?.links || [];
+
+/** Global contact-led footer with navigation and quick style links. */
 export function Footer() {
   return (
-    <footer className="mt-16 border-t border-navy-100 bg-navy-900 text-white/80">
-      <div className="container-page py-12">
-        <Newsletter />
-
-        <div className="mt-12 grid grid-cols-2 gap-8 border-t border-white/10 pt-12 md:grid-cols-3 lg:grid-cols-6">
-          <div className="col-span-2">
-            <Logo variant="light" />
-            <p className="mt-4 max-w-xs text-sm text-white/60">
-              Premium eyewear crafted for everyday clarity. Frames, lenses and sunglasses with an
-              effortless online experience.
+    <footer className="bg-navy-900 text-white/75">
+      <div className="container-page py-12 sm:py-16">
+        <div className="grid gap-10 md:grid-cols-2 xl:grid-cols-[1.35fr_1fr_1.05fr_1.25fr]">
+          <div>
+            <Logo className="!h-16 !w-16 sm:!h-20 sm:!w-20" />
+            <p className="mt-5 max-w-xs text-sm leading-6 text-white/60">
+              Eyewear selected for everyday clarity, confident style and a more comfortable online shopping experience.
             </p>
-            <div className="mt-5 flex items-center gap-3">
-              {SOCIALS.map(({ icon: Icon, href, label }) => (
-                <a
-                  key={label}
-                  href={href}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={label}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-white/70 transition-colors hover:bg-brand-500 hover:text-white"
+            <div className="mt-6 flex max-w-xs items-start gap-3 rounded-2xl border border-white/15 bg-white/5 p-4">
+              <FiClock className="mt-0.5 h-5 w-5 shrink-0 text-brand-300" />
+              <div>
+                <p className="text-sm font-semibold text-white">Open every day</p>
+                <p className="mt-1 text-xs leading-5 text-white/60">Customer support is available from 9:00 AM to 8:00 PM.</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-white">Store navigation</h2>
+            <ul className="mt-5 space-y-3 text-sm">
+              {NAVIGATION.map((link) => (
+                <li key={link.label}>
+                  <Link to={link.to} className="transition-colors hover:text-brand-300">{link.label}</Link>
+                </li>
+              ))}
+              <li><Link to={ROUTES.about} className="transition-colors hover:text-brand-300">Our story</Link></li>
+              <li><Link to={ROUTES.contact} className="transition-colors hover:text-brand-300">Contact us</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-white">Shop by style</h2>
+            <p className="mt-5 text-sm leading-6 text-white/60">Discover a frame shape that suits your everyday look.</p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {STYLES.map((style) => (
+                <Link
+                  key={style.label}
+                  to={style.to}
+                  className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white/80 transition hover:border-brand-400 hover:bg-brand-500 hover:text-white"
                 >
-                  <Icon className="h-4 w-4" />
-                </a>
+                  {style.label}
+                </Link>
               ))}
             </div>
           </div>
 
-          {FOOTER_LINKS.map((col) => (
-            <div key={col.title}>
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-white">
-                {col.title}
-              </h3>
-              <ul className="mt-4 space-y-2.5 text-sm">
-                {col.links.map((link) => (
-                  <li key={link.label}>
-                    <Link to={link.to} className="text-white/60 transition-colors hover:text-brand-400">
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <div>
+            <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-white">Direct contact</h2>
+            <ul className="mt-5 space-y-4 text-sm text-white/65">
+              <li className="flex gap-3"><FiMapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-300" /><span>MG Road, Bengaluru, Karnataka 560001</span></li>
+              <li><a href="tel:+919000000000" className="flex items-center gap-3 transition hover:text-brand-300"><FiPhone className="h-4 w-4 text-brand-300" />+91 90000 00000</a></li>
+              <li><a href="mailto:support@onlinechasmewala.com" className="flex items-center gap-3 transition hover:text-brand-300"><FiMail className="h-4 w-4 text-brand-300" />support@onlinechasmewala.com</a></li>
+            </ul>
+            <a
+              href="https://wa.me/919000000000"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-brand-400"
+            >
+              <FiMessageCircle className="h-4 w-4" /> WhatsApp chat
+            </a>
+          </div>
         </div>
 
-        <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 text-sm text-white/50 sm:flex-row">
+        <div className="mt-12 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs uppercase tracking-[0.12em] text-white/45 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Online Chasmewala. All rights reserved.</p>
-          <a href="mailto:support@onlinechasmewala.com" className="flex items-center gap-1.5 hover:text-brand-400">
-            <FiMail className="h-4 w-4" /> support@onlinechasmewala.com
-          </a>
+          <p>Made with care for clearer vision</p>
         </div>
       </div>
     </footer>

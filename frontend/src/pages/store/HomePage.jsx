@@ -16,6 +16,7 @@ import { SectionHeading } from '@/components/common/SectionHeading';
 import { ProductCarousel } from '@/components/product/ProductCarousel';
 import { ShopByFaceShape } from '@/components/home/ShopByFaceShape';
 import { FeaturedBrands } from '@/components/home/FeaturedBrands';
+import { HappyCustomers } from '@/components/home/HappyCustomers';
 import { TrendingCatalogHero } from '@/components/home/TrendingCatalogHero';
 import { useGetCollectionsQuery } from '@/features/products/productApi';
 import { selectRecentlyViewed } from '@/features/recentlyViewed/recentlyViewedSlice';
@@ -208,6 +209,8 @@ export default function HomePage() {
           </Button>
         </div>
       </section>
+
+      <HappyCustomers />
     </>
   );
 }
