@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { FiSearch, FiHeart, FiShoppingBag, FiUser, FiMenu, FiLogOut, FiGrid } from 'react-icons/fi';
+import { FiSearch, FiHeart, FiShoppingBag, FiUser, FiMenu, FiLogOut, FiGrid, FiChevronDown } from 'react-icons/fi';
 import { Logo } from '@/components/common/Logo';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { MegaMenu } from './MegaMenu';
@@ -90,7 +90,7 @@ export function Navbar() {
               {PAGE_LINKS.map((item) => (
                 <li
                   key={item.to}
-                  className="hidden 2xl:block"
+                  className="hidden min-[1800px]:block"
                 >
                   <Link
                     to={item.to}
@@ -100,6 +100,24 @@ export function Navbar() {
                   </Link>
                 </li>
               ))}
+              <li className="relative hidden min-[1800px]:hidden xl:block">
+                <details className="group">
+                  <summary className="flex h-[72px] cursor-pointer list-none items-center gap-1 whitespace-nowrap px-0 text-[15px] font-semibold text-navy-700 transition-colors hover:text-brand-600 [&::-webkit-details-marker]:hidden">
+                    More <FiChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="absolute left-1/2 top-[62px] z-50 w-44 -translate-x-1/2 rounded-2xl border border-navy-100 bg-surface p-2 shadow-elevated">
+                    {PAGE_LINKS.map((item) => (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        className="block rounded-xl px-3 py-2.5 text-sm font-medium text-navy-700 transition-colors hover:bg-navy-100 hover:text-brand-600"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                </details>
+              </li>
             </ul>
 
             {activeMenu && (
@@ -111,7 +129,7 @@ export function Navbar() {
           </nav>
 
           {/* Search */}
-          <SearchBar className="ml-auto hidden w-[240px] shrink-0 md:block xl:w-[280px] 2xl:w-[320px]" />
+          <SearchBar className="ml-auto hidden w-[220px] shrink-0 md:block xl:w-[260px] 2xl:w-[280px]" />
 
           {/* Actions */}
           <div className={cn('ml-auto flex shrink-0 items-center gap-1', 'md:ml-0')}>
