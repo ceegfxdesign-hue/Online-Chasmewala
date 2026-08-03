@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button, Input, Modal, Select, Textarea } from '@/components/ui';
 import { useToast } from '@/contexts/ToastContext';
 
@@ -28,9 +29,13 @@ function Toggle({ name, label, defaultChecked = false }) {
 export function ProductEditorModal({ product, categories, brands, onClose, onSave, saving = false }) {
   const toast = useToast();
   const editing = Boolean(product?._id);
+  const [validationErrors, setValidationErrors] = useState({});
+
+  const getFieldError = (field) => validationErrors[field];
 
   const submit = async (event) => {
     event.preventDefault();
+    setValidationErrors({});
     const form = new FormData(event.currentTarget);
     const body = Object.fromEntries(form);
 
@@ -87,25 +92,37 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
       toast.success('Product saved');
       onClose();
     } catch (error) {
-      toast.error(error?.message || 'Unable to save product');
+      const errors = Array.isArray(error?.errors) ? error.errors : [];
+      const byField = errors.reduce((result, item) => {
+        if (item?.field && item?.message) result[item.field] = item.message;
+        return result;
+      }, {});
+      setValidationErrors(byField);
+      const firstError = errors[0];
+      toast.error(firstError ? `${firstError.field}: ${firstError.message}` : error?.message || 'Unable to save product');
     }
   };
 
   return (
     <Modal open={Boolean(product)} onClose={onClose} title={`${editing ? 'Edit' : 'Add'} product`} size="xl">
       <form onSubmit={submit} className="space-y-7">
+        {Object.keys(validationErrors).length > 0 && (
+          <div className="rounded-xl border border-error/30 bg-error/5 px-4 py-3 text-sm text-error" role="alert">
+            Please correct the highlighted field{Object.keys(validationErrors).length === 1 ? '' : 's'} and save again.
+          </div>
+        )}
         <section>
           <h3 className="mb-3 font-semibold text-navy-900">Core details</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            <Input name="name" label="Product name" defaultValue={product?.name} required />
-            <Input name="sku" label="SKU" defaultValue={product?.sku} required />
-            <Select name="category" label="Category" defaultValue={product?.category?._id || product?.category || ''} placeholder="Select a category" options={categories.map((item) => ({ value: item._id, label: item.name }))} required />
-            <Select name="brand" label="Brand" defaultValue={product?.brand?._id || product?.brand || ''} placeholder="Select a brand" options={brands.map((item) => ({ value: item._id, label: item.name }))} required />
-            <Input name="price" label="Selling price (₹)" type="number" min="0" defaultValue={product?.price} required />
-            <Input name="mrp" label="MRP (₹)" type="number" min="0" defaultValue={product?.mrp} required />
+            <Input name="name" label="Product name" defaultValue={product?.name} minLength="2" error={getFieldError('name')} required />
+            <Input name="sku" label="SKU" defaultValue={product?.sku} error={getFieldError('sku')} required />
+            <Select name="category" label="Category" defaultValue={product?.category?._id || product?.category || ''} placeholder="Select a category" options={categories.map((item) => ({ value: item._id, label: item.name }))} error={getFieldError('category')} required />
+            <Select name="brand" label="Brand" defaultValue={product?.brand?._id || product?.brand || ''} placeholder="Select a brand" options={brands.map((item) => ({ value: item._id, label: item.name }))} error={getFieldError('brand')} required />
+            <Input name="price" label="Selling price (₹)" type="number" min="0" step="0.01" defaultValue={product?.price} error={getFieldError('price')} required />
+            <Input name="mrp" label="MRP (₹)" type="number" min="0" step="0.01" defaultValue={product?.mrp} error={getFieldError('mrp')} required />
             <Input name="stock" label="Total stock" type="number" min="0" defaultValue={product?.stock ?? 0} />
             <Input name="lowStockThreshold" label="Low-stock alert at" type="number" min="0" defaultValue={product?.lowStockThreshold ?? 5} />
-            <div className="md:col-span-2"><Textarea name="description" label="Description" defaultValue={product?.description} required /></div>
+            <div className="md:col-span-2"><Textarea name="description" label="Description" defaultValue={product?.description} minLength="10" error={getFieldError('description')} required /></div>
             <div className="md:col-span-2"><Textarea name="highlights" label="Highlights (one per line)" defaultValue={asLines(product?.highlights)} helper="Shown as product benefits on the detail page." /></div>
           </div>
         </section>
@@ -113,12 +130,13 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
         <section>
           <h3 className="mb-3 font-semibold text-navy-900">Gallery and colour variants</h3>
           <div className="space-y-4">
-            <Textarea name="images" label="Main image URLs (one per line)" defaultValue={asLines(product?.images)} helper="The first image is the product-card and cart image." required />
+            <Textarea name="images" label="Main image URLs (one per line)" defaultValue={asLines(product?.images)} helper="The first image is the product-card and cart image." error={getFieldError('images')} required />
             <Textarea
               name="variants"
               label="Colour variants (JSON)"
               defaultValue={product?.variants?.length ? JSON.stringify(product.variants, null, 2) : ''}
               helper={'Optional. Example: [{"color":"Matte Black","colorHex":"#111827","stock":12,"sku":"OC-BLK","images":["https://..."]}]'}
+              error={getFieldError('variants')}
             />
             <Input name="frameColor" label="Frame colour description" defaultValue={product?.frameColor} helper="Used in product details and search." />
           </div>
@@ -127,26 +145,26 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
         <section>
           <h3 className="mb-3 font-semibold text-navy-900">Frame specifications</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            <Select name="gender" label="Designed for" defaultValue={product?.gender || 'unisex'} options={GENDERS.map((value) => ({ value, label: humanize(value) }))} />
-            <Select name="frameShape" label="Frame shape" defaultValue={product?.frameShape || ''} placeholder="Select shape" options={FRAME_SHAPES.map((value) => ({ value, label: humanize(value) }))} />
-            <Select name="frameType" label="Frame type" defaultValue={product?.frameType || ''} placeholder="Select type" options={FRAME_TYPES.map((value) => ({ value, label: humanize(value) }))} />
-            <Select name="rimType" label="Rim type" defaultValue={product?.rimType || ''} placeholder="Select rim type" options={FRAME_TYPES.map((value) => ({ value, label: humanize(value) }))} />
-            <Select name="frameMaterial" label="Frame material" defaultValue={product?.frameMaterial || ''} placeholder="Select material" options={FRAME_MATERIALS.map((value) => ({ value, label: humanize(value) }))} />
-            <Select name="frameSize" label="Frame fit" defaultValue={product?.frameSize || 'medium'} options={FRAME_SIZES.map((value) => ({ value, label: humanize(value) }))} />
+            <Select name="gender" label="Designed for" defaultValue={product?.gender || 'unisex'} options={GENDERS.map((value) => ({ value, label: humanize(value) }))} error={getFieldError('gender')} />
+            <Select name="frameShape" label="Frame shape" defaultValue={product?.frameShape || ''} placeholder="Select shape" options={FRAME_SHAPES.map((value) => ({ value, label: humanize(value) }))} error={getFieldError('frameShape')} />
+            <Select name="frameType" label="Frame type" defaultValue={product?.frameType || ''} placeholder="Select type" options={FRAME_TYPES.map((value) => ({ value, label: humanize(value) }))} error={getFieldError('frameType')} />
+            <Select name="rimType" label="Rim type" defaultValue={product?.rimType || ''} placeholder="Select rim type" options={FRAME_TYPES.map((value) => ({ value, label: humanize(value) }))} error={getFieldError('rimType')} />
+            <Select name="frameMaterial" label="Frame material" defaultValue={product?.frameMaterial || ''} placeholder="Select material" options={FRAME_MATERIALS.map((value) => ({ value, label: humanize(value) }))} error={getFieldError('frameMaterial')} />
+            <Select name="frameSize" label="Frame fit" defaultValue={product?.frameSize || 'medium'} options={FRAME_SIZES.map((value) => ({ value, label: humanize(value) }))} error={getFieldError('frameSize')} />
             <Input name="frameWidth" label="Frame width (mm)" type="number" min="0" defaultValue={product?.frameWidth} />
             <Input name="lensWidth" label="Lens width (mm)" type="number" min="0" defaultValue={product?.lensWidth} />
             <Input name="bridgeSize" label="Bridge size (mm)" type="number" min="0" defaultValue={product?.bridgeSize} />
             <Input name="templeSize" label="Temple size (mm)" type="number" min="0" defaultValue={product?.templeSize} />
-            <div className="md:col-span-2"><Input name="suitableFaceShapes" label="Suitable face shapes" defaultValue={asCommaList(product?.suitableFaceShapes)} helper="Comma-separated: oval, round, square, heart, oblong, diamond." /></div>
+            <div className="md:col-span-2"><Input name="suitableFaceShapes" label="Suitable face shapes" defaultValue={asCommaList(product?.suitableFaceShapes)} helper="Comma-separated: oval, round, square, heart, oblong, diamond." error={getFieldError('suitableFaceShapes') || getFieldError('suitableFaceShapes.0')} /></div>
           </div>
         </section>
 
         <section>
           <h3 className="mb-3 font-semibold text-navy-900">Lenses, protection and policies</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            <Select name="lensType" label="Lens type" defaultValue={product?.lensType || ''} placeholder="Select lens type" options={LENS_TYPES.map((value) => ({ value, label: humanize(value) }))} />
+            <Select name="lensType" label="Lens type" defaultValue={product?.lensType || ''} placeholder="Select lens type" options={LENS_TYPES.map((value) => ({ value, label: humanize(value) }))} error={getFieldError('lensType')} />
             <Input name="lensThickness" label="Lens thickness" defaultValue={product?.lensThickness} placeholder="e.g. 1.56 index" />
-            <div className="md:col-span-2"><Textarea name="lensOptions" label="Product-type options (JSON)" defaultValue={product?.lensOptions?.length ? JSON.stringify(product.lensOptions, null, 2) : ''} helper={'Optional. Example: [{"type":"zero-power","label":"Zero Power","subtitle":"Screen glasses","price":0}]'} /></div>
+            <div className="md:col-span-2"><Textarea name="lensOptions" label="Product-type options (JSON)" defaultValue={product?.lensOptions?.length ? JSON.stringify(product.lensOptions, null, 2) : ''} helper={'Optional. Example: [{"type":"zero-power","label":"Zero Power","subtitle":"Screen glasses","price":0}]'} error={getFieldError('lensOptions')} /></div>
             <Input name="warrantyMonths" label="Warranty (months)" type="number" min="0" defaultValue={product?.warrantyMonths ?? 12} />
             <Input name="returnDays" label="Return window (days)" type="number" min="0" defaultValue={product?.returnDays ?? 14} />
             <div className="md:col-span-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">

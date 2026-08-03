@@ -70,6 +70,12 @@ api.interceptors.response.use(
 
 /** Convert an axios error into a consistent `{ message, errors, status }`. */
 export function normalizeError(error) {
+  // The response interceptor may already have normalized this error. Keep its
+  // useful field-level validation messages instead of converting it again.
+  if (error?.message && Object.prototype.hasOwnProperty.call(error, 'status') && Array.isArray(error.errors)) {
+    return error;
+  }
+
   const status = error.response?.status;
   const data = error.response?.data;
   return {
