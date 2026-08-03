@@ -69,7 +69,7 @@ export function TrendingCatalogHero() {
     <section
       aria-roledescription="carousel"
       aria-label="Trending style catalog"
-      className="relative isolate min-h-[25rem] overflow-hidden bg-navy-900 sm:min-h-[29rem] lg:min-h-[32rem]"
+      className="catalog-hero relative isolate min-h-[25rem] overflow-hidden bg-navy-900 sm:min-h-[29rem] lg:min-h-[32rem]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocusCapture={() => setPaused(true)}
@@ -81,13 +81,13 @@ export function TrendingCatalogHero() {
         width="1980"
         height="800"
         alt={activeSlide.imageAlt}
-        className="absolute inset-0 -z-20 h-full w-full animate-catalog-pan object-cover object-[68%_center]"
+        className="catalog-hero-image absolute inset-0 -z-20 h-full w-full animate-catalog-pan object-cover object-[68%_center]"
       />
       <div
         className={
           dark
-            ? 'absolute inset-0 -z-10 bg-gradient-to-r from-navy-900/85 via-navy-900/45 to-navy-900/5'
-            : 'absolute inset-0 -z-10 bg-gradient-to-r from-white/90 via-white/55 to-transparent'
+            ? 'catalog-hero-overlay absolute inset-0 -z-10 bg-gradient-to-r from-navy-900/85 via-navy-900/45 to-navy-900/5'
+            : 'catalog-hero-overlay absolute inset-0 -z-10 bg-gradient-to-r from-white/90 via-white/55 to-transparent'
         }
       />
 
@@ -96,17 +96,17 @@ export function TrendingCatalogHero() {
           <span
             className={
               dark
-                ? 'inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white/90 backdrop-blur-sm'
-                : 'inline-flex items-center gap-2 rounded-full border border-navy-900/10 bg-white/70 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-navy-700 backdrop-blur-sm'
+                ? 'catalog-hero-eyebrow inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white/90 backdrop-blur-sm'
+                : 'catalog-hero-eyebrow inline-flex items-center gap-2 rounded-full border border-navy-900/10 bg-white/70 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-navy-700 backdrop-blur-sm'
             }
           >
             <FiZap className="text-brand-500" />
             {activeSlide.eyebrow}
           </span>
-          <h1 className={dark ? 'mt-5 text-h1 text-white sm:text-display' : 'mt-5 text-h1 sm:text-display'}>
+          <h1 className={dark ? 'catalog-hero-title mt-5 text-h1 text-white sm:text-display' : 'catalog-hero-title mt-5 text-h1 sm:text-display'}>
             {activeSlide.title}
           </h1>
-          <p className={dark ? 'mt-4 max-w-lg text-base text-white/80 sm:text-lg' : 'mt-4 max-w-lg text-base text-navy-700 sm:text-lg'}>
+          <p className={dark ? 'catalog-hero-description mt-4 max-w-lg text-base text-white/80 sm:text-lg' : 'catalog-hero-description mt-4 max-w-lg text-base text-navy-700 sm:text-lg'}>
             {activeSlide.description}
           </p>
           <Button as={Link} to={activeSlide.to} size="lg" rightIcon={<FiArrowRight />} className="mt-7">
@@ -119,8 +119,8 @@ export function TrendingCatalogHero() {
           aria-label="Choose a trending catalog category"
           className={
             dark
-              ? 'flex w-fit max-w-full overflow-x-auto rounded-2xl border border-white/20 bg-white/10 p-1.5 backdrop-blur-md'
-              : 'flex w-fit max-w-full overflow-x-auto rounded-2xl border border-navy-900/10 bg-white/75 p-1.5 shadow-soft backdrop-blur-md'
+              ? 'catalog-hero-tabs flex w-fit max-w-full overflow-x-auto rounded-2xl border border-white/20 bg-white/10 p-1.5 backdrop-blur-md'
+              : 'catalog-hero-tabs flex w-fit max-w-full overflow-x-auto rounded-2xl border border-navy-900/10 bg-white/75 p-1.5 shadow-soft backdrop-blur-md'
           }
         >
           {SLIDES.map((slide, index) => {

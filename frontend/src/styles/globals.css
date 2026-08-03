@@ -94,6 +94,30 @@
   html.dark .shadow-elevated {
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
   }
+
+  /* Bright hero photography needs its own dark treatment for readable text. */
+  html.dark .catalog-hero-image {
+    filter: brightness(0.5) saturate(0.78) contrast(1.08);
+  }
+
+  html.dark .catalog-hero-overlay {
+    background-image: linear-gradient(to right, rgb(8 15 28 / 0.94), rgb(8 15 28 / 0.68) 52%, rgb(8 15 28 / 0.3)) !important;
+  }
+
+  html.dark .catalog-hero-eyebrow,
+  html.dark .catalog-hero-tabs {
+    border-color: rgb(255 255 255 / 0.22);
+    background-color: rgb(15 23 42 / 0.72);
+    color: rgb(255 255 255 / 0.92);
+  }
+
+  html.dark .catalog-hero-title {
+    color: #fff;
+  }
+
+  html.dark .catalog-hero-description {
+    color: rgb(255 255 255 / 0.8);
+  }
 }
 
 @layer components {
