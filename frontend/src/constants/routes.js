@@ -48,7 +48,9 @@ export const ROUTES = Object.freeze({
   adminSettings: '/admin/settings',
 
   // Static
+  services: '/services',
   about: '/about',
+  findUs: '/find-us',
   contact: '/contact',
   faq: '/faq',
   privacy: '/privacy-policy',

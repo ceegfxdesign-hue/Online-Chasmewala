@@ -15,6 +15,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { useOnClickOutside } from '@/hooks/useOnClickOutside';
 import { cn } from '@/utils/cn';
 
+const PAGE_LINKS = [
+  { label: 'Services', to: ROUTES.services },
+  { label: 'About', to: ROUTES.about },
+  { label: 'Find Us', to: ROUTES.findUs },
+];
+
 function IconButton({ icon, label, count, onClick, to, className }) {
   const Comp = to ? Link : 'button';
   return (
@@ -76,6 +82,16 @@ export function Navbar() {
                       'flex h-16 items-center px-3.5 text-sm font-medium transition-colors',
                       activeMenu === item.slug ? 'text-brand-600' : 'text-navy-700 hover:text-brand-600'
                     )}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+              {PAGE_LINKS.map((item) => (
+                <li key={item.to} className="hidden xl:block">
+                  <Link
+                    to={item.to}
+                    className="flex h-16 items-center px-3 text-sm font-medium text-navy-700 transition-colors hover:text-brand-600"
                   >
                     {item.label}
                   </Link>

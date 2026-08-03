@@ -38,7 +38,9 @@ export function MobileMenu() {
           {[
             { label: 'Wishlist', to: ROUTES.wishlist },
             { label: 'Track Orders', to: ROUTES.orders },
+            { label: 'Services', to: ROUTES.services },
             { label: 'About Us', to: ROUTES.about },
+            { label: 'Find Us', to: ROUTES.findUs },
             { label: 'Contact', to: ROUTES.contact },
             { label: 'FAQ', to: ROUTES.faq },
           ].map((l) => (

@@ -93,7 +93,9 @@ export const FOOTER_LINKS = [
   {
     title: 'Company',
     links: [
+      { label: 'Services', to: '/services' },
       { label: 'About Us', to: '/about' },
+      { label: 'Find Us', to: '/find-us' },
       { label: 'Contact', to: '/contact' },
       { label: 'FAQ', to: '/faq' },
     ],

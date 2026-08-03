@@ -41,7 +41,9 @@ export function Footer() {
                   <Link to={link.to} className="transition-colors hover:text-brand-300">{link.label}</Link>
                 </li>
               ))}
+              <li><Link to={ROUTES.services} className="transition-colors hover:text-brand-300">Services</Link></li>
               <li><Link to={ROUTES.about} className="transition-colors hover:text-brand-300">Our story</Link></li>
+              <li><Link to={ROUTES.findUs} className="transition-colors hover:text-brand-300">Find us</Link></li>
               <li><Link to={ROUTES.contact} className="transition-colors hover:text-brand-300">Contact us</Link></li>
             </ul>
           </div>

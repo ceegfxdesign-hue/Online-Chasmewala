@@ -23,7 +23,9 @@ const WishlistPage = lazy(() => import('@/pages/store/WishlistPage'));
 const CheckoutPage = lazy(() => import('@/pages/store/CheckoutPage'));
 const OrderSuccessPage = lazy(() => import('@/pages/store/OrderSuccessPage'));
 const OrderFailedPage = lazy(() => import('@/pages/store/OrderFailedPage'));
+const ServicesPage = lazy(() => import('@/pages/store/ServicesPage'));
 const AboutPage = lazy(() => import('@/pages/store/AboutPage'));
+const FindUsPage = lazy(() => import('@/pages/store/FindUsPage'));
 const ContactPage = lazy(() => import('@/pages/store/ContactPage'));
 const FAQPage = lazy(() => import('@/pages/store/FAQPage'));
 const NotFoundPage = lazy(() => import('@/pages/store/NotFoundPage'));
@@ -106,7 +108,9 @@ export function AppRoutes() {
               }
             />
             <Route path={ROUTES.orderFailed} element={<OrderFailedPage />} />
+            <Route path={ROUTES.services} element={<ServicesPage />} />
             <Route path={ROUTES.about} element={<AboutPage />} />
+            <Route path={ROUTES.findUs} element={<FindUsPage />} />
             <Route path={ROUTES.contact} element={<ContactPage />} />
             <Route path={ROUTES.faq} element={<FAQPage />} />
             <Route path={ROUTES.privacy} element={<PrivacyPolicyPage />} />
