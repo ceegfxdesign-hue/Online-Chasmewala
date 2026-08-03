@@ -38,6 +38,62 @@
   ::selection {
     @apply bg-brand-500/20 text-navy-900;
   }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  html.dark body {
+    background-color: #0b1220;
+    color: #dbeafe;
+  }
+
+  html.dark .bg-surface,
+  html.dark .bg-white {
+    background-color: #111c2f;
+  }
+
+  html.dark .bg-surface\/95 {
+    background-color: rgb(17 28 47 / 0.95);
+  }
+
+  html.dark .bg-surface-muted,
+  html.dark .bg-surface-subtle,
+  html.dark .bg-navy-50 {
+    background-color: #17243a;
+  }
+
+  html.dark .bg-navy-100,
+  html.dark .bg-brand-50 {
+    background-color: #20314a;
+  }
+
+  html.dark .text-navy-900,
+  html.dark .text-navy-800,
+  html.dark .text-navy-700 {
+    color: #f1f5f9;
+  }
+
+  html.dark .text-navy-600,
+  html.dark .text-navy-500 {
+    color: #cbd5e1;
+  }
+
+  html.dark .text-navy-400,
+  html.dark .text-navy-300 {
+    color: #94a3b8;
+  }
+
+  html.dark .border-navy-100,
+  html.dark .border-navy-200 {
+    border-color: #2a3d59;
+  }
+
+  html.dark .shadow-card,
+  html.dark .shadow-soft,
+  html.dark .shadow-elevated {
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+  }
 }
 
 @layer components {

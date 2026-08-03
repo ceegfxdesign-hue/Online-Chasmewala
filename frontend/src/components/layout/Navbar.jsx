@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { FiSearch, FiHeart, FiShoppingBag, FiUser, FiMenu, FiLogOut, FiGrid } from 'react-icons/fi';
 import { Logo } from '@/components/common/Logo';
+import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { MegaMenu } from './MegaMenu';
 import { SearchBar } from './SearchBar';
 import { MEGA_MENU } from '@/constants/navigation';
@@ -120,6 +121,7 @@ export function Navbar() {
               icon={<FiSearch className="h-5 w-5" />}
               className="md:hidden"
             />
+            <ThemeToggle />
             <IconButton
               to={ROUTES.wishlist}
               label="Wishlist"
