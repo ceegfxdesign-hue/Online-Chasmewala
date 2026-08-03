@@ -65,6 +65,9 @@ const productSchema = new mongoose.Schema(
     lensThickness: { type: String },
     lensOptions: [lensOptionSchema],
     suitableFaceShapes: [{ type: String, enum: FACE_SHAPES }],
+    // Optional assets retained for future virtual try-on and 3D viewing.
+    tryOnImage: { type: String },
+    model3dUrl: { type: String },
 
     // Feature flags for lenses
     blueLightFilter: { type: Boolean, default: false, index: true },

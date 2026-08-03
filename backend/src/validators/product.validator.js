@@ -99,6 +99,8 @@ export const createProductSchema = {
     lensThickness: z.string().trim().optional(),
     lensOptions: z.array(lensOptionSchema).optional(),
     suitableFaceShapes: z.array(z.enum(FACE_SHAPES)).optional(),
+    tryOnImage: z.string().trim().optional(),
+    model3dUrl: z.string().trim().optional(),
     frameWidth: z.number().optional(),
     templeSize: z.number().optional(),
     bridgeSize: z.number().optional(),
