@@ -168,7 +168,7 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
     const form = new FormData(event.currentTarget);
     const body = Object.fromEntries(form);
 
-    ['price', 'mrp', 'stock', 'lowStockThreshold', 'frameWidth', 'lensWidth', 'bridgeSize', 'templeSize', 'warrantyMonths', 'returnDays'].forEach((key) => {
+    ['price', 'mrp', 'stock', 'lowStockThreshold', 'rating', 'numReviews', 'soldCount', 'frameWidth', 'lensWidth', 'bridgeSize', 'templeSize', 'warrantyMonths', 'returnDays'].forEach((key) => {
       if (body[key] === '') delete body[key];
       else body[key] = Number(body[key]);
     });
@@ -392,6 +392,9 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
           <div className="grid gap-4 md:grid-cols-2">
             <Input name="tags" label="Tags" defaultValue={asCommaList(product?.tags)} helper="Comma-separated, for search and filters." />
             <Input name="collections" label="Collections" defaultValue={asCommaList(product?.collections)} helper="Comma-separated, for curated storefront sections." />
+            <Input name="rating" label="Product rating (0–5)" type="number" min="0" max="5" step="0.1" defaultValue={product?.rating ?? 0} helper="Shown beside the star rating on the product page." error={getFieldError('rating')} />
+            <Input name="numReviews" label="Review count" type="number" min="0" step="1" defaultValue={product?.numReviews ?? 0} helper="The number shown as reviews on the product page." error={getFieldError('numReviews')} />
+            <Input name="soldCount" label="Units sold" type="number" min="0" step="1" defaultValue={product?.soldCount ?? 0} helper="The number shown as sold on the product page." error={getFieldError('soldCount')} />
             <div className="md:col-span-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
               <Toggle name="isActive" label="Published" defaultChecked={product?.isActive !== false} />
               <Toggle name="isBestSeller" label="Best seller" defaultChecked={product?.isBestSeller} />
