@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { FiDroplet, FiEye, FiMonitor, FiShoppingBag, FiSun, FiTag, FiUser, FiZap } from 'react-icons/fi';
+import { FiDroplet, FiEye, FiShoppingBag, FiSun, FiTag } from 'react-icons/fi';
 import { ROUTES } from '@/constants/routes';
 
 const GROUPS = [
@@ -21,16 +21,6 @@ const GROUPS = [
       { label: 'Women', to: `${ROUTES.products}?category=sunglasses&gender=women`, image: 'oc-sunglasses-women' },
       { label: 'Kids', to: `${ROUTES.products}?category=sunglasses&gender=kids`, image: 'oc-sunglasses-kids' },
       { label: 'On sale', to: `${ROUTES.products}?category=sunglasses&onOffer=true`, icon: FiSun, tint: 'bg-warning-light text-warning-dark' },
-    ],
-  },
-  {
-    title: 'Computer Glasses',
-    badge: 'Blue-light ready',
-    items: [
-      { label: 'Blue-light', to: `${ROUTES.products}?category=computer-glasses&blueLightFilter=true`, icon: FiMonitor, tint: 'bg-brand-50 text-brand-600' },
-      { label: 'Zero power', to: `${ROUTES.products}?category=computer-glasses&lensType=zero-power`, icon: FiEye, tint: 'bg-accent-400/15 text-brand-700' },
-      { label: 'For work', to: `${ROUTES.products}?category=computer-glasses`, icon: FiUser, tint: 'bg-navy-100 text-navy-700' },
-      { label: 'Gaming', to: `${ROUTES.products}?category=computer-glasses&blueLightFilter=true`, icon: FiZap, tint: 'bg-warning-light text-warning-dark' },
     ],
   },
   {
