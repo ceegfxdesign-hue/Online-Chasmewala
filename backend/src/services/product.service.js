@@ -26,9 +26,11 @@ const asArray = (val) =>
 
 const inlineImagePattern = /^data:(image\/[a-z0-9.+-]+);base64,([a-z0-9+/=]+)$/i;
 const imageReferencePattern = /^oc-product-image:\/\/([^/]+)\/(\d+)$/;
+const variantImageReferencePattern = /^oc-product-variant-image:\/\/([^/]+)\/(\d+)\/(\d+)$/;
 
 const isInlineImage = (image) => typeof image === 'string' && inlineImagePattern.test(image);
 const imageReference = (productId, index) => `oc-product-image://${productId}/${index}`;
+const variantImageReference = (productId, variantIndex, imageIndex) => `oc-product-variant-image://${productId}/${variantIndex}/${imageIndex}`;
 
 /**
  * Do not include base64 image bytes in catalog JSON responses. Card rows only
@@ -40,6 +42,12 @@ function serializeImages(product) {
   result.images = (product.images || []).map((image, index) =>
     isInlineImage(image) ? imageReference(product._id, index) : image
   );
+  result.variants = (product.variants || []).map((variant, variantIndex) => ({
+    ...variant,
+    images: (variant.images || []).map((image, imageIndex) => (
+      isInlineImage(image) ? variantImageReference(product._id, variantIndex, imageIndex) : image
+    )),
+  }));
   return result;
 }
 
@@ -50,6 +58,18 @@ function restoreImageReferences(product, images = []) {
     const storedImage = product.images?.[Number(match[2])];
     return storedImage || image;
   });
+}
+
+function restoreVariantImageReferences(product, variants = []) {
+  return variants.map((variant) => ({
+    ...variant,
+    images: (variant.images || []).map((image) => {
+      const match = typeof image === 'string' ? image.match(variantImageReferencePattern) : null;
+      if (!match || String(match[1]) !== String(product._id)) return image;
+      const storedImage = product.variants?.[Number(match[2])]?.images?.[Number(match[3])];
+      return storedImage || image;
+    }),
+  }));
 }
 
 /** Resolve a comma-separated list of slugs (or ids) to ObjectIds. */
@@ -239,6 +259,7 @@ export const productService = {
     const product = await productRepository.findById(id);
     if (!product) throw ApiError.notFound('Product not found');
     if (data.images) data.images = restoreImageReferences(product, data.images);
+    if (data.variants) data.variants = restoreVariantImageReferences(product, data.variants);
     Object.assign(product, data);
     if (product.mrp < product.price) throw ApiError.badRequest('MRP cannot be less than price');
     await product.save(); // triggers slug + discountPercent hooks + validation
@@ -281,6 +302,18 @@ export const productService = {
     const image = product?.images?.[index];
     const match = typeof image === 'string' ? image.match(inlineImagePattern) : null;
     if (!match) throw ApiError.notFound('Product image not found');
+    return { contentType: match[1], buffer: Buffer.from(match[2], 'base64') };
+  },
+
+  /** Return an uploaded inline image belonging to a particular colour variant. */
+  async getVariantImage(id, variantIndex, imageIndex) {
+    if (!mongoose.isValidObjectId(id) || !Number.isInteger(variantIndex) || variantIndex < 0 || !Number.isInteger(imageIndex) || imageIndex < 0) {
+      throw ApiError.notFound('Colour image not found');
+    }
+    const product = await productRepository.model.findOne({ _id: id, isActive: true }).select('variants.images').lean();
+    const image = product?.variants?.[variantIndex]?.images?.[imageIndex];
+    const match = typeof image === 'string' ? image.match(inlineImagePattern) : null;
+    if (!match) throw ApiError.notFound('Colour image not found');
     return { contentType: match[1], buffer: Buffer.from(match[2], 'base64') };
   },
 };

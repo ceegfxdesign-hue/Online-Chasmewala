@@ -29,6 +29,12 @@ export const productController = {
     return res.type(image.contentType).send(image.buffer);
   }),
 
+  variantImage: asyncHandler(async (req, res) => {
+    const image = await productService.getVariantImage(req.params.id, Number(req.params.variantIndex), Number(req.params.imageIndex));
+    res.set('Cache-Control', 'public, max-age=31536000, immutable');
+    return res.type(image.contentType).send(image.buffer);
+  }),
+
   getBySlug: asyncHandler(async (req, res) => {
     const data = await productService.getBySlug(req.params.slug);
     return sendSuccess(res, { data });

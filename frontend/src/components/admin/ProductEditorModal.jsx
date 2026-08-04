@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button, Input, Modal, Select, Textarea } from '@/components/ui';
 import { useToast } from '@/contexts/ToastContext';
+import { getOptimizedImageUrl } from '@/lib/images';
 
 const GENDERS = ['men', 'women', 'unisex', 'kids'];
 const FRAME_SHAPES = ['rectangle', 'square', 'round', 'oval', 'cat-eye', 'aviator', 'wayfarer', 'geometric', 'clubmaster'];
@@ -15,6 +16,17 @@ const MAX_IMAGE_DATA_URL_LENGTH = 750000;
 const asLines = (items = []) => items.join('\n');
 const asCommaList = (items = []) => items.join(', ');
 const humanize = (value) => value.replaceAll('-', ' ');
+
+const createEmptyVariant = () => ({
+  color: '',
+  primaryColor: '',
+  primaryColorHex: '#4B5563',
+  secondaryColor: '',
+  secondaryColorHex: '#C4C7CC',
+  stock: 0,
+  sku: '',
+  images: [],
+});
 
 function normalizeImageSource(value) {
   const source = value.trim();
@@ -85,12 +97,16 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
   const [validationErrors, setValidationErrors] = useState({});
   const [uploadedImages, setUploadedImages] = useState([]);
   const [preparingImages, setPreparingImages] = useState(false);
+  const [variants, setVariants] = useState([]);
 
   const getFieldError = (field) => validationErrors[field];
 
   useEffect(() => {
     setUploadedImages([]);
     setPreparingImages(false);
+    setVariants(product?.variants?.map((variant) => ({ ...createEmptyVariant(), ...variant, images: variant.images || [] })) || []);
+    // Reset only when opening a different product; edits must not reset the form.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?._id]);
 
   const uploadImages = async (event) => {
@@ -107,6 +123,36 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
       const preparedImages = await Promise.all(files.map(createCompressedImageUrl));
       setUploadedImages((current) => [...current, ...preparedImages]);
       toast.success(`${preparedImages.length} image${preparedImages.length === 1 ? '' : 's'} ready to save.`);
+    } catch (error) {
+      toast.error(error.message || 'Unable to prepare these images.');
+    } finally {
+      setPreparingImages(false);
+    }
+  };
+
+  const updateVariant = (index, field, value) => {
+    setVariants((current) => current.map((variant, itemIndex) => (
+      itemIndex === index ? { ...variant, [field]: value } : variant
+    )));
+  };
+
+  const uploadVariantImages = async (index, event) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = '';
+    if (!files.length) return;
+    const imageCount = variants[index]?.images?.length || 0;
+    if (imageCount + files.length > MAX_UPLOADED_IMAGES) {
+      toast.error(`Each colour can have up to ${MAX_UPLOADED_IMAGES} images.`);
+      return;
+    }
+
+    setPreparingImages(true);
+    try {
+      const preparedImages = await Promise.all(files.map(createCompressedImageUrl));
+      setVariants((current) => current.map((variant, itemIndex) => (
+        itemIndex === index ? { ...variant, images: [...(variant.images || []), ...preparedImages] } : variant
+      )));
+      toast.success(`${preparedImages.length} colour image${preparedImages.length === 1 ? '' : 's'} ready to save.`);
     } catch (error) {
       toast.error(error.message || 'Unable to prepare these images.');
     } finally {
@@ -137,22 +183,23 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
       body[key] = String(body[key] || '').split(',').map((value) => value.trim()).filter(Boolean);
     });
 
-    const variantsInput = String(body.variants || '').trim();
-    let variants = [];
-    try {
-      variants = variantsInput ? JSON.parse(variantsInput) : [];
-    } catch {
-      toast.error('Variants must be valid JSON. Check the example shown below the field.');
-      return;
-    }
-    if (!Array.isArray(variants)) {
-      toast.error('Variants must be a JSON list enclosed in square brackets.');
-      return;
-    }
-    body.variants = variants.map((variant) => ({
-      ...variant,
-      color: variant.color || [variant.primaryColor, variant.secondaryColor].filter(Boolean).join(' / '),
+    const productVariants = variants.map((variant) => ({
+      color: String(variant.color || [variant.primaryColor, variant.secondaryColor].filter(Boolean).join(' / ')).trim(),
+      colorHex: variant.primaryColorHex || undefined,
+      primaryColor: String(variant.primaryColor || '').trim() || undefined,
+      primaryColorHex: variant.primaryColorHex || undefined,
+      secondaryColor: String(variant.secondaryColor || '').trim() || undefined,
+      secondaryColorHex: variant.secondaryColorHex || undefined,
+      stock: Number(variant.stock || 0),
+      sku: String(variant.sku || '').trim() || undefined,
+      images: (variant.images || []).map(normalizeImageSource).filter(Boolean),
     }));
+    if (productVariants.some((variant) => !variant.color)) {
+      setValidationErrors({ variants: 'Give every colour a label, or enter its primary colour name.' });
+      toast.error('Give every colour a label, or enter its primary colour name.');
+      return;
+    }
+    body.variants = productVariants;
 
     const lensOptionsInput = String(body.lensOptions || '').trim();
     let lensOptions = [];
@@ -237,13 +284,67 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
                 </div>
               )}
             </div>
-            <Textarea
-              name="variants"
-              label="Colour variants — primary above secondary (JSON)"
-              defaultValue={product?.variants?.length ? JSON.stringify(product.variants, null, 2) : ''}
-              helper={'Optional. Example: [{"color":"Gunmetal / Silver","primaryColor":"Gunmetal","primaryColorHex":"#4B5563","secondaryColor":"Silver","secondaryColorHex":"#C4C7CC","stock":12,"sku":"OC-GUN-SIL","images":["https://..."]}]'}
-              error={getFieldError('variants')}
-            />
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-navy-700">Colour variants</p>
+                  <p className="mt-1 text-xs text-navy-400">Give each colour its own photos. Selecting it on the product page will switch the gallery.</p>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={() => setVariants((current) => [...current, createEmptyVariant()])}>Add colour</Button>
+              </div>
+              {getFieldError('variants') && <p className="text-sm text-error">{getFieldError('variants')}</p>}
+              {variants.map((variant, index) => (
+                <div key={variant._id || index} className="rounded-2xl border border-navy-100 bg-surface-subtle p-4">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <p className="font-semibold text-navy-800">Colour {index + 1}</p>
+                    <Button type="button" variant="ghost" size="sm" className="text-error hover:bg-error/10 hover:text-error" onClick={() => setVariants((current) => current.filter((_, itemIndex) => itemIndex !== index))}>Remove</Button>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Input label="Colour label" value={variant.color} onChange={(event) => updateVariant(index, 'color', event.target.value)} placeholder="e.g. Gunmetal / Silver" />
+                    <Input label="Colour SKU" value={variant.sku} onChange={(event) => updateVariant(index, 'sku', event.target.value)} placeholder="e.g. OC-GUN-SIL" />
+                    <Input label="Primary colour name (top)" value={variant.primaryColor} onChange={(event) => updateVariant(index, 'primaryColor', event.target.value)} placeholder="e.g. Gunmetal" />
+                    <Input label="Secondary colour name (bottom)" value={variant.secondaryColor} onChange={(event) => updateVariant(index, 'secondaryColor', event.target.value)} placeholder="e.g. Silver" />
+                    <label className="text-sm font-medium text-navy-700">Primary colour (top)
+                      <input type="color" value={variant.primaryColorHex || '#4B5563'} onChange={(event) => updateVariant(index, 'primaryColorHex', event.target.value)} className="mt-1.5 block h-11 w-full cursor-pointer rounded-xl border border-navy-200 bg-surface p-1" aria-label={`Primary colour for colour ${index + 1}`} />
+                    </label>
+                    <label className="text-sm font-medium text-navy-700">Secondary colour (bottom)
+                      <input type="color" value={variant.secondaryColorHex || '#C4C7CC'} onChange={(event) => updateVariant(index, 'secondaryColorHex', event.target.value)} className="mt-1.5 block h-11 w-full cursor-pointer rounded-xl border border-navy-200 bg-surface p-1" aria-label={`Secondary colour for colour ${index + 1}`} />
+                    </label>
+                    <Input label="Stock for this colour" type="number" min="0" value={variant.stock} onChange={(event) => updateVariant(index, 'stock', event.target.value)} />
+                    <div className="flex items-end gap-3 pb-0.5">
+                      <span className="h-11 w-11 rounded-full border-2 border-white shadow-soft" style={{ background: `linear-gradient(to bottom, ${variant.primaryColorHex || '#4B5563'} 0 50%, ${variant.secondaryColorHex || '#C4C7CC'} 50% 100%)` }} aria-hidden="true" />
+                      <span className="text-xs text-navy-400">Primary is above secondary on the product-page swatch.</span>
+                    </div>
+                  </div>
+                  <Textarea
+                    label={`Images for colour ${index + 1} (one URL per line)`}
+                    value={(variant.images || []).filter((image) => !image.startsWith('data:image/')).join('\n')}
+                    onChange={(event) => {
+                      const uploaded = (variant.images || []).filter((image) => image.startsWith('data:image/'));
+                      updateVariant(index, 'images', [...event.target.value.split('\n').map(normalizeImageSource).filter(Boolean), ...uploaded]);
+                    }}
+                    helper="These photos are shown when this colour is selected. You can also upload images below."
+                    rows={3}
+                    containerClassName="mt-4"
+                  />
+                  <label className="mt-3 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-navy-200 bg-surface px-5 py-5 text-center transition hover:border-brand-400 hover:bg-brand-50">
+                    <span className="text-sm font-semibold text-navy-700">{preparingImages ? 'Preparing image files...' : `Upload photos for colour ${index + 1}`}</span>
+                    <span className="mt-1 text-xs text-navy-400">JPEG, PNG or WebP — up to {Math.max(0, MAX_UPLOADED_IMAGES - (variant.images?.length || 0))} more</span>
+                    <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" disabled={preparingImages || (variant.images?.length || 0) >= MAX_UPLOADED_IMAGES} onChange={(event) => uploadVariantImages(index, event)} />
+                  </label>
+                  {variant.images?.length > 0 && (
+                    <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-5">
+                      {variant.images.map((image, imageIndex) => (
+                        <div key={`${image.slice(0, 48)}-${imageIndex}`} className="relative aspect-square overflow-hidden rounded-xl border border-navy-100 bg-surface">
+                          <img src={getOptimizedImageUrl(image, 240)} alt={`${variant.color || `Colour ${index + 1}`} — ${imageIndex + 1}`} className="h-full w-full object-cover" />
+                          <button type="button" onClick={() => updateVariant(index, 'images', variant.images.filter((_, itemIndex) => itemIndex !== imageIndex))} className="absolute right-1 top-1 rounded-full bg-navy-900/80 px-2 py-1 text-xs font-bold text-white" aria-label={`Remove colour ${index + 1} image ${imageIndex + 1}`}>×</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
             <Input name="frameColor" label="Frame colour description" defaultValue={product?.frameColor} helper="Used in product details and search." />
           </div>
         </section>
