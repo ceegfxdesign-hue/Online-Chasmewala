@@ -143,6 +143,15 @@ export function SettingsPage() {
             <Input name="youtube" label="YouTube URL" defaultValue={data?.socialLinks?.youtube} />
 
             <div className="md:col-span-2 mt-3 border-t border-navy-100 pt-5">
+              <h2 className="text-lg font-semibold text-navy-900">Footer direct contact</h2>
+              <p className="mt-1 text-sm text-navy-500">These details appear in the Direct Contact column at the bottom of every storefront page.</p>
+            </div>
+            <Input name="storeAddress" label="Store address" defaultValue={data?.storeAddress} placeholder="e.g. MG Road, Bengaluru, Karnataka 560001" />
+            <Input name="whatsappNumber" label="WhatsApp number" defaultValue={data?.whatsappNumber} placeholder="e.g. +91 90000 00000" helper="Include the country code. This is used by the WhatsApp chat button." />
+            <Input name="businessHoursTitle" label="Business-hours title" defaultValue={data?.businessHoursTitle} placeholder="e.g. Open every day" />
+            <Textarea name="businessHoursText" label="Business-hours message" defaultValue={data?.businessHoursText} placeholder="e.g. Customer support is available from 9:00 AM to 8:00 PM." />
+
+            <div className="md:col-span-2 mt-3 border-t border-navy-100 pt-5">
               <h2 className="text-lg font-semibold text-navy-900">Home category card images</h2>
               <p className="mt-1 text-sm text-navy-500">Paste a direct image URL for each card. Leave a field empty to use the current default image.</p>
             </div>

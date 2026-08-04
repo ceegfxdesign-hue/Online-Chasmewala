@@ -14,4 +14,22 @@ router.get(
   })
 );
 
+router.get(
+  '/footer',
+  asyncHandler(async (_req, res) => {
+    const settings = await settingsService.get();
+    return sendSuccess(res, {
+      data: {
+        storeName: settings.storeName,
+        supportEmail: settings.supportEmail,
+        supportPhone: settings.supportPhone,
+        storeAddress: settings.storeAddress,
+        businessHoursTitle: settings.businessHoursTitle,
+        businessHoursText: settings.businessHoursText,
+        whatsappNumber: settings.whatsappNumber,
+      },
+    });
+  })
+);
+
 export default router;

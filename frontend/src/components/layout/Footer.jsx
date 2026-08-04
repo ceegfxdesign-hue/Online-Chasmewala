@@ -3,6 +3,7 @@ import { FiClock, FiMail, FiMapPin, FiMessageCircle, FiPhone } from 'react-icons
 import { Logo } from '@/components/common/Logo';
 import { FOOTER_LINKS } from '@/constants/navigation';
 import { ROUTES } from '@/constants/routes';
+import { useGetFooterSettingsQuery } from '@/features/settings/settingsApi';
 
 const STYLES = [
   { label: 'Wayfarer frames', to: `${ROUTES.products}?frameShape=wayfarer` },
@@ -15,6 +16,19 @@ const NAVIGATION = FOOTER_LINKS.find((column) => column.title === 'Shop')?.links
 
 /** Global contact-led footer with navigation and quick style links. */
 export function Footer() {
+  const { data: settings } = useGetFooterSettingsQuery();
+  const footer = {
+    storeName: settings?.storeName || 'Online Chasmewala',
+    address: settings?.storeAddress || 'MG Road, Bengaluru, Karnataka 560001',
+    phone: settings?.supportPhone || '+91 90000 00000',
+    email: settings?.supportEmail || 'support@onlinechasmewala.com',
+    hoursTitle: settings?.businessHoursTitle || 'Open every day',
+    hoursText: settings?.businessHoursText || 'Customer support is available from 9:00 AM to 8:00 PM.',
+    whatsapp: settings?.whatsappNumber || settings?.supportPhone || '+91 90000 00000',
+  };
+  const phoneLink = `tel:${footer.phone.replace(/[^+\d]/g, '')}`;
+  const whatsappLink = `https://wa.me/${footer.whatsapp.replace(/\D/g, '')}`;
+
   return (
     <footer className="bg-navy-900 text-white/75">
       <div className="container-page py-12 sm:py-16">
@@ -27,8 +41,8 @@ export function Footer() {
             <div className="mt-6 flex max-w-xs items-start gap-3 rounded-2xl border border-white/15 bg-white/5 p-4">
               <FiClock className="mt-0.5 h-5 w-5 shrink-0 text-brand-300" />
               <div>
-                <p className="text-sm font-semibold text-white">Open every day</p>
-                <p className="mt-1 text-xs leading-5 text-white/60">Customer support is available from 9:00 AM to 8:00 PM.</p>
+                <p className="text-sm font-semibold text-white">{footer.hoursTitle}</p>
+                <p className="mt-1 text-xs leading-5 text-white/60">{footer.hoursText}</p>
               </div>
             </div>
           </div>
@@ -67,12 +81,12 @@ export function Footer() {
           <div>
             <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-white">Direct contact</h2>
             <ul className="mt-5 space-y-4 text-sm text-white/65">
-              <li className="flex gap-3"><FiMapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-300" /><span>MG Road, Bengaluru, Karnataka 560001</span></li>
-              <li><a href="tel:+919000000000" className="flex items-center gap-3 transition hover:text-brand-300"><FiPhone className="h-4 w-4 text-brand-300" />+91 90000 00000</a></li>
-              <li><a href="mailto:support@onlinechasmewala.com" className="flex items-center gap-3 transition hover:text-brand-300"><FiMail className="h-4 w-4 text-brand-300" />support@onlinechasmewala.com</a></li>
+              <li className="flex gap-3"><FiMapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-300" /><span>{footer.address}</span></li>
+              <li><a href={phoneLink} className="flex items-center gap-3 transition hover:text-brand-300"><FiPhone className="h-4 w-4 text-brand-300" />{footer.phone}</a></li>
+              <li><a href={`mailto:${footer.email}`} className="flex items-center gap-3 transition hover:text-brand-300"><FiMail className="h-4 w-4 text-brand-300" />{footer.email}</a></li>
             </ul>
             <a
-              href="https://wa.me/919000000000"
+              href={whatsappLink}
               target="_blank"
               rel="noreferrer"
               className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-brand-400"

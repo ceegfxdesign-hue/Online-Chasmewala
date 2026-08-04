@@ -10,7 +10,12 @@ export const settingsApi = baseApi.injectEndpoints({
       transformResponse: data,
       providesTags: ['Admin'],
     }),
+    getFooterSettings: builder.query({
+      query: () => ({ url: '/settings/footer' }),
+      transformResponse: data,
+      providesTags: ['Admin'],
+    }),
   }),
 });
 
-export const { useGetHomeCategoryImagesQuery } = settingsApi;
+export const { useGetHomeCategoryImagesQuery, useGetFooterSettingsQuery } = settingsApi;
