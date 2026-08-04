@@ -42,7 +42,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
               aria-label={title || 'Dialog'}
               tabIndex={-1}
               className={cn(
-                'relative z-10 w-full overflow-hidden rounded-2xl bg-surface shadow-elevated focus:outline-none',
+                'relative z-10 flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-2xl bg-surface shadow-elevated focus:outline-none',
                 SIZES[size],
                 className
               )}
@@ -65,7 +65,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
                   )}
                 </div>
               )}
-              <div className="max-h-[70vh] overflow-y-auto p-5">{children}</div>
+              <div className="min-h-0 flex-1 overflow-y-auto p-5">{children}</div>
               {footer && <div className="border-t border-navy-100 p-5">{footer}</div>}
             </motion.div>
           </div>

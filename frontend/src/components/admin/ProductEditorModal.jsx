@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button, Input, Modal, Select, Textarea } from '@/components/ui';
 import { useToast } from '@/contexts/ToastContext';
 import { getOptimizedImageUrl } from '@/lib/images';
@@ -98,6 +98,8 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
   const [uploadedImages, setUploadedImages] = useState([]);
   const [preparingImages, setPreparingImages] = useState(false);
   const [variants, setVariants] = useState([]);
+  const mainImageInputRef = useRef(null);
+  const variantImageInputRefs = useRef({});
 
   const getFieldError = (field) => validationErrors[field];
 
@@ -268,11 +270,12 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
           <div className="space-y-4">
             <Textarea name="images" label="Main image URLs (one per line)" defaultValue={asLines(product?.images)} helper="Paste direct image URLs here. You can also upload photos below; both will be saved in the gallery." error={getFieldError('images')} />
             <div>
-              <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-navy-200 bg-surface-subtle px-5 py-6 text-center transition hover:border-brand-400 hover:bg-brand-50">
+              <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-navy-200 bg-surface-subtle px-5 py-6 text-center">
                 <span className="text-sm font-semibold text-navy-700">{preparingImages ? 'Preparing image files...' : 'Upload product photos'}</span>
                 <span className="mt-1 text-xs text-navy-400">JPEG, PNG or WebP — up to {MAX_UPLOADED_IMAGES - uploadedImages.length} more files</span>
-                <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" disabled={preparingImages || uploadedImages.length >= MAX_UPLOADED_IMAGES} onChange={uploadImages} />
-              </label>
+                <Button type="button" variant="outline" size="sm" className="mt-3" disabled={preparingImages || uploadedImages.length >= MAX_UPLOADED_IMAGES} onClick={() => mainImageInputRef.current?.click()}>Choose photos</Button>
+                <input ref={mainImageInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={uploadImages} />
+              </div>
               {uploadedImages.length > 0 && (
                 <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-5">
                   {uploadedImages.map((image, index) => (
@@ -327,11 +330,12 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
                     rows={3}
                     containerClassName="mt-4"
                   />
-                  <label className="mt-3 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-navy-200 bg-surface px-5 py-5 text-center transition hover:border-brand-400 hover:bg-brand-50">
+                  <div className="mt-3 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-navy-200 bg-surface px-5 py-5 text-center">
                     <span className="text-sm font-semibold text-navy-700">{preparingImages ? 'Preparing image files...' : `Upload photos for colour ${index + 1}`}</span>
                     <span className="mt-1 text-xs text-navy-400">JPEG, PNG or WebP — up to {Math.max(0, MAX_UPLOADED_IMAGES - (variant.images?.length || 0))} more</span>
-                    <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" disabled={preparingImages || (variant.images?.length || 0) >= MAX_UPLOADED_IMAGES} onChange={(event) => uploadVariantImages(index, event)} />
-                  </label>
+                    <Button type="button" variant="outline" size="sm" className="mt-3" disabled={preparingImages || (variant.images?.length || 0) >= MAX_UPLOADED_IMAGES} onClick={() => variantImageInputRefs.current[index]?.click()}>Choose photos</Button>
+                    <input ref={(node) => { variantImageInputRefs.current[index] = node; }} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={(event) => uploadVariantImages(index, event)} />
+                  </div>
                   {variant.images?.length > 0 && (
                     <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-5">
                       {variant.images.map((image, imageIndex) => (
