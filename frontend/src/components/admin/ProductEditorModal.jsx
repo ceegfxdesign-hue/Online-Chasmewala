@@ -63,7 +63,10 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
       toast.error('Variants must be a JSON list enclosed in square brackets.');
       return;
     }
-    body.variants = variants;
+    body.variants = variants.map((variant) => ({
+      ...variant,
+      color: variant.color || [variant.primaryColor, variant.secondaryColor].filter(Boolean).join(' / '),
+    }));
 
     const lensOptionsInput = String(body.lensOptions || '').trim();
     let lensOptions = [];
@@ -133,9 +136,9 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
             <Textarea name="images" label="Main image URLs (one per line)" defaultValue={asLines(product?.images)} helper="The first image is the product-card and cart image." error={getFieldError('images')} required />
             <Textarea
               name="variants"
-              label="Colour variants (JSON)"
+              label="Colour variants — primary above secondary (JSON)"
               defaultValue={product?.variants?.length ? JSON.stringify(product.variants, null, 2) : ''}
-              helper={'Optional. Example: [{"color":"Matte Black","colorHex":"#111827","stock":12,"sku":"OC-BLK","images":["https://..."]}]'}
+              helper={'Optional. Example: [{"color":"Gunmetal / Silver","primaryColor":"Gunmetal","primaryColorHex":"#4B5563","secondaryColor":"Silver","secondaryColorHex":"#C4C7CC","stock":12,"sku":"OC-GUN-SIL","images":["https://..."]}]'}
               error={getFieldError('variants')}
             />
             <Input name="frameColor" label="Frame colour description" defaultValue={product?.frameColor} helper="Used in product details and search." />

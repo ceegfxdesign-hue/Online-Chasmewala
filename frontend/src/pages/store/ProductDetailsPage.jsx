@@ -348,17 +348,19 @@ export default function ProductDetailsPage() {
                 <div className="flex flex-wrap gap-2">
                   {product.variants.map((v, i) => (
                     <button
-                      key={v._id || v.color}
+                      key={v._id || v.color || `${v.primaryColor}-${v.secondaryColor}`}
                       type="button"
                       onClick={() => setVariantIdx(i)}
-                      aria-label={v.color}
+                      aria-label={v.color || [v.primaryColor, v.secondaryColor].filter(Boolean).join(' / ') || 'Colour variant'}
                       aria-pressed={i === variantIdx}
-                      title={v.color}
+                      title={v.color || [v.primaryColor, v.secondaryColor].filter(Boolean).join(' / ') || 'Colour variant'}
                       className={cn(
-                        'h-9 w-9 rounded-full border-2 transition-transform',
+                        'h-9 w-9 overflow-hidden rounded-full border-2 transition-transform',
                         i === variantIdx ? 'border-brand-500 ring-2 ring-brand-500/30' : 'border-navy-200'
                       )}
-                      style={{ backgroundColor: v.colorHex || '#ccc' }}
+                      style={v.secondaryColorHex
+                        ? { background: `linear-gradient(to bottom, ${v.primaryColorHex || v.colorHex || '#ccc'} 0 50%, ${v.secondaryColorHex} 50% 100%)` }
+                        : { backgroundColor: v.primaryColorHex || v.colorHex || '#ccc' }}
                     />
                   ))}
                 </div>

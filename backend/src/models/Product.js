@@ -14,6 +14,10 @@ const variantSchema = new mongoose.Schema(
   {
     color: { type: String, required: true },
     colorHex: { type: String },
+    primaryColor: { type: String },
+    primaryColorHex: { type: String },
+    secondaryColor: { type: String },
+    secondaryColorHex: { type: String },
     images: [{ type: String }],
     stock: { type: Number, default: 0, min: 0 },
     sku: { type: String },

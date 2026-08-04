@@ -64,6 +64,10 @@ export const idParamSchema = {
 const variantSchema = z.object({
   color: z.string().min(1),
   colorHex: z.string().optional(),
+  primaryColor: z.string().trim().optional(),
+  primaryColorHex: z.string().trim().optional(),
+  secondaryColor: z.string().trim().optional(),
+  secondaryColorHex: z.string().trim().optional(),
   images: z.array(z.string()).optional(),
   stock: z.number().int().min(0).optional(),
   sku: z.string().optional(),
