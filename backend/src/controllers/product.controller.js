@@ -26,12 +26,16 @@ export const productController = {
   image: asyncHandler(async (req, res) => {
     const image = await productService.getImage(req.params.id, Number(req.params.index));
     res.set('Cache-Control', 'public, max-age=31536000, immutable');
+    // Product photos are intentionally embedded by the separate Hostinger
+    // storefront origin, so they must not inherit Helmet's same-origin policy.
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
     return res.type(image.contentType).send(image.buffer);
   }),
 
   variantImage: asyncHandler(async (req, res) => {
     const image = await productService.getVariantImage(req.params.id, Number(req.params.variantIndex), Number(req.params.imageIndex));
     res.set('Cache-Control', 'public, max-age=31536000, immutable');
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
     return res.type(image.contentType).send(image.buffer);
   }),
 
