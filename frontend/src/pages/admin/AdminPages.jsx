@@ -81,4 +81,86 @@ export function UsersPage() {
 
 export function InventoryPage() { const { data: items = [], isLoading } = useGetLowStockQuery(); return <Page name="Inventory">{isLoading ? <Loading /> : <><div className="mb-4 flex items-center gap-2 rounded-xl bg-warning-light p-3 text-sm text-warning-dark"><FiAlertTriangle /> Products at or below their low-stock threshold need attention.</div><Table columns={['Product', 'SKU', 'Brand', 'Stock', 'Threshold', 'Status']} rows={items} render={(p) => <tr key={p._id}><td className="px-4 py-3 font-medium">{p.name}</td><td className="px-4 py-3">{p.sku}</td><td className="px-4 py-3">{p.brand}</td><td className="px-4 py-3 font-semibold">{p.stock}</td><td className="px-4 py-3">{p.lowStockThreshold}</td><td className="px-4 py-3 capitalize">{p.status.replaceAll('_', ' ')}</td></tr>} empty="Inventory levels look healthy." /></>}</Page>; }
 export function ReportsPage() { const { data, isLoading } = useGetSalesReportQuery({}); const summary = data?.summary; return <Page name="Sales Reports">{isLoading ? <Loading /> : <><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[['Revenue', formatPrice(summary?.revenue || 0)], ['Orders', summary?.orders || 0], ['Items sold', summary?.items || 0], ['Discounts', formatPrice(summary?.discount || 0)]].map(([label, value]) => <Card key={label}><CardBody><p className="text-sm text-navy-500">{label}</p><p className="mt-2 text-h4 text-navy-900">{value}</p></CardBody></Card>)}</div><div className="mt-6"><Chart title="90-day revenue"><BarChart data={data?.byDay || []}><CartesianGrid stroke="#E2E8F0" /><XAxis dataKey="date" tick={{ fontSize: 11 }} /><YAxis /><Tooltip formatter={(v) => formatPrice(v)} /><Bar dataKey="revenue" fill="#00A6A6" /></BarChart></Chart></div></>}</Page>; }
-export function SettingsPage() { const { data, isLoading } = useGetSettingsQuery(); const [update, { isLoading: saving }] = useUpdateSettingsMutation(); const toast = useToast(); const submit = async (e) => { e.preventDefault(); const f = new FormData(e.currentTarget); const body = Object.fromEntries(f); ['freeShippingThreshold', 'standardShippingFee', 'expressShippingFee', 'taxPercent'].forEach((key) => { body[key] = Number(body[key] || 0); }); body.socialLinks = { instagram: body.instagram, facebook: body.facebook, twitter: body.twitter, youtube: body.youtube }; ['instagram', 'facebook', 'twitter', 'youtube'].forEach((key) => delete body[key]); try { await update(body).unwrap(); toast.success('Store settings saved'); } catch (err) { toast.error(err.message); } }; if (isLoading) return <Loading />; return <Page name="Store Settings"><Card><CardBody><form onSubmit={submit} className="grid gap-4 md:grid-cols-2"><Input name="storeName" label="Store name" defaultValue={data?.storeName} required /><Input name="supportEmail" label="Support email" type="email" defaultValue={data?.supportEmail} required /><Input name="supportPhone" label="Support phone" defaultValue={data?.supportPhone} required /><Input name="currency" label="Currency" defaultValue={data?.currency} required /><Input name="freeShippingThreshold" label="Free shipping threshold" type="number" defaultValue={data?.freeShippingThreshold} /><Input name="standardShippingFee" label="Standard shipping fee" type="number" defaultValue={data?.standardShippingFee} /><Input name="expressShippingFee" label="Express shipping fee" type="number" defaultValue={data?.expressShippingFee} /><Input name="taxPercent" label="Tax percent" type="number" defaultValue={data?.taxPercent} /><div className="md:col-span-2"><Textarea name="announcement" label="Announcement" defaultValue={data?.announcement} /></div><Input name="instagram" label="Instagram URL" defaultValue={data?.socialLinks?.instagram} /><Input name="facebook" label="Facebook URL" defaultValue={data?.socialLinks?.facebook} /><Input name="twitter" label="Twitter URL" defaultValue={data?.socialLinks?.twitter} /><Input name="youtube" label="YouTube URL" defaultValue={data?.socialLinks?.youtube} /><div className="md:col-span-2"><Button type="submit" loading={saving} leftIcon={<FiCheck />}>Save settings</Button></div></form></CardBody></Card></Page>; }
+export function SettingsPage() {
+  const { data, isLoading } = useGetSettingsQuery();
+  const [update, { isLoading: saving }] = useUpdateSettingsMutation();
+  const toast = useToast();
+
+  const submit = async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const body = Object.fromEntries(form);
+    ['freeShippingThreshold', 'standardShippingFee', 'expressShippingFee', 'taxPercent'].forEach((key) => {
+      body[key] = Number(body[key] || 0);
+    });
+    body.socialLinks = {
+      instagram: body.instagram,
+      facebook: body.facebook,
+      twitter: body.twitter,
+      youtube: body.youtube,
+    };
+    body.homeCategoryImages = {
+      eyeglasses: {
+        men: body.eyeglassesMenImage,
+        women: body.eyeglassesWomenImage,
+        kids: body.eyeglassesKidsImage,
+      },
+      sunglasses: {
+        men: body.sunglassesMenImage,
+        women: body.sunglassesWomenImage,
+        kids: body.sunglassesKidsImage,
+      },
+    };
+    ['instagram', 'facebook', 'twitter', 'youtube', 'eyeglassesMenImage', 'eyeglassesWomenImage', 'eyeglassesKidsImage', 'sunglassesMenImage', 'sunglassesWomenImage', 'sunglassesKidsImage'].forEach((key) => delete body[key]);
+
+    try {
+      await update(body).unwrap();
+      toast.success('Store settings saved');
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  if (isLoading) return <Loading />;
+
+  return (
+    <Page name="Store Settings">
+      <Card>
+        <CardBody>
+          <form onSubmit={submit} className="grid gap-4 md:grid-cols-2">
+            <Input name="storeName" label="Store name" defaultValue={data?.storeName} required />
+            <Input name="supportEmail" label="Support email" type="email" defaultValue={data?.supportEmail} required />
+            <Input name="supportPhone" label="Support phone" defaultValue={data?.supportPhone} required />
+            <Input name="currency" label="Currency" defaultValue={data?.currency} required />
+            <Input name="freeShippingThreshold" label="Free shipping threshold" type="number" defaultValue={data?.freeShippingThreshold} />
+            <Input name="standardShippingFee" label="Standard shipping fee" type="number" defaultValue={data?.standardShippingFee} />
+            <Input name="expressShippingFee" label="Express shipping fee" type="number" defaultValue={data?.expressShippingFee} />
+            <Input name="taxPercent" label="Tax percent" type="number" defaultValue={data?.taxPercent} />
+            <div className="md:col-span-2"><Textarea name="announcement" label="Announcement" defaultValue={data?.announcement} /></div>
+            <Input name="instagram" label="Instagram URL" defaultValue={data?.socialLinks?.instagram} />
+            <Input name="facebook" label="Facebook URL" defaultValue={data?.socialLinks?.facebook} />
+            <Input name="twitter" label="Twitter URL" defaultValue={data?.socialLinks?.twitter} />
+            <Input name="youtube" label="YouTube URL" defaultValue={data?.socialLinks?.youtube} />
+
+            <div className="md:col-span-2 mt-3 border-t border-navy-100 pt-5">
+              <h2 className="text-lg font-semibold text-navy-900">Home category card images</h2>
+              <p className="mt-1 text-sm text-navy-500">Paste a direct image URL for each card. Leave a field empty to use the current default image.</p>
+            </div>
+            <div className="md:col-span-2"><p className="text-sm font-semibold text-navy-800">Eyeglasses</p></div>
+            <Input name="eyeglassesMenImage" label="Men image URL" type="url" defaultValue={data?.homeCategoryImages?.eyeglasses?.men} placeholder="https://example.com/eyeglasses-men.jpg" />
+            <Input name="eyeglassesWomenImage" label="Women image URL" type="url" defaultValue={data?.homeCategoryImages?.eyeglasses?.women} placeholder="https://example.com/eyeglasses-women.jpg" />
+            <Input name="eyeglassesKidsImage" label="Kids image URL" type="url" defaultValue={data?.homeCategoryImages?.eyeglasses?.kids} placeholder="https://example.com/eyeglasses-kids.jpg" />
+            <div />
+            <div className="md:col-span-2"><p className="text-sm font-semibold text-navy-800">Sunglasses</p></div>
+            <Input name="sunglassesMenImage" label="Men image URL" type="url" defaultValue={data?.homeCategoryImages?.sunglasses?.men} placeholder="https://example.com/sunglasses-men.jpg" />
+            <Input name="sunglassesWomenImage" label="Women image URL" type="url" defaultValue={data?.homeCategoryImages?.sunglasses?.women} placeholder="https://example.com/sunglasses-women.jpg" />
+            <Input name="sunglassesKidsImage" label="Kids image URL" type="url" defaultValue={data?.homeCategoryImages?.sunglasses?.kids} placeholder="https://example.com/sunglasses-kids.jpg" />
+            <div />
+
+            <div className="md:col-span-2"><Button type="submit" loading={saving} leftIcon={<FiCheck />}>Save settings</Button></div>
+          </form>
+        </CardBody>
+      </Card>
+    </Page>
+  );
+}

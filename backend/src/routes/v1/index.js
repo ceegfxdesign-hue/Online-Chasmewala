@@ -16,6 +16,7 @@ import accountRoutes from './account.routes.js';
 import adminRoutes from './admin.routes.js';
 import bannerRoutes from './banner.routes.js';
 import offerRoutes from './offer.routes.js';
+import settingsRoutes from './settings.routes.js';
 
 const router = Router();
 
@@ -32,5 +33,6 @@ router.use('/account', accountRoutes);
 router.use('/admin', adminRoutes);
 router.use('/banners', bannerRoutes);
 router.use('/offers', offerRoutes);
+router.use('/settings', settingsRoutes);
 
 export default router;

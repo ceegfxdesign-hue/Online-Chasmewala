@@ -22,6 +22,20 @@ const settingsSchema = new mongoose.Schema(
       twitter: String,
       youtube: String,
     },
+    // Home-page category cards. The admin can replace these six images without
+    // rebuilding the storefront.
+    homeCategoryImages: {
+      eyeglasses: {
+        men: { type: String, default: '' },
+        women: { type: String, default: '' },
+        kids: { type: String, default: '' },
+      },
+      sunglasses: {
+        men: { type: String, default: '' },
+        women: { type: String, default: '' },
+        kids: { type: String, default: '' },
+      },
+    },
   },
   { timestamps: true }
 );

@@ -103,5 +103,19 @@ export const updateSettingsSchema = {
         youtube: z.string().url().or(z.literal('')).optional(),
       })
       .optional(),
+    homeCategoryImages: z
+      .object({
+        eyeglasses: z.object({
+          men: z.string().url().or(z.literal('')).optional(),
+          women: z.string().url().or(z.literal('')).optional(),
+          kids: z.string().url().or(z.literal('')).optional(),
+        }).optional(),
+        sunglasses: z.object({
+          men: z.string().url().or(z.literal('')).optional(),
+          women: z.string().url().or(z.literal('')).optional(),
+          kids: z.string().url().or(z.literal('')).optional(),
+        }).optional(),
+      })
+      .optional(),
   }),
 };
