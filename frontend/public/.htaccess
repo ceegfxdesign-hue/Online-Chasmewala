@@ -1,0 +1,13 @@
+# Serve the React application for every client-side route on Apache/LiteSpeed
+# hosting (including Hostinger). Real files and folders, such as /assets, are
+# still served normally.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  RewriteRule ^ index.html [L]
+</IfModule>
