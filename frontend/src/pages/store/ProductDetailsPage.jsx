@@ -139,6 +139,10 @@ export default function ProductDetailsPage() {
     );
 
   const variant = product.variants?.[variantIdx];
+  const hasColourVariants = Array.isArray(product.variants) && product.variants.some((item) => (
+    item?.color || item?.colorHex || item?.primaryColor || item?.primaryColorHex
+  ));
+  const selectedColourLabel = variant?.color || [variant?.primaryColor, variant?.secondaryColor].filter(Boolean).join(' / ');
   const galleryImages = variant?.images?.length ? variant.images : product.images;
   const unitPrice = product.price + (lens?.price || 0);
   const outOfStock = product.stock === 0;
@@ -340,10 +344,10 @@ export default function ProductDetailsPage() {
             <p className="mt-5 text-sm leading-relaxed text-navy-600">{product.description}</p>
 
             {/* Colors / variants */}
-            {product.variants?.length > 1 && (
+            {hasColourVariants && (
               <div className="mt-6">
                 <p className="mb-2 text-sm font-semibold text-navy-900">
-                  Color: <span className="font-normal text-navy-500">{variant?.color}</span>
+                  Color: <span className="font-normal text-navy-500">{selectedColourLabel || 'Selected colour'}</span>
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {product.variants.map((v, i) => (
