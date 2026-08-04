@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Input, Modal, Select, Textarea } from '@/components/ui';
 import { useToast } from '@/contexts/ToastContext';
 
@@ -8,10 +8,63 @@ const FRAME_TYPES = ['full-rim', 'half-rim', 'rimless'];
 const FRAME_MATERIALS = ['acetate', 'metal', 'tr90', 'titanium', 'plastic', 'mixed'];
 const FRAME_SIZES = ['narrow', 'medium', 'wide', 'extra-wide'];
 const LENS_TYPES = ['single-vision', 'bifocal', 'progressive', 'zero-power', 'blue-light', 'polarized', 'photochromic', 'sunglasses'];
+const MAX_UPLOADED_IMAGES = 5;
+const MAX_IMAGE_EDGE = 1200;
+const MAX_IMAGE_DATA_URL_LENGTH = 750000;
 
 const asLines = (items = []) => items.join('\n');
 const asCommaList = (items = []) => items.join(', ');
 const humanize = (value) => value.replaceAll('-', ' ');
+
+function normalizeImageSource(value) {
+  const source = value.trim();
+  const driveFile = source.match(/^https?:\/\/drive\.google\.com\/file\/d\/([^/?#]+)/i);
+  return driveFile ? `https://drive.google.com/uc?export=view&id=${driveFile[1]}` : source;
+}
+
+function createCompressedImageUrl(file) {
+  return new Promise((resolve, reject) => {
+    if (!file?.type?.startsWith('image/')) {
+      reject(new Error('Please choose an image file.'));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('The selected image could not be read.'));
+    reader.onload = () => {
+      const image = new Image();
+      image.onerror = () => reject(new Error('The selected image could not be opened.'));
+      image.onload = () => {
+        const scale = Math.min(1, MAX_IMAGE_EDGE / Math.max(image.width, image.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext('2d');
+        if (!context) {
+          reject(new Error('Image preparation is not supported in this browser.'));
+          return;
+        }
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+        let quality = 0.86;
+        let imageUrl = canvas.toDataURL('image/jpeg', quality);
+        while (imageUrl.length > MAX_IMAGE_DATA_URL_LENGTH && quality > 0.45) {
+          quality -= 0.1;
+          imageUrl = canvas.toDataURL('image/jpeg', quality);
+        }
+        if (imageUrl.length > MAX_IMAGE_DATA_URL_LENGTH) {
+          reject(new Error('This image is too large. Please choose a smaller image.'));
+          return;
+        }
+        resolve(imageUrl);
+      };
+      image.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
 function Toggle({ name, label, defaultChecked = false }) {
   return (
@@ -30,8 +83,36 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
   const toast = useToast();
   const editing = Boolean(product?._id);
   const [validationErrors, setValidationErrors] = useState({});
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const [preparingImages, setPreparingImages] = useState(false);
 
   const getFieldError = (field) => validationErrors[field];
+
+  useEffect(() => {
+    setUploadedImages([]);
+    setPreparingImages(false);
+  }, [product?._id]);
+
+  const uploadImages = async (event) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = '';
+    if (!files.length) return;
+    if (uploadedImages.length + files.length > MAX_UPLOADED_IMAGES) {
+      toast.error(`Select no more than ${MAX_UPLOADED_IMAGES - uploadedImages.length} additional image(s).`);
+      return;
+    }
+
+    setPreparingImages(true);
+    try {
+      const preparedImages = await Promise.all(files.map(createCompressedImageUrl));
+      setUploadedImages((current) => [...current, ...preparedImages]);
+      toast.success(`${preparedImages.length} image${preparedImages.length === 1 ? '' : 's'} ready to save.`);
+    } catch (error) {
+      toast.error(error.message || 'Unable to prepare these images.');
+    } finally {
+      setPreparingImages(false);
+    }
+  };
 
   const submit = async (event) => {
     event.preventDefault();
@@ -44,9 +125,14 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
       else body[key] = Number(body[key]);
     });
 
-    ['images', 'highlights'].forEach((key) => {
-      body[key] = String(body[key] || '').split('\n').map((value) => value.trim()).filter(Boolean);
-    });
+    body.images = String(body.images || '').split('\n').map(normalizeImageSource).filter(Boolean);
+    body.images = [...body.images, ...uploadedImages];
+    if (!body.images.length) {
+      setValidationErrors({ images: 'Add at least one image URL or upload an image file.' });
+      toast.error('Add at least one image URL or upload an image file.');
+      return;
+    }
+    body.highlights = String(body.highlights || '').split('\n').map((value) => value.trim()).filter(Boolean);
     ['tags', 'collections', 'suitableFaceShapes'].forEach((key) => {
       body[key] = String(body[key] || '').split(',').map((value) => value.trim()).filter(Boolean);
     });
@@ -133,7 +219,24 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
         <section>
           <h3 className="mb-3 font-semibold text-navy-900">Gallery and colour variants</h3>
           <div className="space-y-4">
-            <Textarea name="images" label="Main image URLs (one per line)" defaultValue={asLines(product?.images)} helper="The first image is the product-card and cart image." error={getFieldError('images')} required />
+            <Textarea name="images" label="Main image URLs (one per line)" defaultValue={asLines(product?.images)} helper="Paste direct image URLs here. You can also upload photos below; both will be saved in the gallery." error={getFieldError('images')} />
+            <div>
+              <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-navy-200 bg-surface-subtle px-5 py-6 text-center transition hover:border-brand-400 hover:bg-brand-50">
+                <span className="text-sm font-semibold text-navy-700">{preparingImages ? 'Preparing image files...' : 'Upload product photos'}</span>
+                <span className="mt-1 text-xs text-navy-400">JPEG, PNG or WebP — up to {MAX_UPLOADED_IMAGES - uploadedImages.length} more files</span>
+                <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" disabled={preparingImages || uploadedImages.length >= MAX_UPLOADED_IMAGES} onChange={uploadImages} />
+              </label>
+              {uploadedImages.length > 0 && (
+                <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-5">
+                  {uploadedImages.map((image, index) => (
+                    <div key={`${image.slice(0, 48)}-${index}`} className="relative aspect-square overflow-hidden rounded-xl border border-navy-100 bg-surface-subtle">
+                      <img src={image} alt={`Upload ${index + 1}`} className="h-full w-full object-cover" />
+                      <button type="button" onClick={() => setUploadedImages((current) => current.filter((_, itemIndex) => itemIndex !== index))} className="absolute right-1 top-1 rounded-full bg-navy-900/80 px-2 py-1 text-xs font-bold text-white" aria-label={`Remove upload ${index + 1}`}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <Textarea
               name="variants"
               label="Colour variants — primary above secondary (JSON)"
