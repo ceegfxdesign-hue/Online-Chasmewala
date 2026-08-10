@@ -87,7 +87,7 @@ export function TrendingCatalogHero() {
         className={
           dark
             ? 'catalog-hero-overlay absolute inset-0 -z-10 bg-gradient-to-r from-navy-900/85 via-navy-900/45 to-navy-900/5'
-            : 'catalog-hero-overlay absolute inset-0 -z-10 bg-gradient-to-r from-white/90 via-white/55 to-transparent'
+            : 'catalog-hero-overlay absolute inset-0 -z-10 bg-gradient-to-r from-hero/95 via-hero/60 to-transparent'
         }
       />
 

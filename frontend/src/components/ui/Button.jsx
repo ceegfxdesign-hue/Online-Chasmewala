@@ -4,8 +4,9 @@ import { Spinner } from './Spinner';
 
 const VARIANTS = {
   primary:
-    'bg-brand-700 text-white shadow-soft hover:bg-brand-800 active:bg-brand-900 disabled:hover:bg-brand-700',
-  secondary: 'bg-navy-900 text-white shadow-soft hover:bg-navy-800 active:bg-navy-700',
+    'bg-brand-500 text-white shadow-soft hover:bg-brand-600 active:bg-brand-700 disabled:hover:bg-brand-500',
+  secondary:
+    'border border-navy-100 bg-transparent text-navy-900 shadow-none hover:bg-surface-subtle active:bg-navy-100',
   outline:
     'border border-brand-500 text-brand-600 bg-transparent hover:bg-brand-50 active:bg-brand-100',
   ghost: 'text-navy-700 bg-transparent hover:bg-navy-100 active:bg-navy-200',

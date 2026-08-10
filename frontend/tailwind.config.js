@@ -17,42 +17,43 @@ export default {
       colors: {
         // Brand — teal / navy / cyan
         brand: {
-          50: '#e6fafa',
-          100: '#c0f2f2',
-          200: '#8ce8e8',
-          300: '#4dd9d9',
-          400: '#1cc4c4',
-          500: '#00a6a6', // primary
-          600: '#008585',
-          700: '#046a6a',
-          800: '#0a5454',
-          900: '#0d4646',
+          50: '#E7F3F2',
+          100: '#CFE8E6',
+          200: '#A8D6D3',
+          300: '#72BDB9',
+          400: '#16B8B2',
+          500: '#087F7B', // refined teal
+          600: '#066A67',
+          700: '#055856',
+          800: '#044846',
+          900: '#033837',
         },
         accent: {
-          400: '#33dede',
-          500: '#00d4d4', // cyan accent
-          600: '#00b3b3',
+          400: '#D7B979',
+          500: '#C9A45C', // champagne gold, used sparingly
+          600: '#A8833E',
         },
         navy: {
-          50: '#f1f5f9',
-          100: '#e2e8f0',
-          200: '#cbd5e1',
-          300: '#94a3b8',
-          400: '#64748b',
-          500: '#475569',
-          600: '#334155',
-          700: '#1e293b',
-          800: '#131f34',
-          900: '#0f172a', // secondary / dark navy
+          50: '#EEF2F4',
+          100: '#D9E1E8',
+          200: '#CBD5DF',
+          300: '#8A99AA',
+          400: '#526174',
+          500: '#3D4B5D',
+          600: '#2C394B',
+          700: '#202C3D',
+          800: '#111827',
+          900: '#0B1428', // deep ink navy
         },
-        success: { light: '#dcfce7', DEFAULT: '#16a34a', dark: '#15803d' },
-        error: { light: '#fee2e2', DEFAULT: '#dc2626', dark: '#b91c1c' },
-        warning: { light: '#fef3c7', DEFAULT: '#f59e0b', dark: '#b45309' },
+        success: { light: '#E7F3F2', DEFAULT: '#087F7B', dark: '#066A67' },
+        error: { light: '#FBE9E7', DEFAULT: '#D95C55', dark: '#B84540' },
+        warning: { light: '#F7F0E0', DEFAULT: '#C9A45C', dark: '#8D6B32' },
         surface: {
-          DEFAULT: '#ffffff',
-          muted: '#f8fafc', // off-white
-          subtle: '#f1f5f9', // light gray
+          DEFAULT: '#FFFFFF',
+          muted: '#F8F9F7', // soft ivory
+          subtle: '#EEF2F4', // cool mist
         },
+        hero: '#F4F7F6',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
@@ -77,11 +78,11 @@ export default {
         '3xl': '1.75rem',
       },
       boxShadow: {
-        soft: '0 1px 2px rgba(15,23,42,0.04), 0 2px 8px rgba(15,23,42,0.06)',
-        card: '0 2px 4px rgba(15,23,42,0.04), 0 8px 24px rgba(15,23,42,0.08)',
-        elevated: '0 12px 32px rgba(15,23,42,0.12)',
-        glass: '0 8px 32px rgba(15,23,42,0.10)',
-        focus: '0 0 0 3px rgba(0,166,166,0.35)',
+        soft: '0 1px 2px rgba(11,20,40,0.035), 0 2px 8px rgba(11,20,40,0.045)',
+        card: '0 2px 5px rgba(11,20,40,0.035), 0 8px 22px rgba(11,20,40,0.06)',
+        elevated: '0 12px 30px rgba(11,20,40,0.09)',
+        glass: '0 8px 28px rgba(11,20,40,0.08)',
+        focus: '0 0 0 3px rgba(8,127,123,0.28)',
       },
       keyframes: {
         'fade-in': { from: { opacity: '0' }, to: { opacity: '1' } },

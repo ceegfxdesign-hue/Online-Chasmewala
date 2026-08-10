@@ -5,9 +5,14 @@
 /* ── Design tokens as CSS variables (mirror tailwind.config for runtime use) ── */
 @layer base {
   :root {
-    --color-brand: 0 166 166;
-    --color-accent: 0 212 212;
-    --color-navy: 15 23 42;
+    --color-brand: 8 127 123;
+    --color-accent: 201 164 92;
+    --color-navy: 11 20 40;
+    --color-brand-400: #16B8B2;
+    --color-brand-500: #087F7B;
+    --color-navy-900: #0B1428;
+    --color-border: #D9E1E8;
+    --color-gold: #C9A45C;
     --radius-card: 1.25rem;
     --space-section: 4rem;
   }
@@ -44,49 +49,49 @@
   }
 
   html.dark body {
-    background-color: #0b1220;
-    color: #dbeafe;
+    background-color: #0B1428;
+    color: #D9E1E8;
   }
 
   html.dark .bg-surface,
   html.dark .bg-white {
-    background-color: #111c2f;
+    background-color: #111D30;
   }
 
   html.dark .bg-surface\/95 {
-    background-color: rgb(17 28 47 / 0.95);
+    background-color: rgb(17 29 48 / 0.95);
   }
 
   html.dark .bg-surface-muted,
   html.dark .bg-surface-subtle,
   html.dark .bg-navy-50 {
-    background-color: #17243a;
+    background-color: #162438;
   }
 
   html.dark .bg-navy-100,
   html.dark .bg-brand-50 {
-    background-color: #20314a;
+    background-color: #203046;
   }
 
   html.dark .text-navy-900,
   html.dark .text-navy-800,
   html.dark .text-navy-700 {
-    color: #f1f5f9;
+    color: #F8F9F7;
   }
 
   html.dark .text-navy-600,
   html.dark .text-navy-500 {
-    color: #cbd5e1;
+    color: #CBD5DF;
   }
 
   html.dark .text-navy-400,
   html.dark .text-navy-300 {
-    color: #94a3b8;
+    color: #9AACBD;
   }
 
   html.dark .border-navy-100,
   html.dark .border-navy-200 {
-    border-color: #2a3d59;
+    border-color: #29405B;
   }
 
   html.dark .shadow-card,
@@ -101,7 +106,7 @@
   }
 
   html.dark .catalog-hero-overlay {
-    background-image: linear-gradient(to right, rgb(8 15 28 / 0.94), rgb(8 15 28 / 0.68) 52%, rgb(8 15 28 / 0.3)) !important;
+    background-image: linear-gradient(to right, rgb(11 20 40 / 0.94), rgb(11 20 40 / 0.68) 52%, rgb(11 20 40 / 0.3)) !important;
   }
 
   html.dark .catalog-hero-eyebrow,
