@@ -378,6 +378,11 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
             <div className="md:col-span-2"><Textarea name="lensOptions" label="Product-type options (JSON)" defaultValue={product?.lensOptions?.length ? JSON.stringify(product.lensOptions, null, 2) : ''} helper={'Optional. Example: [{"type":"zero-power","label":"Zero Power","subtitle":"Screen glasses","price":0}]'} error={getFieldError('lensOptions')} /></div>
             <Input name="warrantyMonths" label="Warranty (months)" type="number" min="0" defaultValue={product?.warrantyMonths ?? 12} />
             <Input name="returnDays" label="Return window (days)" type="number" min="0" defaultValue={product?.returnDays ?? 14} />
+            <div className="md:col-span-2 grid gap-4 md:grid-cols-3">
+              <Input name="shippingMessage" label="Shipping message" defaultValue={product?.shippingMessage} placeholder="Free shipping" helper="Shown in the delivery assurance card." />
+              <Input name="returnMessage" label="Return message" defaultValue={product?.returnMessage} placeholder={`${product?.returnDays ?? 14}-day returns`} helper="Leave blank to use the return window." />
+              <Input name="warrantyMessage" label="Warranty message" defaultValue={product?.warrantyMessage} placeholder={`${product?.warrantyMonths ?? 12}mo warranty`} helper="Leave blank to use the warranty period." />
+            </div>
             <div className="md:col-span-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
               <Toggle name="powered" label="Prescription supported" defaultChecked={product?.powered !== false} />
               <Toggle name="blueLightFilter" label="Blue-light filter" defaultChecked={product?.blueLightFilter} />

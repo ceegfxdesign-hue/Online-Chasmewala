@@ -88,6 +88,9 @@ const productSchema = new mongoose.Schema(
 
     warrantyMonths: { type: Number, default: 12 },
     returnDays: { type: Number, default: 14 },
+    shippingMessage: { type: String, trim: true, default: '' },
+    returnMessage: { type: String, trim: true, default: '' },
+    warrantyMessage: { type: String, trim: true, default: '' },
 
     tags: [{ type: String, index: true }],
     collections: [{ type: String }], // e.g. 'summer-2026'

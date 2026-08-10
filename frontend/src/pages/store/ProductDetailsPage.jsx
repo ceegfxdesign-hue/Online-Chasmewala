@@ -341,36 +341,6 @@ export default function ProductDetailsPage() {
               </div>
             )}
 
-            <p className="mt-5 text-sm leading-relaxed text-navy-600">{product.description}</p>
-
-            {/* Colors / variants */}
-            {hasColourVariants && (
-              <div className="mt-6">
-                <p className="mb-2 text-sm font-semibold text-navy-900">
-                  Color: <span className="font-normal text-navy-500">{selectedColourLabel || 'Selected colour'}</span>
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {product.variants.map((v, i) => (
-                    <button
-                      key={v._id || v.color || `${v.primaryColor}-${v.secondaryColor}`}
-                      type="button"
-                      onClick={() => setVariantIdx(i)}
-                      aria-label={v.color || [v.primaryColor, v.secondaryColor].filter(Boolean).join(' / ') || 'Colour variant'}
-                      aria-pressed={i === variantIdx}
-                      title={v.color || [v.primaryColor, v.secondaryColor].filter(Boolean).join(' / ') || 'Colour variant'}
-                      className={cn(
-                        'h-9 w-9 overflow-hidden rounded-full border-2 transition-transform',
-                        i === variantIdx ? 'border-brand-500 ring-2 ring-brand-500/30' : 'border-navy-200'
-                      )}
-                      style={v.secondaryColorHex
-                        ? { background: `linear-gradient(to bottom, ${v.primaryColorHex || v.colorHex || '#ccc'} 0 50%, ${v.secondaryColorHex} 50% 100%)` }
-                        : { backgroundColor: v.primaryColorHex || v.colorHex || '#ccc' }}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Lens options */}
             {lensOptions.length > 0 && (
               <div className="mt-6">
@@ -404,6 +374,34 @@ export default function ProductDetailsPage() {
                     {lens.packageId ? 'Edit lenses' : 'Select lenses'}
                   </Button>
                 )}
+              </div>
+            )}
+
+            {/* Colors / variants */}
+            {hasColourVariants && (
+              <div className="mt-6">
+                <p className="mb-2 text-sm font-semibold text-navy-900">
+                  Frame color: <span className="font-normal text-navy-500">{selectedColourLabel || 'Selected colour'}</span>
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {product.variants.map((v, i) => (
+                    <button
+                      key={v._id || v.color || `${v.primaryColor}-${v.secondaryColor}`}
+                      type="button"
+                      onClick={() => setVariantIdx(i)}
+                      aria-label={v.color || [v.primaryColor, v.secondaryColor].filter(Boolean).join(' / ') || 'Colour variant'}
+                      aria-pressed={i === variantIdx}
+                      title={v.color || [v.primaryColor, v.secondaryColor].filter(Boolean).join(' / ') || 'Colour variant'}
+                      className={cn(
+                        'h-9 w-9 overflow-hidden rounded-full border-2 transition-transform',
+                        i === variantIdx ? 'border-brand-500 ring-2 ring-brand-500/30' : 'border-navy-200'
+                      )}
+                      style={v.secondaryColorHex
+                        ? { background: `linear-gradient(to bottom, ${v.primaryColorHex || v.colorHex || '#ccc'} 0 50%, ${v.secondaryColorHex} 50% 100%)` }
+                        : { backgroundColor: v.primaryColorHex || v.colorHex || '#ccc' }}
+                    />
+                  ))}
+                </div>
               </div>
             )}
 
@@ -463,21 +461,24 @@ export default function ProductDetailsPage() {
               </Button>
             </div>
 
-            {/* Delivery + trust */}
+            {/* Delivery assurances remain beneath purchase controls; description is last. */}
             <div className="mt-6">
               <PincodeChecker returnDays={product.returnDays} />
             </div>
             <div className="mt-4 grid grid-cols-3 gap-3 text-center text-xs text-navy-500">
               <div className="rounded-xl bg-surface-muted p-3">
-                <FiTruck className="mx-auto mb-1 h-5 w-5 text-brand-500" /> Free shipping
+                <FiTruck className="mx-auto mb-1 h-5 w-5 text-brand-500" /> {product.shippingMessage || 'Free shipping'}
               </div>
               <div className="rounded-xl bg-surface-muted p-3">
-                <FiRefreshCw className="mx-auto mb-1 h-5 w-5 text-brand-500" /> {product.returnDays}-day returns
+                <FiRefreshCw className="mx-auto mb-1 h-5 w-5 text-brand-500" /> {product.returnMessage || `${product.returnDays}-day returns`}
               </div>
               <div className="rounded-xl bg-surface-muted p-3">
-                <FiShield className="mx-auto mb-1 h-5 w-5 text-brand-500" /> {product.warrantyMonths}mo warranty
+                <FiShield className="mx-auto mb-1 h-5 w-5 text-brand-500" /> {product.warrantyMessage || `${product.warrantyMonths}mo warranty`}
               </div>
             </div>
+
+            <p className="mt-6 text-sm leading-relaxed text-navy-600">{product.description}</p>
+
           </div>
         </div>
 
