@@ -61,7 +61,7 @@ function ProductCardBase({ product, className, priority = false }) {
     <article className={cn('group h-full', className)}>
       <Link
         to={ROUTES.product(product.slug)}
-        className="flex h-full flex-col overflow-hidden rounded-2xl bg-surface shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-elevated"
+        className="flex h-full flex-col overflow-hidden rounded-2xl border border-navy-100 bg-surface shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-navy-200 hover:shadow-elevated"
       >
         <div className="relative aspect-square overflow-hidden bg-surface-subtle">
           {image && (
