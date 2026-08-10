@@ -43,9 +43,9 @@ function CategoryCard({ item, categoryImages }) {
   return (
     <Link
       to={item.to}
-      className="group relative flex min-h-48 flex-col items-center justify-center overflow-hidden rounded-3xl border border-navy-100 bg-surface px-4 py-5 text-center shadow-soft transition-all duration-300 hover:-translate-y-1 hover:border-brand-200 hover:shadow-card sm:min-h-52"
+      className="group relative flex min-h-52 flex-col items-center justify-center overflow-hidden rounded-3xl border border-navy-100 bg-surface px-4 py-5 text-center shadow-soft transition-all duration-300 hover:-translate-y-1 hover:border-brand-200 hover:shadow-card sm:min-h-56"
     >
-      <span className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-surface-subtle shadow-soft sm:h-28 sm:w-28 lg:h-32 lg:w-32">
+      <span className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-surface-subtle shadow-soft sm:h-32 sm:w-32 lg:h-36 lg:w-36">
         {item.image ? (
           <img
             src={configuredImage || `https://picsum.photos/seed/${item.image}/192/192`}
