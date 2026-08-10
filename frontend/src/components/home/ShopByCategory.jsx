@@ -1,18 +1,19 @@
 import { Link } from 'react-router-dom';
 import { FiTag } from 'react-icons/fi';
+import eyeglassesImage from '@/assets/hero/trending-eyeglasses.jpg';
 import { ROUTES } from '@/constants/routes';
 import { useGetHomeCategoryImagesQuery } from '@/features/settings/settingsApi';
 
 const CATEGORIES = [
-  { label: 'Men', detail: 'Explore styles', to: `${ROUTES.products}?category=eyeglasses&gender=men`, imageKey: 'men' },
-  { label: 'Women', detail: 'Explore styles', to: `${ROUTES.products}?category=eyeglasses&gender=women`, imageKey: 'women' },
-  { label: 'Kids', detail: 'Explore styles', to: `${ROUTES.products}?category=eyeglasses&gender=kids`, imageKey: 'kids' },
+  { label: 'Men', detail: 'Explore styles', to: `${ROUTES.products}?category=eyeglasses&gender=men`, imageKey: 'men', fallbackImage: eyeglassesImage },
+  { label: 'Women', detail: 'Explore styles', to: `${ROUTES.products}?category=eyeglasses&gender=women`, imageKey: 'women', fallbackImage: eyeglassesImage },
+  { label: 'Kids', detail: 'Explore styles', to: `${ROUTES.products}?category=eyeglasses&gender=kids`, imageKey: 'kids', fallbackImage: eyeglassesImage },
   { label: 'On sale', detail: 'Great offers', to: `${ROUTES.products}?onOffer=true`, icon: FiTag },
 ];
 
 function CategoryCard({ item, categoryImages }) {
   const Icon = item.icon;
-  const image = categoryImages?.eyeglasses?.[item.imageKey];
+  const image = categoryImages?.eyeglasses?.[item.imageKey] || item.fallbackImage;
 
   return (
     <Link
@@ -29,11 +30,11 @@ function CategoryCard({ item, categoryImages }) {
             loading="lazy"
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
           />
-        ) : (
+        ) : Icon ? (
           <span className="flex h-full w-full items-center justify-center bg-warning-light text-warning-dark">
             <Icon className="h-9 w-9" aria-hidden="true" />
           </span>
-        )}
+        ) : null}
       </span>
       <span className="mt-4 text-sm font-bold uppercase tracking-[0.14em] text-navy-900">{item.label}</span>
       <span className="mt-1 text-xs text-navy-400">{item.detail}</span>
