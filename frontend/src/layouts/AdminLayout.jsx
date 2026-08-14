@@ -18,9 +18,9 @@ export function AdminLayout() {
     <div className="min-h-screen bg-navy-50">
       <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
       <header className="sticky top-0 z-20 border-b border-navy-100 bg-surface px-4 py-3 lg:hidden"><Link to={ROUTES.admin}><Logo /></Link></header>
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-navy-100 bg-surface p-5 lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col overflow-hidden border-r border-navy-100 bg-surface p-5 lg:flex">
         <Link to={ROUTES.admin} className="mb-8"><Logo /></Link>
-        <nav aria-label="Admin" className="space-y-1">
+        <nav aria-label="Admin" className="min-h-0 flex-1 space-y-1 overflow-y-scroll pr-2 [scrollbar-gutter:stable] [scrollbar-width:thin]">
           {navigation.map(([to, label, Icon, end]) => <NavLink key={to} to={to} end={end} className={({ isActive }) => cn('flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium', isActive ? 'bg-brand-500 text-white' : 'text-navy-600 hover:bg-navy-100')}><Icon className="h-4 w-4" />{label}</NavLink>)}
         </nav>
         <Link to={ROUTES.home} className="mt-auto px-3 text-sm font-medium text-brand-600 hover:text-brand-700">View storefront →</Link>
