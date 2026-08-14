@@ -92,7 +92,7 @@ function HeroAction({ slide }) {
   const commonProps = {
     size: 'lg',
     rightIcon: <FiArrowRight />,
-    className: 'mt-7',
+    className: 'mt-0',
   };
 
   if (destination.type === 'internal') {
@@ -196,7 +196,7 @@ export function TrendingCatalogHero() {
         }
       />
 
-      <div className="container-page flex min-h-[25rem] flex-col py-10 sm:min-h-[29rem] lg:min-h-[32rem] lg:py-14">
+      <div className="container-page flex min-h-[25rem] flex-col pb-20 pt-10 sm:min-h-[29rem] lg:min-h-[32rem] lg:pb-20 lg:pt-14">
         <div className="max-w-xl animate-catalog-enter">
           <span
             className={
@@ -222,6 +222,8 @@ export function TrendingCatalogHero() {
               {activeSlide.description}
             </p>
           )}
+        </div>
+        <div className="mt-auto pt-6">
           <HeroAction slide={activeSlide} />
         </div>
       </div>
