@@ -80,18 +80,26 @@ export function SearchBar({ className, onNavigate }) {
               {data?.products?.length > 0 && (
                 <div className="mb-1">
                   <p className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-navy-300">Products</p>
-                  {data.products.map((p) => (
-                    <Link
-                      key={p._id}
-                      to={ROUTES.product(p.slug)}
-                      onClick={() => { setOpen(false); onNavigate?.(); }}
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-navy-100"
-                    >
-                      <img src={getOptimizedImageUrl(p.images?.[0], 80)} alt="" className="h-10 w-10 rounded-lg object-cover" />
-                      <span className="flex-1 truncate text-sm text-navy-800">{p.name}</span>
-                      <span className="text-sm font-semibold text-navy-900">{formatPrice(p.price)}</span>
-                    </Link>
-                  ))}
+                  <div
+                    className="search-horizontal-scrollbar overflow-x-scroll overscroll-x-contain pb-2"
+                    role="region"
+                    aria-label="Product search results"
+                  >
+                    <div className="min-w-[24rem]">
+                      {data.products.map((p) => (
+                        <Link
+                          key={p._id}
+                          to={ROUTES.product(p.slug)}
+                          onClick={() => { setOpen(false); onNavigate?.(); }}
+                          className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-navy-100"
+                        >
+                          <img src={getOptimizedImageUrl(p.images?.[0], 80)} alt="" className="h-10 w-10 rounded-lg object-cover" />
+                          <span className="min-w-0 flex-1 whitespace-nowrap text-sm text-navy-800">{p.name}</span>
+                          <span className="shrink-0 text-sm font-semibold text-navy-900">{formatPrice(p.price)}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
               {(data?.brands?.length > 0 || data?.categories?.length > 0) && (
