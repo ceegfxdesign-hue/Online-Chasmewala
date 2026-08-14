@@ -192,22 +192,22 @@
   @apply bg-brand-700;
 }
 
-/* Keep search suggestions horizontally reachable on narrow navigation layouts. */
-.search-horizontal-scrollbar {
+/* Keep the product-suggestion list vertically scrollable and visibly discoverable. */
+.search-vertical-scrollbar {
   scrollbar-color: var(--color-brand-500) #eef2f4;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
 }
-.search-horizontal-scrollbar::-webkit-scrollbar {
-  height: 8px;
+.search-vertical-scrollbar::-webkit-scrollbar {
+  width: 8px;
 }
-.search-horizontal-scrollbar::-webkit-scrollbar-track {
+.search-vertical-scrollbar::-webkit-scrollbar-track {
   @apply rounded-full bg-navy-100;
 }
-.search-horizontal-scrollbar::-webkit-scrollbar-thumb {
+.search-vertical-scrollbar::-webkit-scrollbar-thumb {
   @apply rounded-full bg-brand-600;
   border: 2px solid #eef2f4;
 }
-.search-horizontal-scrollbar::-webkit-scrollbar-thumb:hover {
+.search-vertical-scrollbar::-webkit-scrollbar-thumb:hover {
   @apply bg-brand-700;
 }
