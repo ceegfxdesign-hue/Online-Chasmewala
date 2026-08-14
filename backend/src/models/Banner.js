@@ -7,8 +7,8 @@ const bannerSchema = new mongoose.Schema(
     subtitle: { type: String },
     image: { type: String, required: true },
     mobileImage: { type: String },
-    ctaLabel: { type: String, default: 'Shop now' },
-    ctaLink: { type: String, default: '/products' },
+    ctaLabel: { type: String, trim: true },
+    ctaLink: { type: String, trim: true },
     placement: {
       type: String,
       enum: ['hero', 'secondary', 'strip', 'category'],

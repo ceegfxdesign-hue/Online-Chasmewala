@@ -167,11 +167,47 @@ describe('Admin APIs', () => {
     const created = await request(app)
       .post('/api/v1/admin/banners')
       .set(asAdmin())
-      .send({ title: 'Monsoon Sale', image: 'https://picsum.photos/seed/monsoon/1200/500', placement: 'hero' });
+      .send({
+        title: 'Monsoon Sale',
+        image: 'https://picsum.photos/seed/monsoon/1200/500',
+        placement: 'hero',
+        ctaLabel: '',
+        ctaLink: '',
+        order: -2,
+      });
     expect(created.status).toBe(201);
+    expect(created.body.data.ctaLabel).toBe('');
+    expect(created.body.data.ctaLink).toBe('');
+
+    const second = await request(app)
+      .post('/api/v1/admin/banners')
+      .set(asAdmin())
+      .send({
+        title: 'New Season Frames',
+        image: 'https://picsum.photos/seed/new-season/1200/500',
+        placement: 'hero',
+        order: -1,
+      });
+    expect(second.status).toBe(201);
+    expect(second.body.data).not.toHaveProperty('ctaLabel');
+    expect(second.body.data).not.toHaveProperty('ctaLink');
+
+    const clearedSchedule = await request(app)
+      .patch(`/api/v1/admin/banners/${second.body.data._id}`)
+      .set(asAdmin())
+      .send({ startsAt: null, expiresAt: null });
+    expect(clearedSchedule.status).toBe(200);
+    expect(clearedSchedule.body.data.startsAt).toBeNull();
+    expect(clearedSchedule.body.data.expiresAt).toBeNull();
 
     const publicBanners = await request(app).get('/api/v1/banners?placement=hero');
-    expect(publicBanners.body.data.some((b) => b.title === 'Monsoon Sale')).toBe(true);
+    expect(publicBanners.body.data.slice(0, 2).map((banner) => banner.title)).toEqual([
+      'Monsoon Sale',
+      'New Season Frames',
+    ]);
+    const publicBlankCta = publicBanners.body.data.find((banner) => banner.title === 'Monsoon Sale');
+    expect(publicBlankCta.ctaLabel).toBe('');
+    expect(publicBlankCta.ctaLink).toBe('');
 
     const hidden = await request(app)
       .patch(`/api/v1/admin/banners/${created.body.data._id}`)

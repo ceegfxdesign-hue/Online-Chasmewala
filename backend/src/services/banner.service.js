@@ -11,7 +11,7 @@ export const bannerService = {
     const filter = {
       isActive: true,
       $and: [
-        { $or: [{ startsAt: { $exists: false } }, { startsAt: { $lte: now } }] },
+        { $or: [{ startsAt: { $exists: false } }, { startsAt: null }, { startsAt: { $lte: now } }] },
         { $or: [{ expiresAt: { $exists: false } }, { expiresAt: null }, { expiresAt: { $gte: now } }] },
       ],
     };

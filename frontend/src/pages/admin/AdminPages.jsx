@@ -40,7 +40,255 @@ export const CategoriesPage = () => <CatalogPage kind="Category" />; export cons
 export function ProductsPage() { const { data, isLoading } = useGetAdminProductsQuery({ page: 1, limit: 50 }); const { data: categories = [] } = useGetCategoriesQuery(); const { data: brands = [] } = useGetBrandsQuery(); const [create] = useCreateProductMutation(); const [update] = useUpdateProductMutation(); const [remove] = useDeleteProductMutation(); const [editing, setEditing] = useState(null); const toast = useToast(); const rows = data?.items || []; const submit = async (event) => { event.preventDefault(); const f = new FormData(event.currentTarget); const body = Object.fromEntries(f); ['price', 'mrp', 'stock', 'lowStockThreshold'].forEach((key) => { body[key] = Number(body[key] || 0); }); body.images = body.images.split('\n').map((image) => image.trim()).filter(Boolean); body.isActive = f.get('isActive') === 'on'; try { if (editing?._id) await update({ id: editing._id, ...body }).unwrap(); else await create(body).unwrap(); toast.success('Product saved'); setEditing(null); } catch (err) { toast.error(err.message); } }; return <Page name="Products" action={<Button leftIcon={<FiPlus />} onClick={() => setEditing({})}>Add product</Button>}>{isLoading ? <Loading /> : <><Table columns={['Product', 'SKU', 'Price', 'Stock', 'Published', 'Actions']} rows={rows} render={(p) => <tr key={p._id}><td className="px-4 py-3 font-medium">{p.name}</td><td className="px-4 py-3 text-navy-500">{p.sku}</td><td className="px-4 py-3">{formatPrice(p.price)}</td><td className="px-4 py-3">{p.stock}</td><td className="px-4 py-3">{p.isActive ? 'Yes' : 'No'}</td><td className="flex gap-2 px-4 py-3"><Button size="icon" variant="ghost" aria-label="Edit" onClick={() => setEditing(p)}><FiEdit2 /></Button><Button size="sm" variant="danger" onClick={() => remove(p._id)}>Delete</Button></td></tr>} empty="No products found." /><Modal open={editing !== null} onClose={() => setEditing(null)} title={`${editing?._id ? 'Edit' : 'Add'} product`} size="xl"><form onSubmit={submit} className="grid gap-4 md:grid-cols-2"><Input name="name" label="Name" defaultValue={editing?.name} required /><Input name="sku" label="SKU" defaultValue={editing?.sku} required /><Select name="category" label="Category" defaultValue={editing?.category?._id || editing?.category} options={categories.map((x) => ({ value: x._id, label: x.name }))} required /><Select name="brand" label="Brand" defaultValue={editing?.brand?._id || editing?.brand} options={brands.map((x) => ({ value: x._id, label: x.name }))} required /><Input name="price" type="number" label="Selling price" defaultValue={editing?.price} required /><Input name="mrp" type="number" label="MRP" defaultValue={editing?.mrp} required /><Input name="stock" type="number" label="Stock" defaultValue={editing?.stock || 0} /><Input name="lowStockThreshold" type="number" label="Low-stock threshold" defaultValue={editing?.lowStockThreshold || 5} /><div className="md:col-span-2"><Textarea name="description" label="Description" defaultValue={editing?.description} required /></div><div className="md:col-span-2"><Textarea name="images" label="Image URLs (one per line)" defaultValue={editing?.images?.join('\n')} required /></div><label className="flex gap-2 text-sm"><input name="isActive" type="checkbox" defaultChecked={editing?.isActive !== false} /> Published</label><div className="md:col-span-2"><Button type="submit">Save product</Button></div></form></Modal></>}</Page>; }
 
 function SimpleResourcePage({ kind }) { const config = { Coupon: [useGetAdminCouponsQuery, useCreateAdminCouponMutation, useUpdateAdminCouponMutation, useDeleteAdminCouponMutation], Banner: [useGetAdminBannersQuery, useCreateAdminBannerMutation, useUpdateAdminBannerMutation, useDeleteAdminBannerMutation] }[kind]; const { data: items = [], isLoading } = config[0](); const [create] = config[1](); const [update] = config[2](); const [remove] = config[3](); const [editing, setEditing] = useState(null); const toast = useToast(); const submit = async (event) => { event.preventDefault(); const f = new FormData(event.currentTarget); const body = Object.fromEntries(f); if (kind === 'Coupon') { ['value', 'maxDiscount', 'minOrderValue', 'usageLimit', 'perUserLimit'].forEach((key) => { if (body[key]) body[key] = Number(body[key]); else delete body[key]; }); body.isActive = f.get('isActive') === 'on'; } else { body.order = Number(body.order || 0); body.isActive = f.get('isActive') === 'on'; } try { if (editing?._id) await update({ id: editing._id, ...body }).unwrap(); else await create(body).unwrap(); toast.success(`${kind} saved`); setEditing(null); } catch (e) { toast.error(e.message); } }; const fields = kind === 'Coupon' ? <><Input name="code" label="Code" defaultValue={editing?.code} required /><Textarea name="description" label="Description" defaultValue={editing?.description} /><Select name="type" label="Discount type" defaultValue={editing?.type || 'percentage'} options={[{ value: 'percentage', label: 'Percentage' }, { value: 'fixed', label: 'Fixed amount' }]} /><Input name="value" type="number" label="Discount value" defaultValue={editing?.value} required /><Input name="expiresAt" type="date" label="Expires on" defaultValue={editing?.expiresAt?.slice(0, 10)} required /></> : <><Input name="title" label="Title" defaultValue={editing?.title} required /><Textarea name="subtitle" label="Subtitle" defaultValue={editing?.subtitle} /><Input name="image" label="Image URL" defaultValue={editing?.image} required /><Input name="ctaLabel" label="CTA label" defaultValue={editing?.ctaLabel} /><Input name="ctaLink" label="CTA link" defaultValue={editing?.ctaLink} /><Input name="order" type="number" label="Order" defaultValue={editing?.order || 0} /></>; return <Page name={`${kind}s`} action={<Button leftIcon={<FiPlus />} onClick={() => setEditing({})}>Add {kind}</Button>}>{isLoading ? <Loading /> : <><Table columns={kind === 'Coupon' ? ['Code', 'Discount', 'Expires', 'Status', 'Actions'] : ['Title', 'Placement', 'Order', 'Status', 'Actions']} rows={items} render={(item) => <tr key={item._id}><td className="px-4 py-3 font-medium">{kind === 'Coupon' ? item.code : item.title}</td><td className="px-4 py-3">{kind === 'Coupon' ? `${item.value}${item.type === 'percentage' ? '%' : ''}` : item.placement}</td><td className="px-4 py-3">{kind === 'Coupon' ? formatDate(item.expiresAt) : item.order}</td><td className="px-4 py-3">{item.isActive ? 'Active' : 'Hidden'}</td><td className="flex gap-2 px-4 py-3"><Button size="icon" variant="ghost" aria-label="Edit" onClick={() => setEditing(item)}><FiEdit2 /></Button><Button size="icon" variant="ghost" aria-label="Delete" onClick={() => remove(item._id)}><FiTrash2 /></Button></td></tr>} /><Modal open={editing !== null} onClose={() => setEditing(null)} title={`${editing?._id ? 'Edit' : 'Add'} ${kind}`}><form onSubmit={submit} className="space-y-4">{fields}<label className="flex gap-2 text-sm"><input name="isActive" type="checkbox" defaultChecked={editing?.isActive !== false} /> Active</label><Button type="submit" fullWidth>Save {kind}</Button></form></Modal></>}</Page>; }
-export const CouponsPage = () => <SimpleResourcePage kind="Coupon" />; export const BannersPage = () => <SimpleResourcePage kind="Banner" />;
+export const CouponsPage = () => <SimpleResourcePage kind="Coupon" />;
+
+const toDateTimeLocal = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return localDate.toISOString().slice(0, 16);
+};
+
+const getBannerStatus = (banner) => {
+  if (!banner.isActive) return 'Hidden';
+  const now = Date.now();
+  if (banner.startsAt && new Date(banner.startsAt).getTime() > now) return 'Scheduled';
+  if (banner.expiresAt && new Date(banner.expiresAt).getTime() < now) return 'Expired';
+  return 'Active';
+};
+
+export function BannersPage() {
+  const { data: banners = [], isLoading } = useGetAdminBannersQuery();
+  const [createBanner, { isLoading: creating }] = useCreateAdminBannerMutation();
+  const [updateBanner, { isLoading: updating }] = useUpdateAdminBannerMutation();
+  const [deleteBanner] = useDeleteAdminBannerMutation();
+  const [editing, setEditing] = useState(null);
+  const toast = useToast();
+
+  const submit = async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const body = Object.fromEntries(form);
+    const isEditing = Boolean(editing?._id);
+
+    body.title = body.title.trim();
+    body.image = body.image.trim();
+    body.order = Number.parseInt(body.order || '0', 10);
+    body.isActive = form.get('isActive') === 'on';
+
+    ['subtitle', 'mobileImage', 'ctaLabel', 'ctaLink'].forEach((key) => {
+      body[key] = body[key]?.trim() || '';
+      if (!isEditing && !body[key]) delete body[key];
+    });
+    ['startsAt', 'expiresAt'].forEach((key) => {
+      if (body[key]) {
+        body[key] = new Date(body[key]).toISOString();
+        return;
+      }
+      if (isEditing) body[key] = null;
+      else delete body[key];
+    });
+
+    if (
+      body.startsAt &&
+      body.expiresAt &&
+      new Date(body.expiresAt).getTime() <= new Date(body.startsAt).getTime()
+    ) {
+      toast.error('The expiry time must be later than the start time');
+      return;
+    }
+
+    try {
+      if (isEditing) await updateBanner({ id: editing._id, ...body }).unwrap();
+      else await createBanner(body).unwrap();
+      toast.success(`Banner ${isEditing ? 'updated' : 'added'}`);
+      setEditing(null);
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const remove = async (banner) => {
+    try {
+      await deleteBanner(banner._id).unwrap();
+      toast.success('Banner deleted');
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  return (
+    <Page
+      name="Banners"
+      action={(
+        <Button leftIcon={<FiPlus />} onClick={() => setEditing({})}>
+          Add another banner
+        </Button>
+      )}
+    >
+      <div className="mb-4 rounded-2xl border border-navy-100 bg-surface px-4 py-3 text-sm text-navy-600">
+        <span className="font-semibold text-navy-900">{banners.length} banner{banners.length === 1 ? '' : 's'}</span>
+        {' '}configured. Add as many banners as needed, then control their position, display order and active dates independently.
+      </div>
+
+      {isLoading ? (
+        <Loading />
+      ) : (
+        <Table
+          columns={['Preview', 'Content', 'Placement', 'Schedule', 'Order', 'Status', 'Actions']}
+          rows={banners}
+          empty="No banners yet. Add your first banner to begin."
+          render={(banner) => (
+            <tr key={banner._id}>
+              <td className="px-4 py-3">
+                <img
+                  src={banner.image}
+                  alt=""
+                  className="h-14 w-24 rounded-lg border border-navy-100 bg-surface-subtle object-cover"
+                />
+              </td>
+              <td className="max-w-xs px-4 py-3">
+                <span className="block font-medium text-navy-900">{banner.title}</span>
+                {banner.subtitle && (
+                  <span className="mt-0.5 block truncate text-xs text-navy-500">{banner.subtitle}</span>
+                )}
+                {banner.ctaLabel && (
+                  <span className="mt-1 block text-xs font-medium text-brand-600">{banner.ctaLabel}</span>
+                )}
+              </td>
+              <td className="px-4 py-3 capitalize">
+                {banner.placement || 'hero'}
+                <span className="block text-xs text-navy-400">{banner.theme || 'dark'} theme</span>
+              </td>
+              <td className="whitespace-nowrap px-4 py-3 text-xs text-navy-600">
+                <span className="block">From: {banner.startsAt ? formatDate(banner.startsAt) : 'Immediately'}</span>
+                <span className="mt-1 block">Until: {banner.expiresAt ? formatDate(banner.expiresAt) : 'No expiry'}</span>
+              </td>
+              <td className="px-4 py-3 font-medium">{banner.order ?? 0}</td>
+              <td className="px-4 py-3">{getBannerStatus(banner)}</td>
+              <td className="flex gap-2 px-4 py-3">
+                <Button size="icon" variant="ghost" aria-label={`Edit ${banner.title}`} onClick={() => setEditing(banner)}>
+                  <FiEdit2 />
+                </Button>
+                <Button size="icon" variant="ghost" aria-label={`Delete ${banner.title}`} onClick={() => remove(banner)}>
+                  <FiTrash2 />
+                </Button>
+              </td>
+            </tr>
+          )}
+        />
+      )}
+
+      <Modal
+        open={editing !== null}
+        onClose={() => setEditing(null)}
+        title={`${editing?._id ? 'Edit' : 'Add'} banner`}
+        description="Each saved banner is a separate slide that can be ordered and scheduled independently."
+        size="xl"
+      >
+        <form onSubmit={submit} className="grid gap-4 md:grid-cols-2">
+          <Input name="title" label="Banner title" defaultValue={editing?.title} required />
+          <Input
+            name="subtitle"
+            label="Subtitle (optional)"
+            defaultValue={editing?.subtitle}
+            placeholder="Supporting text shown below the title"
+          />
+          <div className="md:col-span-2">
+            <Input
+              name="image"
+              label="Desktop banner image URL"
+              defaultValue={editing?.image}
+              placeholder="https://example.com/banner-desktop.jpg"
+              required
+            />
+          </div>
+          <div className="md:col-span-2">
+            <Input
+              name="mobileImage"
+              label="Mobile banner image URL (optional)"
+              defaultValue={editing?.mobileImage}
+              placeholder="https://example.com/banner-mobile.jpg"
+              helper="If empty, the desktop image is also used on phones and tablets."
+            />
+          </div>
+          <Input
+            name="ctaLabel"
+            label="Button label (optional)"
+            defaultValue={editing?.ctaLabel}
+            placeholder="e.g. Shop eyeglasses"
+          />
+          <Input
+            name="ctaLink"
+            label="Banner/CTA destination link (optional)"
+            defaultValue={editing?.ctaLink}
+            placeholder="e.g. /products?category=eyeglasses"
+            helper="Leave empty when this banner should not link anywhere."
+          />
+          <Select
+            name="placement"
+            label="Placement"
+            defaultValue={editing?.placement || 'hero'}
+            options={[
+              { value: 'hero', label: 'Homepage hero' },
+              { value: 'secondary', label: 'Secondary banner' },
+              { value: 'strip', label: 'Promotional strip' },
+              { value: 'category', label: 'Category banner' },
+            ]}
+          />
+          <Select
+            name="theme"
+            label="Image/theme treatment"
+            defaultValue={editing?.theme || 'dark'}
+            helper="Choose the option that gives the best contrast against the banner image."
+            options={[
+              { value: 'dark', label: 'Dark image — white text' },
+              { value: 'light', label: 'Light image — navy text' },
+            ]}
+          />
+          <Input
+            name="order"
+            type="number"
+            step="1"
+            label="Display order"
+            defaultValue={editing?.order ?? 0}
+            helper="Lower numbers appear first when multiple banners share a placement."
+          />
+          <div className="hidden md:block" />
+          <Input
+            name="startsAt"
+            type="datetime-local"
+            label="Start showing (optional)"
+            defaultValue={toDateTimeLocal(editing?.startsAt)}
+            helper="Leave empty to make it available immediately."
+          />
+          <Input
+            name="expiresAt"
+            type="datetime-local"
+            label="Stop showing (optional)"
+            defaultValue={toDateTimeLocal(editing?.expiresAt)}
+            helper="Leave empty to keep showing it without an expiry date."
+          />
+          <label className="flex items-center gap-2 rounded-xl border border-navy-100 px-4 py-3 text-sm font-medium text-navy-700 md:col-span-2">
+            <input
+              name="isActive"
+              type="checkbox"
+              defaultChecked={editing?.isActive !== false}
+              className="h-4 w-4 accent-brand-600"
+            />
+            Active and eligible to appear during its scheduled window
+          </label>
+          <div className="md:col-span-2">
+            <Button type="submit" fullWidth loading={creating || updating}>
+              {editing?._id ? 'Save banner changes' : 'Add banner'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </Page>
+  );
+}
 
 export function ReviewsPage() {
   const { data, isLoading } = useGetAdminReviewsQuery({ page: 1, limit: 30 });
