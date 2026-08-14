@@ -10,27 +10,38 @@ import { HappyCustomers } from '@/components/home/HappyCustomers';
 import { TrendingCatalogHero } from '@/components/home/TrendingCatalogHero';
 import { SunglassesPromo } from '@/components/home/SunglassesPromo';
 import { useGetCollectionsQuery } from '@/features/products/productApi';
+import { useGetTrustBenefitsQuery } from '@/features/settings/settingsApi';
 import { selectRecentlyViewed } from '@/features/recentlyViewed/recentlyViewedSlice';
 import { absoluteUrl } from '@/lib/seo';
 import { loadState, saveState } from '@/lib/storage';
 import { ROUTES } from '@/constants/routes';
 
-const VALUE_PROPS = [
-  { icon: FiShield, title: '100% Original Brands', text: 'Guaranteed authenticity' },
-  { icon: FiRefreshCw, title: '14-Day Return Policy', text: 'Hassle-free returns' },
-  { icon: FiShield, title: '1-Year Warranty On Frames', text: 'Quality you can trust' },
-  { icon: FiTruck, title: 'Free Shipping', text: 'Above ₹999' },
+const VALUE_PROP_DEFAULTS = [
+  { title: '100% Original Brands', subtitle: 'Guaranteed authenticity' },
+  { title: '14-Day Return Policy', subtitle: 'Hassle-free returns' },
+  { title: '1-Year Warranty On Frames', subtitle: 'Quality you can trust' },
+  { title: 'Free Shipping', subtitle: 'Above ₹999' },
 ];
+const VALUE_PROP_ICONS = [FiShield, FiRefreshCw, FiShield, FiTruck];
 
 const HOME_COLLECTIONS_CACHE_KEY = 'homeProductCollections';
 
 /** The premium storefront home page, composed from reusable commerce sections. */
 export default function HomePage() {
   const { data: collections, isLoading: collectionsLoading } = useGetCollectionsQuery();
+  const { data: trustBenefits } = useGetTrustBenefitsQuery();
   const recentlyViewed = useSelector(selectRecentlyViewed);
   const [cachedCollections, setCachedCollections] = useState(() => loadState(HOME_COLLECTIONS_CACHE_KEY, null));
   const displayCollections = collections || cachedCollections;
   const showCollectionSkeletons = collectionsLoading && !displayCollections;
+  const valueProps = VALUE_PROP_DEFAULTS.map((fallback, index) => {
+    const benefit = trustBenefits?.[index];
+    return {
+      icon: VALUE_PROP_ICONS[index],
+      title: benefit?.title || fallback.title,
+      text: benefit?.subtitle || fallback.subtitle,
+    };
+  });
 
   useEffect(() => {
     if (!collections) return;
@@ -56,8 +67,8 @@ export default function HomePage() {
 
       <section className="border-y border-navy-100 bg-surface">
         <div className="container-page grid grid-cols-1 divide-y divide-navy-100 py-2 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
-          {VALUE_PROPS.map((value) => (
-            <div key={value.title} className="flex items-center gap-3 px-3 py-5 sm:px-5">
+          {valueProps.map((value, index) => (
+            <div key={index} className="flex items-center gap-3 px-3 py-5 sm:px-5">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-brand-100 bg-brand-50 text-brand-600">
                 <value.icon className="h-5 w-5" />
               </div>

@@ -121,5 +121,14 @@ export const updateSettingsSchema = {
         }).optional(),
       })
       .optional(),
+    trustBenefits: z
+      .array(
+        z.object({
+          title: z.string().trim().min(1).max(80),
+          subtitle: z.string().trim().min(1).max(160),
+        })
+      )
+      .length(4, 'Exactly four trust benefits are required')
+      .optional(),
   }),
 };

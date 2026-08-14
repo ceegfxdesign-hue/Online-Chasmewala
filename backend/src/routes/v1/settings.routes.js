@@ -15,6 +15,14 @@ router.get(
 );
 
 router.get(
+  '/trust-benefits',
+  asyncHandler(async (_req, res) => {
+    const settings = await settingsService.get();
+    return sendSuccess(res, { data: settings.trustBenefits });
+  })
+);
+
+router.get(
   '/footer',
   asyncHandler(async (_req, res) => {
     const settings = await settingsService.get();

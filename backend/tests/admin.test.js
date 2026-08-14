@@ -216,6 +216,39 @@ describe('Admin APIs', () => {
     expect(hidden.body.data.isActive).toBe(false);
   });
 
+  it('exposes and updates the four homepage trust benefits', async () => {
+    const defaults = await request(app).get('/api/v1/settings/trust-benefits');
+    expect(defaults.status).toBe(200);
+    expect(defaults.body.data).toEqual([
+      { title: '100% Original Brands', subtitle: 'Guaranteed authenticity' },
+      { title: '14-Day Return Policy', subtitle: 'Hassle-free returns' },
+      { title: '1-Year Warranty On Frames', subtitle: 'Quality you can trust' },
+      { title: 'Free Shipping', subtitle: 'Above ₹999' },
+    ]);
+
+    const trustBenefits = [
+      { title: 'Authentic Eyewear', subtitle: 'Sourced from trusted brands' },
+      { title: 'Easy Returns', subtitle: 'Return eligible orders within 14 days' },
+      { title: 'Frame Warranty', subtitle: 'One year of frame protection' },
+      { title: 'Complimentary Delivery', subtitle: 'Available above ₹1,499' },
+    ];
+    const updated = await request(app)
+      .patch('/api/v1/admin/settings')
+      .set(asAdmin())
+      .send({ trustBenefits });
+    expect(updated.status).toBe(200);
+    expect(updated.body.data.trustBenefits).toEqual(trustBenefits);
+
+    const publicSettings = await request(app).get('/api/v1/settings/trust-benefits');
+    expect(publicSettings.body.data).toEqual(trustBenefits);
+
+    const invalid = await request(app)
+      .patch('/api/v1/admin/settings')
+      .set(asAdmin())
+      .send({ trustBenefits: trustBenefits.slice(0, 3) });
+    expect(invalid.status).toBe(422);
+  });
+
   it('manages users: details, deactivate, and self-protection', async () => {
     const users = await request(app).get('/api/v1/admin/users?search=demo').set(asAdmin());
     const demo = users.body.data[0];

@@ -329,6 +329,30 @@ export function UsersPage() {
 
 export function InventoryPage() { const { data: items = [], isLoading } = useGetLowStockQuery(); return <Page name="Inventory">{isLoading ? <Loading /> : <><div className="mb-4 flex items-center gap-2 rounded-xl bg-warning-light p-3 text-sm text-warning-dark"><FiAlertTriangle /> Products at or below their low-stock threshold need attention.</div><Table columns={['Product', 'SKU', 'Brand', 'Stock', 'Threshold', 'Status']} rows={items} render={(p) => <tr key={p._id}><td className="px-4 py-3 font-medium">{p.name}</td><td className="px-4 py-3">{p.sku}</td><td className="px-4 py-3">{p.brand}</td><td className="px-4 py-3 font-semibold">{p.stock}</td><td className="px-4 py-3">{p.lowStockThreshold}</td><td className="px-4 py-3 capitalize">{p.status.replaceAll('_', ' ')}</td></tr>} empty="Inventory levels look healthy." /></>}</Page>; }
 export function ReportsPage() { const { data, isLoading } = useGetSalesReportQuery({}); const summary = data?.summary; return <Page name="Sales Reports">{isLoading ? <Loading /> : <><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[['Revenue', formatPrice(summary?.revenue || 0)], ['Orders', summary?.orders || 0], ['Items sold', summary?.items || 0], ['Discounts', formatPrice(summary?.discount || 0)]].map(([label, value]) => <Card key={label}><CardBody><p className="text-sm text-navy-500">{label}</p><p className="mt-2 text-h4 text-navy-900">{value}</p></CardBody></Card>)}</div><div className="mt-6"><Chart title="90-day revenue"><BarChart data={data?.byDay || []}><CartesianGrid stroke="#D9E1E8" /><XAxis dataKey="date" tick={{ fontSize: 11 }} /><YAxis /><Tooltip formatter={(v) => formatPrice(v)} /><Bar dataKey="revenue" fill="#087F7B" /></BarChart></Chart></div></>}</Page>; }
+
+const TRUST_BENEFIT_SLOTS = [
+  {
+    icon: 'Authenticity badge',
+    title: '100% Original Brands',
+    subtitle: 'Guaranteed authenticity',
+  },
+  {
+    icon: 'Return arrows',
+    title: '14-Day Return Policy',
+    subtitle: 'Hassle-free returns',
+  },
+  {
+    icon: 'Warranty shield',
+    title: '1-Year Warranty On Frames',
+    subtitle: 'Quality you can trust',
+  },
+  {
+    icon: 'Delivery truck',
+    title: 'Free Shipping',
+    subtitle: 'Above ₹999',
+  },
+];
+
 export function SettingsPage() {
   const { data, isLoading } = useGetSettingsQuery();
   const [update, { isLoading: saving }] = useUpdateSettingsMutation();
@@ -359,7 +383,26 @@ export function SettingsPage() {
         kids: body.sunglassesKidsImage,
       },
     };
-    ['instagram', 'facebook', 'twitter', 'youtube', 'eyeglassesMenImage', 'eyeglassesWomenImage', 'eyeglassesKidsImage', 'sunglassesMenImage', 'sunglassesWomenImage', 'sunglassesKidsImage'].forEach((key) => delete body[key]);
+    body.trustBenefits = TRUST_BENEFIT_SLOTS.map((_, index) => ({
+      title: body[`trustBenefit${index}Title`].trim(),
+      subtitle: body[`trustBenefit${index}Subtitle`].trim(),
+    }));
+    [
+      'instagram',
+      'facebook',
+      'twitter',
+      'youtube',
+      'eyeglassesMenImage',
+      'eyeglassesWomenImage',
+      'eyeglassesKidsImage',
+      'sunglassesMenImage',
+      'sunglassesWomenImage',
+      'sunglassesKidsImage',
+      ...TRUST_BENEFIT_SLOTS.flatMap((_, index) => [
+        `trustBenefit${index}Title`,
+        `trustBenefit${index}Subtitle`,
+      ]),
+    ].forEach((key) => delete body[key]);
 
     try {
       await update(body).unwrap();
@@ -389,6 +432,39 @@ export function SettingsPage() {
             <Input name="facebook" label="Facebook URL" defaultValue={data?.socialLinks?.facebook} />
             <Input name="twitter" label="Twitter URL" defaultValue={data?.socialLinks?.twitter} />
             <Input name="youtube" label="YouTube URL" defaultValue={data?.socialLinks?.youtube} />
+
+            <div className="md:col-span-2 mt-3 border-t border-navy-100 pt-5">
+              <h2 className="text-lg font-semibold text-navy-900">Homepage trust-benefit strip</h2>
+              <p className="mt-1 text-sm text-navy-500">
+                Edit the heading and supporting text for each benefit. The four icons and their positions remain fixed.
+              </p>
+            </div>
+            {TRUST_BENEFIT_SLOTS.map((slot, index) => {
+              const benefit = data?.trustBenefits?.[index] || slot;
+              return (
+                <div
+                  key={slot.icon}
+                  className="grid gap-4 rounded-2xl border border-navy-100 bg-surface-subtle p-4 md:col-span-2 md:grid-cols-2"
+                >
+                  <div className="md:col-span-2">
+                    <p className="font-semibold text-navy-900">Benefit {index + 1}</p>
+                    <p className="mt-0.5 text-xs text-navy-500">Fixed icon: {slot.icon}</p>
+                  </div>
+                  <Input
+                    name={`trustBenefit${index}Title`}
+                    label="Heading"
+                    defaultValue={benefit.title}
+                    required
+                  />
+                  <Input
+                    name={`trustBenefit${index}Subtitle`}
+                    label="Supporting text"
+                    defaultValue={benefit.subtitle}
+                    required
+                  />
+                </div>
+              );
+            })}
 
             <div className="md:col-span-2 mt-3 border-t border-navy-100 pt-5">
               <h2 className="text-lg font-semibold text-navy-900">Footer direct contact</h2>

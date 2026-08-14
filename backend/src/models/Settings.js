@@ -1,5 +1,20 @@
 import mongoose from 'mongoose';
 
+export const DEFAULT_TRUST_BENEFITS = [
+  { title: '100% Original Brands', subtitle: 'Guaranteed authenticity' },
+  { title: '14-Day Return Policy', subtitle: 'Hassle-free returns' },
+  { title: '1-Year Warranty On Frames', subtitle: 'Quality you can trust' },
+  { title: 'Free Shipping', subtitle: 'Above ₹999' },
+];
+
+const trustBenefitSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true, trim: true, maxlength: 80 },
+    subtitle: { type: String, required: true, trim: true, maxlength: 160 },
+  },
+  { _id: false }
+);
+
 /**
  * Singleton store settings, editable from the admin panel. Access via
  * `Settings.getSingleton()`.
@@ -38,6 +53,14 @@ const settingsSchema = new mongoose.Schema(
         men: { type: String, default: '' },
         women: { type: String, default: '' },
         kids: { type: String, default: '' },
+      },
+    },
+    trustBenefits: {
+      type: [trustBenefitSchema],
+      default: () => DEFAULT_TRUST_BENEFITS.map((benefit) => ({ ...benefit })),
+      validate: {
+        validator: (benefits) => benefits.length === 4,
+        message: 'Exactly four trust benefits are required',
       },
     },
   },

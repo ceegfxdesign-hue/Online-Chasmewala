@@ -15,7 +15,12 @@ export const settingsApi = baseApi.injectEndpoints({
       transformResponse: data,
       providesTags: ['Admin'],
     }),
+    getTrustBenefits: builder.query({
+      query: () => ({ url: '/settings/trust-benefits' }),
+      transformResponse: data,
+      providesTags: ['Admin'],
+    }),
   }),
 });
 
-export const { useGetHomeCategoryImagesQuery, useGetFooterSettingsQuery } = settingsApi;
+export const { useGetHomeCategoryImagesQuery, useGetFooterSettingsQuery, useGetTrustBenefitsQuery } = settingsApi;
