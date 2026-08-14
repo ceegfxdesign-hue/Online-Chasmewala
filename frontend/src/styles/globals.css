@@ -171,3 +171,23 @@
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-navy-300;
 }
+
+/* Keep the admin navigation rail visible instead of relying on OS auto-hide. */
+.admin-sidebar-scrollbar {
+  scrollbar-color: #087f7b #eef2f4;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+.admin-sidebar-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.admin-sidebar-scrollbar::-webkit-scrollbar-track {
+  @apply rounded-full bg-navy-100;
+}
+.admin-sidebar-scrollbar::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-brand-600;
+  border: 2px solid #eef2f4;
+}
+.admin-sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  @apply bg-brand-700;
+}
