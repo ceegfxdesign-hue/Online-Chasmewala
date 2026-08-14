@@ -111,7 +111,7 @@ export default {
         'slide-up': 'slide-up 0.35s ease-out',
         'scale-in': 'scale-in 0.2s ease-out',
         'catalog-enter': 'catalog-enter 0.55s ease-out',
-        'catalog-pan': 'catalog-pan 5.5s ease-out both',
+        'catalog-pan': 'catalog-pan 5s ease-out both',
       },
       transitionTimingFunction: {
         premium: 'cubic-bezier(0.22, 1, 0.36, 1)',

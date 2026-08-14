@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiArrowRight, FiChevronLeft, FiChevronRight, FiPause, FiPlay, FiZap } from 'react-icons/fi';
 import { Button } from '@/components/ui/Button';
@@ -46,6 +46,9 @@ const FALLBACK_SLIDES = [
     tone: 'light',
   },
 ];
+
+// React 18 passes the browser-supported fetch priority hint as a lowercase attribute.
+const HERO_IMAGE_PRIORITY = { fetchpriority: 'high' };
 
 const getSafeDestination = (value) => {
   const destination = typeof value === 'string' ? value.trim() : '';
@@ -118,7 +121,7 @@ export function TrendingCatalogHero() {
   const { data: banners } = useGetHeroBannersQuery();
   const [activeIndex, setActiveIndex] = useState(0);
   const [userPaused, setUserPaused] = useState(false);
-  const [interactionPaused, setInteractionPaused] = useState(false);
+  const touchStartX = useRef(null);
   const slides = useMemo(() => {
     const activeBanners = Array.isArray(banners) ? banners.filter((banner) => banner?.image) : [];
     return activeBanners.length ? activeBanners.map(toHeroSlide) : FALLBACK_SLIDES;
@@ -132,24 +135,35 @@ export function TrendingCatalogHero() {
 
   useEffect(() => {
     const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    if (userPaused || interactionPaused || reducedMotion || slides.length < 2) return undefined;
+    if (userPaused || reducedMotion || slides.length < 2) return undefined;
 
-    const timer = window.setInterval(() => {
+    const timer = window.setTimeout(() => {
       setActiveIndex((index) => (index + 1) % slides.length);
-    }, 5500);
+    }, 5000);
 
-    return () => window.clearInterval(timer);
-  }, [interactionPaused, slides.length, userPaused]);
+    return () => window.clearTimeout(timer);
+  }, [safeActiveIndex, slides.length, userPaused]);
 
   const dark = activeSlide.tone === 'dark';
   const controlButtonClass = dark
-    ? 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20'
-    : 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-navy-900/10 bg-white/75 text-navy-900 shadow-soft transition-colors hover:bg-navy-100';
+    ? 'flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-navy-900/45 text-white shadow-soft backdrop-blur-sm transition-all hover:scale-105 hover:bg-navy-900/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white'
+    : 'flex h-11 w-11 items-center justify-center rounded-full border border-navy-900/10 bg-white/80 text-navy-900 shadow-soft backdrop-blur-sm transition-all hover:scale-105 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600';
   const goToPrevious = () => {
     setActiveIndex((index) => (index - 1 + slides.length) % slides.length);
   };
   const goToNext = () => {
     setActiveIndex((index) => (index + 1) % slides.length);
+  };
+  const handleTouchStart = (event) => {
+    touchStartX.current = event.touches[0]?.clientX ?? null;
+  };
+  const handleTouchEnd = (event) => {
+    const endX = event.changedTouches[0]?.clientX;
+    const startX = touchStartX.current;
+    touchStartX.current = null;
+    if (startX === null || endX === undefined || Math.abs(startX - endX) < 50) return;
+    if (startX > endX) goToNext();
+    else goToPrevious();
   };
 
   return (
@@ -157,10 +171,9 @@ export function TrendingCatalogHero() {
       aria-roledescription="carousel"
       aria-label="Trending style catalog"
       className="catalog-hero relative isolate min-h-[25rem] overflow-hidden bg-navy-900 sm:min-h-[29rem] lg:min-h-[32rem]"
-      onMouseEnter={() => setInteractionPaused(true)}
-      onMouseLeave={() => setInteractionPaused(false)}
-      onFocusCapture={() => setInteractionPaused(true)}
-      onBlurCapture={() => setInteractionPaused(false)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={() => { touchStartX.current = null; }}
     >
       <picture key={activeSlide.id}>
         {activeSlide.mobileImage && (
@@ -171,7 +184,7 @@ export function TrendingCatalogHero() {
           width="1980"
           height="800"
           alt={activeSlide.imageAlt}
-          fetchPriority="high"
+          {...HERO_IMAGE_PRIORITY}
           className="catalog-hero-image absolute inset-0 -z-20 h-full w-full animate-catalog-pan object-cover object-[68%_center]"
         />
       </picture>
@@ -183,7 +196,7 @@ export function TrendingCatalogHero() {
         }
       />
 
-      <div className="container-page flex min-h-[25rem] flex-col justify-between py-10 sm:min-h-[29rem] lg:min-h-[32rem] lg:py-14">
+      <div className="container-page flex min-h-[25rem] flex-col py-10 sm:min-h-[29rem] lg:min-h-[32rem] lg:py-14">
         <div className="max-w-xl animate-catalog-enter">
           <span
             className={
@@ -211,26 +224,29 @@ export function TrendingCatalogHero() {
           )}
           <HeroAction slide={activeSlide} />
         </div>
-
-        <div className="catalog-hero-controls flex max-w-full min-w-0 items-center gap-2">
-          {slides.length > 1 && (
-            <button
-              type="button"
-              onClick={goToPrevious}
-              aria-label="Show previous banner"
-              className={controlButtonClass}
-            >
-              <FiChevronLeft aria-hidden="true" />
-            </button>
-          )}
+      </div>
+      {slides.length > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={goToPrevious}
+            aria-label="Show previous banner"
+            className={`${controlButtonClass} absolute left-3 top-1/2 z-20 -translate-y-1/2 sm:left-5 lg:left-8`}
+          >
+            <FiChevronLeft className="h-6 w-6" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={goToNext}
+            aria-label="Show next banner"
+            className={`${controlButtonClass} absolute right-3 top-1/2 z-20 -translate-y-1/2 sm:right-5 lg:right-8`}
+          >
+            <FiChevronRight className="h-6 w-6" aria-hidden="true" />
+          </button>
           <div
             role="tablist"
             aria-label="Choose a featured banner"
-            className={
-              dark
-                ? 'catalog-hero-tabs flex min-w-0 max-w-full overflow-x-auto rounded-2xl border border-white/20 bg-white/10 p-1.5 backdrop-blur-md'
-                : 'catalog-hero-tabs flex min-w-0 max-w-full overflow-x-auto rounded-2xl border border-navy-900/10 bg-white/75 p-1.5 shadow-soft backdrop-blur-md'
-            }
+            className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2.5"
           >
             {slides.map((slide, index) => {
               const isActive = index === safeActiveIndex;
@@ -244,51 +260,38 @@ export function TrendingCatalogHero() {
                   aria-controls="catalog-slide"
                   aria-label={`Show banner ${index + 1}: ${slide.label}`}
                   onClick={() => setActiveIndex(index)}
-                  className={
+                  className={`rounded-full shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ${
                     isActive
-                      ? 'max-w-44 shrink-0 truncate rounded-xl bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white shadow-soft'
+                      ? dark
+                        ? 'h-3 w-3 bg-white'
+                        : 'h-3 w-3 bg-navy-900'
                       : dark
-                        ? 'max-w-44 shrink-0 truncate rounded-xl px-4 py-2.5 text-sm font-semibold text-white/75 transition-colors hover:bg-white/10 hover:text-white'
-                        : 'max-w-44 shrink-0 truncate rounded-xl px-4 py-2.5 text-sm font-semibold text-navy-600 transition-colors hover:bg-navy-100'
-                  }
+                        ? 'h-2.5 w-2.5 bg-white/45 hover:bg-white/80'
+                        : 'h-2.5 w-2.5 bg-navy-900/35 hover:bg-navy-900/70'
+                  }`}
                 >
-                  {slide.label}
+                  <span className="sr-only">{slide.label}</span>
                 </button>
               );
             })}
           </div>
-          {slides.length > 1 && (
-            <>
-              <button
-                type="button"
-                onClick={goToNext}
-                aria-label="Show next banner"
-                className={controlButtonClass}
-              >
-                <FiChevronRight aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setUserPaused((value) => !value)}
-                aria-label={
-                  userPaused
-                    ? 'Resume automatic banner rotation'
-                    : 'Pause automatic banner rotation'
-                }
-                aria-pressed={userPaused}
-                className={controlButtonClass}
-              >
-                {userPaused ? <FiPlay aria-hidden="true" /> : <FiPause aria-hidden="true" />}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+          <button
+            type="button"
+            onClick={() => setUserPaused((value) => !value)}
+            aria-label={userPaused ? 'Resume automatic banner rotation' : 'Pause automatic banner rotation'}
+            aria-pressed={userPaused}
+            className="sr-only focus:not-sr-only focus:absolute focus:bottom-12 focus:left-1/2 focus:z-30 focus:-translate-x-1/2 focus:rounded-lg focus:bg-navy-900 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+          >
+            {userPaused ? <FiPlay className="mr-2 inline" aria-hidden="true" /> : <FiPause className="mr-2 inline" aria-hidden="true" />}
+            {userPaused ? 'Resume banners' : 'Pause banners'}
+          </button>
+        </>
+      )}
       <span
         id="catalog-slide"
         role="tabpanel"
-        aria-labelledby={`catalog-tab-${activeSlide.id}`}
-        aria-live={userPaused || interactionPaused ? 'polite' : 'off'}
+        aria-labelledby={slides.length > 1 ? `catalog-tab-${activeSlide.id}` : undefined}
+        aria-live={userPaused ? 'polite' : 'off'}
         className="sr-only"
       >
         {activeSlide.label}: {activeSlide.description}
