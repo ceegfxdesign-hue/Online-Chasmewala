@@ -12,7 +12,11 @@ export const adminApi = baseApi.injectEndpoints({
     getOrderStatus: builder.query({ query: () => ({ url: '/admin/analytics/order-status' }), transformResponse: data }),
     getTopProducts: builder.query({ query: (range = '30d') => ({ url: '/admin/analytics/top-products', params: { range } }), transformResponse: data }),
     getAdminOrders: builder.query({ query: (params) => ({ url: '/admin/orders', params }), transformResponse: list, providesTags: ['Admin', 'Order'] }),
-    updateAdminOrder: builder.mutation({ query: ({ id, ...body }) => ({ url: `/admin/orders/${id}/status`, method: 'patch', data: body }), invalidatesTags: ['Admin', 'Order'] }),
+    updateAdminOrder: builder.mutation({
+      query: ({ id, ...body }) => ({ url: `/admin/orders/${id}/status`, method: 'patch', data: body }),
+      transformResponse: data,
+      invalidatesTags: ['Admin', 'Order'],
+    }),
     getAdminReturns: builder.query({ query: (params) => ({ url: '/admin/returns', params }), transformResponse: list, providesTags: ['Admin', 'Return'] }),
     updateAdminReturn: builder.mutation({ query: ({ id, ...body }) => ({ url: `/admin/returns/${id}/status`, method: 'patch', data: body }), invalidatesTags: ['Admin', 'Return'] }),
     getAdminReviews: builder.query({ query: (params) => ({ url: '/admin/reviews', params }), transformResponse: list, providesTags: ['Admin', 'Review'] }),
