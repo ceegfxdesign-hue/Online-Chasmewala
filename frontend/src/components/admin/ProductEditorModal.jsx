@@ -393,13 +393,52 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
         </section>
 
         <section>
+          <div className="mb-3">
+            <h3 className="font-semibold text-navy-900">Ratings &amp; social proof</h3>
+            <p className="mt-1 text-sm text-navy-500">
+              The product page automatically fills its star icons from the rating point entered here.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Input
+              name="rating"
+              label="Star rating point (0–5)"
+              type="number"
+              min="0"
+              max="5"
+              step="0.1"
+              defaultValue={product?.rating ?? 0}
+              helper="Example: 4.6 displays a 4.6 rating and the matching stars."
+              error={getFieldError('rating')}
+            />
+            <Input
+              name="numReviews"
+              label="Number of reviews"
+              type="number"
+              min="0"
+              step="1"
+              defaultValue={product?.numReviews ?? 0}
+              helper="Shown next to the rating as the customer review count."
+              error={getFieldError('numReviews')}
+            />
+            <Input
+              name="soldCount"
+              label="Number of units sold"
+              type="number"
+              min="0"
+              step="1"
+              defaultValue={product?.soldCount ?? 0}
+              helper="Shown as the product's sold count; existing values are preserved when editing."
+              error={getFieldError('soldCount')}
+            />
+          </div>
+        </section>
+
+        <section>
           <h3 className="mb-3 font-semibold text-navy-900">Merchandising</h3>
           <div className="grid gap-4 md:grid-cols-2">
             <Input name="tags" label="Tags" defaultValue={asCommaList(product?.tags)} helper="Comma-separated, for search and filters." />
             <Input name="collections" label="Collections" defaultValue={asCommaList(product?.collections)} helper="Comma-separated, for curated storefront sections." />
-            <Input name="rating" label="Product rating (0–5)" type="number" min="0" max="5" step="0.1" defaultValue={product?.rating ?? 0} helper="Shown beside the star rating on the product page." error={getFieldError('rating')} />
-            <Input name="numReviews" label="Review count" type="number" min="0" step="1" defaultValue={product?.numReviews ?? 0} helper="The number shown as reviews on the product page." error={getFieldError('numReviews')} />
-            <Input name="soldCount" label="Units sold" type="number" min="0" step="1" defaultValue={product?.soldCount ?? 0} helper="The number shown as sold on the product page." error={getFieldError('soldCount')} />
             <div className="md:col-span-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
               <Toggle name="isActive" label="Published" defaultChecked={product?.isActive !== false} />
               <Toggle name="isBestSeller" label="Best seller" defaultChecked={product?.isBestSeller} />

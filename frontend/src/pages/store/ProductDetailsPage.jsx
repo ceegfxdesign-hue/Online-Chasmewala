@@ -305,8 +305,9 @@ export default function ProductDetailsPage() {
               </div>
             </div>
 
-            <div className="mt-2 flex items-center gap-3">
-              <RatingStars value={product.rating} showValue />
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <span className="text-sm font-semibold text-navy-700">{Number(product.rating || 0).toFixed(1)}</span>
+              <RatingStars value={product.rating} />
               <span className="text-sm text-navy-400">{product.numReviews} reviews</span>
               <span className="text-navy-200">·</span>
               <span className="text-sm text-navy-400">{product.soldCount}+ sold</span>
