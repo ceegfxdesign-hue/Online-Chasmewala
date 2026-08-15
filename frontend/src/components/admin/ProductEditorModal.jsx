@@ -95,15 +95,19 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
   const toast = useToast();
   const editing = Boolean(product?._id);
   const [validationErrors, setValidationErrors] = useState({});
+  const [mainImageUrls, setMainImageUrls] = useState('');
   const [uploadedImages, setUploadedImages] = useState([]);
   const [preparingImages, setPreparingImages] = useState(false);
   const [variants, setVariants] = useState([]);
   const mainImageInputRef = useRef(null);
+  const mainImageUploadModeRef = useRef('add');
   const variantImageInputRefs = useRef({});
+  const variantImageUploadModesRef = useRef({});
 
   const getFieldError = (field) => validationErrors[field];
 
   useEffect(() => {
+    setMainImageUrls(asLines(product?.images));
     setUploadedImages([]);
     setPreparingImages(false);
     setVariants(product?.variants?.map((variant) => ({ ...createEmptyVariant(), ...variant, images: variant.images || [] })) || []);
@@ -111,25 +115,54 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?._id]);
 
+  const savedMainImages = String(mainImageUrls || '')
+    .split('\n')
+    .map(normalizeImageSource)
+    .filter(Boolean);
+  const mainImages = [...savedMainImages, ...uploadedImages];
+
+  const chooseMainImages = (mode) => {
+    mainImageUploadModeRef.current = mode;
+    mainImageInputRef.current?.click();
+  };
+
   const uploadImages = async (event) => {
     const files = Array.from(event.target.files || []);
     event.target.value = '';
     if (!files.length) return;
-    if (uploadedImages.length + files.length > MAX_UPLOADED_IMAGES) {
-      toast.error(`Select no more than ${MAX_UPLOADED_IMAGES - uploadedImages.length} additional image(s).`);
+    const replacing = mainImageUploadModeRef.current === 'replace';
+    const availableSlots = replacing ? MAX_UPLOADED_IMAGES : MAX_UPLOADED_IMAGES - mainImages.length;
+    if (files.length > availableSlots) {
+      toast.error(`Select no more than ${Math.max(0, availableSlots)} image(s).`);
       return;
     }
 
     setPreparingImages(true);
     try {
       const preparedImages = await Promise.all(files.map(createCompressedImageUrl));
-      setUploadedImages((current) => [...current, ...preparedImages]);
-      toast.success(`${preparedImages.length} image${preparedImages.length === 1 ? '' : 's'} ready to save.`);
+      if (replacing) {
+        setMainImageUrls('');
+        setUploadedImages(preparedImages);
+      } else {
+        setUploadedImages((current) => [...current, ...preparedImages]);
+      }
+      toast.success(
+        `${preparedImages.length} image${preparedImages.length === 1 ? '' : 's'} ${replacing ? 'will replace the gallery' : 'added'} when you save.`
+      );
     } catch (error) {
       toast.error(error.message || 'Unable to prepare these images.');
     } finally {
       setPreparingImages(false);
     }
+  };
+
+  const removeMainImage = (index) => {
+    if (index < savedMainImages.length) {
+      setMainImageUrls(asLines(savedMainImages.filter((_, imageIndex) => imageIndex !== index)));
+      return;
+    }
+    const uploadIndex = index - savedMainImages.length;
+    setUploadedImages((current) => current.filter((_, imageIndex) => imageIndex !== uploadIndex));
   };
 
   const updateVariant = (index, field, value) => {
@@ -142,7 +175,8 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
     const files = Array.from(event.target.files || []);
     event.target.value = '';
     if (!files.length) return;
-    const imageCount = variants[index]?.images?.length || 0;
+    const replacing = variantImageUploadModesRef.current[index] === 'replace';
+    const imageCount = replacing ? 0 : variants[index]?.images?.length || 0;
     if (imageCount + files.length > MAX_UPLOADED_IMAGES) {
       toast.error(`Each colour can have up to ${MAX_UPLOADED_IMAGES} images.`);
       return;
@@ -152,9 +186,13 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
     try {
       const preparedImages = await Promise.all(files.map(createCompressedImageUrl));
       setVariants((current) => current.map((variant, itemIndex) => (
-        itemIndex === index ? { ...variant, images: [...(variant.images || []), ...preparedImages] } : variant
+        itemIndex === index
+          ? { ...variant, images: replacing ? preparedImages : [...(variant.images || []), ...preparedImages] }
+          : variant
       )));
-      toast.success(`${preparedImages.length} colour image${preparedImages.length === 1 ? '' : 's'} ready to save.`);
+      toast.success(
+        `${preparedImages.length} colour image${preparedImages.length === 1 ? '' : 's'} ${replacing ? 'will replace the colour gallery' : 'added'} when you save.`
+      );
     } catch (error) {
       toast.error(error.message || 'Unable to prepare these images.');
     } finally {
@@ -173,8 +211,7 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
       else body[key] = Number(body[key]);
     });
 
-    body.images = String(body.images || '').split('\n').map(normalizeImageSource).filter(Boolean);
-    body.images = [...body.images, ...uploadedImages];
+    body.images = mainImages;
     if (!body.images.length) {
       setValidationErrors({ images: 'Add at least one image URL or upload an image file.' });
       toast.error('Add at least one image URL or upload an image file.');
@@ -268,20 +305,31 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
         <section>
           <h3 className="mb-3 font-semibold text-navy-900">Gallery and colour variants</h3>
           <div className="space-y-4">
-            <Textarea name="images" label="Main image URLs (one per line)" defaultValue={asLines(product?.images)} helper="Paste direct image URLs here. You can also upload photos below; both will be saved in the gallery." error={getFieldError('images')} />
+            <Textarea
+              name="images"
+              label="Main image URLs (one per line)"
+              value={mainImageUrls}
+              onChange={(event) => setMainImageUrls(event.target.value)}
+              helper="Paste direct image URLs here. You can also add photos or replace the complete gallery below."
+              error={getFieldError('images')}
+            />
             <div>
               <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-navy-200 bg-surface-subtle px-5 py-6 text-center">
                 <span className="text-sm font-semibold text-navy-700">{preparingImages ? 'Preparing image files...' : 'Upload product photos'}</span>
-                <span className="mt-1 text-xs text-navy-400">JPEG, PNG or WebP — up to {MAX_UPLOADED_IMAGES - uploadedImages.length} more files</span>
-                <Button type="button" variant="outline" size="sm" className="mt-3" disabled={preparingImages || uploadedImages.length >= MAX_UPLOADED_IMAGES} onClick={() => mainImageInputRef.current?.click()}>Choose photos</Button>
+                <span className="mt-1 text-xs text-navy-400">JPEG, PNG or WebP — {mainImages.length}/{MAX_UPLOADED_IMAGES} gallery images</span>
+                <div className="mt-3 flex flex-wrap justify-center gap-2">
+                  <Button type="button" variant="outline" size="sm" disabled={preparingImages || mainImages.length >= MAX_UPLOADED_IMAGES} onClick={() => chooseMainImages('add')}>Add photos</Button>
+                  {editing && <Button type="button" variant="secondary" size="sm" disabled={preparingImages} onClick={() => chooseMainImages('replace')}>Replace gallery</Button>}
+                </div>
                 <input ref={mainImageInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={uploadImages} />
               </div>
-              {uploadedImages.length > 0 && (
+              {mainImages.length > 0 && (
                 <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-5">
-                  {uploadedImages.map((image, index) => (
+                  {mainImages.map((image, index) => (
                     <div key={`${image.slice(0, 48)}-${index}`} className="relative aspect-square overflow-hidden rounded-xl border border-navy-100 bg-surface-subtle">
-                      <img src={image} alt={`Upload ${index + 1}`} className="h-full w-full object-cover" />
-                      <button type="button" onClick={() => setUploadedImages((current) => current.filter((_, itemIndex) => itemIndex !== index))} className="absolute right-1 top-1 rounded-full bg-navy-900/80 px-2 py-1 text-xs font-bold text-white" aria-label={`Remove upload ${index + 1}`}>×</button>
+                      <img src={getOptimizedImageUrl(image, 240)} alt={`Product gallery ${index + 1}`} className="h-full w-full object-cover" />
+                      <button type="button" onClick={() => removeMainImage(index)} className="absolute right-1 top-1 rounded-full bg-navy-900/80 px-2 py-1 text-xs font-bold text-white" aria-label={`Remove product image ${index + 1}`}>×</button>
+                      {index === 0 && <span className="absolute bottom-1 left-1 rounded bg-brand-500 px-1.5 py-0.5 text-[10px] font-bold text-white">MAIN</span>}
                     </div>
                   ))}
                 </div>
@@ -333,7 +381,34 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
                   <div className="mt-3 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-navy-200 bg-surface px-5 py-5 text-center">
                     <span className="text-sm font-semibold text-navy-700">{preparingImages ? 'Preparing image files...' : `Upload photos for colour ${index + 1}`}</span>
                     <span className="mt-1 text-xs text-navy-400">JPEG, PNG or WebP — up to {Math.max(0, MAX_UPLOADED_IMAGES - (variant.images?.length || 0))} more</span>
-                    <Button type="button" variant="outline" size="sm" className="mt-3" disabled={preparingImages || (variant.images?.length || 0) >= MAX_UPLOADED_IMAGES} onClick={() => variantImageInputRefs.current[index]?.click()}>Choose photos</Button>
+                    <div className="mt-3 flex flex-wrap justify-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={preparingImages || (variant.images?.length || 0) >= MAX_UPLOADED_IMAGES}
+                        onClick={() => {
+                          variantImageUploadModesRef.current[index] = 'add';
+                          variantImageInputRefs.current[index]?.click();
+                        }}
+                      >
+                        Add photos
+                      </Button>
+                      {editing && (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          disabled={preparingImages}
+                          onClick={() => {
+                            variantImageUploadModesRef.current[index] = 'replace';
+                            variantImageInputRefs.current[index]?.click();
+                          }}
+                        >
+                          Replace colour photos
+                        </Button>
+                      )}
+                    </div>
                     <input ref={(node) => { variantImageInputRefs.current[index] = node; }} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={(event) => uploadVariantImages(index, event)} />
                   </div>
                   {variant.images?.length > 0 && (

@@ -40,7 +40,10 @@ export function createApp() {
   );
 
   // ── Parsing ───────────────────────────────────────────────────────────────
-  app.use(express.json({ limit: '1mb' }));
+  // Admin product galleries are submitted as compressed data URLs. Keep the
+  // request below MongoDB's 16 MB document ceiling while allowing a practical
+  // multi-image edit payload.
+  app.use(express.json({ limit: '12mb' }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
   app.use(cookieParser());
 

@@ -2,6 +2,7 @@
  * Product catalog business logic: filtered/sorted/paginated listings, search,
  * detail lookups, related products, filter facets, and admin CRUD.
  */
+import { createHash } from 'node:crypto';
 import mongoose from 'mongoose';
 import {
   productRepository,
@@ -29,8 +30,18 @@ const imageReferencePattern = /^oc-product-image:\/\/([^/]+)\/(\d+)$/;
 const variantImageReferencePattern = /^oc-product-variant-image:\/\/([^/]+)\/(\d+)\/(\d+)$/;
 
 const isInlineImage = (image) => typeof image === 'string' && inlineImagePattern.test(image);
-const imageReference = (productId, index) => `oc-product-image://${productId}/${index}`;
-const variantImageReference = (productId, variantIndex, imageIndex) => `oc-product-variant-image://${productId}/${variantIndex}/${imageIndex}`;
+const imageVersion = (image) => createHash('sha256').update(image).digest('hex').slice(0, 12);
+const productImageToken = (productId, image) => `${productId}@${imageVersion(image)}`;
+const imageReference = (productId, index, image) =>
+  `oc-product-image://${productImageToken(productId, image)}/${index}`;
+const variantImageReference = (productId, variantIndex, imageIndex, image) =>
+  `oc-product-variant-image://${productImageToken(productId, image)}/${variantIndex}/${imageIndex}`;
+
+function parseProductImageToken(token) {
+  const [productId, version] = String(token).split('@');
+  if (!mongoose.isValidObjectId(productId)) return null;
+  return { productId, version };
+}
 
 /**
  * Do not include base64 image bytes in catalog JSON responses. Card rows only
@@ -40,12 +51,14 @@ function serializeImages(product) {
   if (!product) return product;
   const result = { ...product };
   result.images = (product.images || []).map((image, index) =>
-    isInlineImage(image) ? imageReference(product._id, index) : image
+    isInlineImage(image) ? imageReference(product._id, index, image) : image
   );
   result.variants = (product.variants || []).map((variant, variantIndex) => ({
     ...variant,
     images: (variant.images || []).map((image, imageIndex) => (
-      isInlineImage(image) ? variantImageReference(product._id, variantIndex, imageIndex) : image
+      isInlineImage(image)
+        ? variantImageReference(product._id, variantIndex, imageIndex, image)
+        : image
     )),
   }));
   return result;
@@ -54,7 +67,8 @@ function serializeImages(product) {
 function restoreImageReferences(product, images = []) {
   return images.map((image) => {
     const match = typeof image === 'string' ? image.match(imageReferencePattern) : null;
-    if (!match || String(match[1]) !== String(product._id)) return image;
+    const token = match ? parseProductImageToken(match[1]) : null;
+    if (!token || String(token.productId) !== String(product._id)) return image;
     const storedImage = product.images?.[Number(match[2])];
     return storedImage || image;
   });
@@ -65,7 +79,8 @@ function restoreVariantImageReferences(product, variants = []) {
     ...variant,
     images: (variant.images || []).map((image) => {
       const match = typeof image === 'string' ? image.match(variantImageReferencePattern) : null;
-      if (!match || String(match[1]) !== String(product._id)) return image;
+      const token = match ? parseProductImageToken(match[1]) : null;
+      if (!token || String(token.productId) !== String(product._id)) return image;
       const storedImage = product.variants?.[Number(match[2])]?.images?.[Number(match[3])];
       return storedImage || image;
     }),
@@ -294,26 +309,38 @@ export const productService = {
   },
 
   /** Return an uploaded inline image as image bytes, outside the catalog JSON. */
-  async getImage(id, index) {
-    if (!mongoose.isValidObjectId(id) || !Number.isInteger(index) || index < 0) {
+  async getImage(token, index) {
+    const reference = parseProductImageToken(token);
+    if (!reference || !Number.isInteger(index) || index < 0) {
       throw ApiError.notFound('Product image not found');
     }
-    const product = await productRepository.model.findOne({ _id: id, isActive: true }).select('images').lean();
+    const product = await productRepository.model
+      .findOne({ _id: reference.productId, isActive: true })
+      .select('images')
+      .lean();
     const image = product?.images?.[index];
     const match = typeof image === 'string' ? image.match(inlineImagePattern) : null;
-    if (!match) throw ApiError.notFound('Product image not found');
+    if (!match || (reference.version && reference.version !== imageVersion(image))) {
+      throw ApiError.notFound('Product image not found');
+    }
     return { contentType: match[1], buffer: Buffer.from(match[2], 'base64') };
   },
 
   /** Return an uploaded inline image belonging to a particular colour variant. */
-  async getVariantImage(id, variantIndex, imageIndex) {
-    if (!mongoose.isValidObjectId(id) || !Number.isInteger(variantIndex) || variantIndex < 0 || !Number.isInteger(imageIndex) || imageIndex < 0) {
+  async getVariantImage(token, variantIndex, imageIndex) {
+    const reference = parseProductImageToken(token);
+    if (!reference || !Number.isInteger(variantIndex) || variantIndex < 0 || !Number.isInteger(imageIndex) || imageIndex < 0) {
       throw ApiError.notFound('Colour image not found');
     }
-    const product = await productRepository.model.findOne({ _id: id, isActive: true }).select('variants.images').lean();
+    const product = await productRepository.model
+      .findOne({ _id: reference.productId, isActive: true })
+      .select('variants.images')
+      .lean();
     const image = product?.variants?.[variantIndex]?.images?.[imageIndex];
     const match = typeof image === 'string' ? image.match(inlineImagePattern) : null;
-    if (!match) throw ApiError.notFound('Colour image not found');
+    if (!match || (reference.version && reference.version !== imageVersion(image))) {
+      throw ApiError.notFound('Colour image not found');
+    }
     return { contentType: match[1], buffer: Buffer.from(match[2], 'base64') };
   },
 };

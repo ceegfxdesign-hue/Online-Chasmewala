@@ -160,4 +160,112 @@ describe('Catalog admin CRUD', () => {
       .set('Authorization', `Bearer ${token}`);
     expect(removed.status).toBe(200);
   });
+
+  it('persists replacement product and colour-variant images with fresh media references', async () => {
+    const token = await adminToken();
+    const [cats, brands] = await Promise.all([
+      request(app).get('/api/v1/categories'),
+      request(app).get('/api/v1/brands'),
+    ]);
+    const inlineImage = (value) =>
+      `data:image/png;base64,${Buffer.from(value).toString('base64')}`;
+    const mediaPath = (reference) => {
+      const main = reference.match(/^oc-product-image:\/\/([^/]+)\/(\d+)$/);
+      if (main) return `/api/v1/products/media/${main[1]}/${main[2]}`;
+      const variant = reference.match(/^oc-product-variant-image:\/\/([^/]+)\/(\d+)\/(\d+)$/);
+      return `/api/v1/products/media/${variant[1]}/variant/${variant[2]}/${variant[3]}`;
+    };
+
+    const created = await request(app)
+      .post('/api/v1/products')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        name: 'Editable Image Frame',
+        sku: 'EDIT-IMAGE-1',
+        description: 'A frame used to verify image replacement behavior.',
+        price: 1200,
+        mrp: 1800,
+        category: cats.body.data[0]._id,
+        brand: brands.body.data[0]._id,
+        images: [inlineImage('original-main-image')],
+        variants: [{ color: 'Black', images: [inlineImage('original-variant-image')] }],
+      });
+
+    expect(created.status).toBe(201);
+    const id = created.body.data._id;
+    const originalMainReference = created.body.data.images[0];
+    const originalVariantReference = created.body.data.variants[0].images[0];
+    expect(originalMainReference).toMatch(
+      new RegExp(`^oc-product-image://${id}@[a-f0-9]{12}/0$`)
+    );
+    expect(originalVariantReference).toMatch(
+      new RegExp(`^oc-product-variant-image://${id}@[a-f0-9]{12}/0/0$`)
+    );
+
+    const preserved = await request(app)
+      .patch(`/api/v1/products/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        images: [originalMainReference],
+        variants: [{ color: 'Black', images: [originalVariantReference] }],
+      });
+    expect(preserved.status).toBe(200);
+    expect(preserved.body.data.images[0]).toBe(originalMainReference);
+    expect(preserved.body.data.variants[0].images[0]).toBe(originalVariantReference);
+
+    const updated = await request(app)
+      .patch(`/api/v1/products/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        images: [inlineImage('replacement-main-image')],
+        variants: [{ color: 'Black', images: [inlineImage('replacement-variant-image')] }],
+      });
+
+    expect(updated.status).toBe(200);
+    const replacementMainReference = updated.body.data.images[0];
+    const replacementVariantReference = updated.body.data.variants[0].images[0];
+    expect(replacementMainReference).not.toBe(originalMainReference);
+    expect(replacementVariantReference).not.toBe(originalVariantReference);
+
+    const [mainImage, variantImage, staleMainImage] = await Promise.all([
+      request(app).get(mediaPath(replacementMainReference)),
+      request(app).get(mediaPath(replacementVariantReference)),
+      request(app).get(mediaPath(originalMainReference)),
+    ]);
+    expect(mainImage.status).toBe(200);
+    expect(mainImage.body.toString()).toBe('replacement-main-image');
+    expect(variantImage.status).toBe(200);
+    expect(variantImage.body.toString()).toBe('replacement-variant-image');
+    expect(staleMainImage.status).toBe(404);
+  });
+
+  it('accepts a compressed multi-image product payload larger than one megabyte', async () => {
+    const token = await adminToken();
+    const [cats, brands] = await Promise.all([
+      request(app).get('/api/v1/categories'),
+      request(app).get('/api/v1/brands'),
+    ]);
+    const largeInlineImage = (character) =>
+      `data:image/jpeg;base64,${character.repeat(600000)}`;
+
+    const created = await request(app)
+      .post('/api/v1/products')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        name: 'Large Gallery Frame',
+        sku: 'LARGE-GALLERY-1',
+        description: 'A frame used to verify compressed gallery request sizes.',
+        price: 1200,
+        mrp: 1800,
+        category: cats.body.data[0]._id,
+        brand: brands.body.data[0]._id,
+        images: [largeInlineImage('a'), largeInlineImage('b')],
+      });
+
+    expect(created.status).toBe(201);
+    expect(created.body.data.images).toHaveLength(2);
+    created.body.data.images.forEach((image) => {
+      expect(image).toMatch(/^oc-product-image:\/\/[0-9a-f]{24}@[a-f0-9]{12}\/\d+$/);
+    });
+  });
 });

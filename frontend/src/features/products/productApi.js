@@ -24,6 +24,7 @@ export const productApi = baseApi.injectEndpoints({
     getCollections: builder.query({
       query: () => ({ url: '/products/collections' }),
       transformResponse: (res) => res.data,
+      providesTags: [{ type: 'Product', id: 'COLLECTIONS' }],
     }),
 
     getSuggestions: builder.query({
@@ -74,18 +75,28 @@ export const productApi = baseApi.injectEndpoints({
     }),
     createProduct: builder.mutation({
       query: (body) => ({ url: '/products', method: 'post', data: body }),
-      invalidatesTags: [{ type: 'Product', id: 'LIST' }, { type: 'Product', id: 'ADMIN_LIST' }],
+      invalidatesTags: [
+        { type: 'Product', id: 'LIST' },
+        { type: 'Product', id: 'COLLECTIONS' },
+        { type: 'Product', id: 'ADMIN_LIST' },
+      ],
     }),
     updateProduct: builder.mutation({
       query: ({ id, ...body }) => ({ url: `/products/${id}`, method: 'patch', data: body }),
       invalidatesTags: (r, e, arg) => [
         { type: 'Product', id: arg.id },
+        { type: 'Product', id: 'LIST' },
+        { type: 'Product', id: 'COLLECTIONS' },
         { type: 'Product', id: 'ADMIN_LIST' },
       ],
     }),
     deleteProduct: builder.mutation({
       query: (id) => ({ url: `/products/${id}`, method: 'delete' }),
-      invalidatesTags: [{ type: 'Product', id: 'LIST' }, { type: 'Product', id: 'ADMIN_LIST' }],
+      invalidatesTags: [
+        { type: 'Product', id: 'LIST' },
+        { type: 'Product', id: 'COLLECTIONS' },
+        { type: 'Product', id: 'ADMIN_LIST' },
+      ],
     }),
   }),
   overrideExisting: false,
