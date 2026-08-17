@@ -3,8 +3,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   FiChevronLeft,
   FiChevronRight,
-  FiMapPin,
-  FiRotateCw,
   FiStar,
   FiX,
   FiZoomIn,
@@ -17,11 +15,10 @@ import { cn } from '@/utils/cn';
  * Product image gallery: thumbnail rail, main image with hover-to-zoom (desktop)
  * and a fullscreen lightbox with keyboard/next-prev navigation.
  */
-export function ProductGallery({ images = [], alt, rating = 0, reviewCount = 0, onFindStore, onCompare }) {
+export function ProductGallery({ images = [], alt, rating = 0, reviewCount = 0 }) {
   const [active, setActive] = useState(0);
   const [zoom, setZoom] = useState({ show: false, x: 50, y: 50 });
   const [lightbox, setLightbox] = useState(false);
-  const [isSpinning, setIsSpinning] = useState(false);
   const mainRef = useRef(null);
 
   const safeImages = useMemo(
@@ -44,14 +41,7 @@ export function ProductGallery({ images = [], alt, rating = 0, reviewCount = 0, 
 
   useEffect(() => {
     setActive(0);
-    setIsSpinning(false);
   }, [images]);
-
-  useEffect(() => {
-    if (!isSpinning || safeImages.length < 2) return undefined;
-    const interval = window.setInterval(() => step(1), 850);
-    return () => window.clearInterval(interval);
-  }, [isSpinning, safeImages.length, step]);
 
   useEffect(() => {
     if (!lightbox) return undefined;
@@ -148,32 +138,6 @@ export function ProductGallery({ images = [], alt, rating = 0, reviewCount = 0, 
           >
             <FiZoomIn className="h-5 w-5" />
           </button>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {onFindStore && (
-            <button type="button" onClick={onFindStore} className="inline-flex items-center gap-1.5 rounded-lg border border-brand-500 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-50">
-              <FiMapPin className="h-4 w-4" /> Nearby stores
-            </button>
-          )}
-          {safeImages.length > 1 && (
-            <button
-              type="button"
-              onClick={() => setIsSpinning((value) => !value)}
-              aria-pressed={isSpinning}
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition',
-                isSpinning ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-navy-200 text-navy-600 hover:border-brand-300'
-              )}
-            >
-              <FiRotateCw className={cn('h-4 w-4', isSpinning && 'animate-spin')} />
-              {isSpinning ? 'Stop 360°' : '360° view'}
-            </button>
-          )}
-          {onCompare && (
-            <button type="button" onClick={onCompare} className="rounded-lg border border-navy-200 px-3 py-2 text-xs font-semibold text-navy-600 transition hover:border-brand-300 hover:text-brand-700">
-              Compare frames
-            </button>
-          )}
         </div>
       </div>
 

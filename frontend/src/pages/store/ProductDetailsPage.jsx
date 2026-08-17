@@ -12,7 +12,6 @@ import {
   FiRefreshCw,
   FiMinus,
   FiPlus,
-  FiBarChart2,
   FiCheck,
   FiGift,
 } from 'react-icons/fi';
@@ -31,7 +30,6 @@ import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { addToCart } from '@/features/cart/cartSlice';
 import { toggleWishlist } from '@/features/wishlist/wishlistSlice';
-import { toggleCompare, selectCompareCount, COMPARE_MAX } from '@/features/compare/compareSlice';
 import { pushRecentlyViewed, selectRecentlyViewed } from '@/features/recentlyViewed/recentlyViewedSlice';
 import { openCartDrawer } from '@/features/ui/uiSlice';
 import { useGetOffersQuery } from '@/features/cart/cartApi';
@@ -73,9 +71,7 @@ export default function ProductDetailsPage() {
   const { data: related } = useGetRelatedProductsQuery(slug, { skip: !slug });
   const { data: offers = [] } = useGetOffersQuery();
   const recentlyViewed = useSelector(selectRecentlyViewed);
-  const compareCount = useSelector(selectCompareCount);
   const wishlisted = useSelector((s) => product && s.wishlist.items.some((i) => i.productId === product._id));
-  const inCompare = useSelector((s) => product && s.compare.items.some((i) => i._id === product._id));
 
   const [variantIdx, setVariantIdx] = useState(0);
   const [lens, setLens] = useState(null);
@@ -183,20 +179,6 @@ export default function ProductDetailsPage() {
     toast.success(wishlisted ? 'Removed from wishlist' : 'Added to wishlist');
   };
 
-  const onCompare = () => {
-    if (!inCompare && compareCount >= COMPARE_MAX) {
-      toast.error(`You can compare up to ${COMPARE_MAX} products`);
-      return;
-    }
-    dispatch(toggleCompare({
-      _id: product._id, slug: product.slug, name: product.name, images: product.images,
-      price: product.price, mrp: product.mrp, rating: product.rating, brand: product.brand,
-      frameShape: product.frameShape, frameMaterial: product.frameMaterial, frameType: product.frameType,
-      lensType: product.lensType, warrantyMonths: product.warrantyMonths,
-    }));
-    toast.info(inCompare ? 'Removed from compare' : 'Added to compare');
-  };
-
   const onShare = async () => {
     const url = window.location.href;
     try {
@@ -208,14 +190,6 @@ export default function ProductDetailsPage() {
     } catch {
       /* user dismissed share sheet */
     }
-  };
-
-  const onFindStore = () => {
-    window.open(
-      'https://www.google.com/maps/search/?api=1&query=eyewear+store+near+me',
-      '_blank',
-      'noopener,noreferrer'
-    );
   };
 
   const specsTab = (
@@ -283,8 +257,6 @@ export default function ProductDetailsPage() {
             alt={product.name}
             rating={product.rating}
             reviewCount={product.numReviews}
-            onFindStore={onFindStore}
-            onCompare={onCompare}
           />
 
           <div className="h-fit rounded-2xl bg-surface p-5 shadow-card xl:sticky xl:top-24 xl:p-6">
@@ -453,12 +425,6 @@ export default function ProductDetailsPage() {
               </Button>
               <Button size="lg" variant="secondary" onClick={onBuyNow} disabled={outOfStock} leftIcon={<FiZap />} className="flex-1">
                 Buy Now
-              </Button>
-            </div>
-
-            <div className="mt-3 flex gap-3">
-              <Button variant="ghost" onClick={onCompare} leftIcon={inCompare ? <FiCheck /> : <FiBarChart2 />}>
-                {inCompare ? 'In compare' : 'Compare'}
               </Button>
             </div>
 
