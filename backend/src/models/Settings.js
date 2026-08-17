@@ -7,10 +7,28 @@ export const DEFAULT_TRUST_BENEFITS = [
   { title: 'Free Shipping', subtitle: 'Above ₹999' },
 ];
 
+export const DEFAULT_ANNOUNCEMENT_ITEMS = [
+  { text: 'Free shipping on orders above ₹999', icon: 'truck' },
+  { text: 'Easy 14-day returns', icon: 'refresh' },
+  { text: '1-year warranty on frames', icon: 'shield' },
+];
+
 const trustBenefitSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true, maxlength: 80 },
     subtitle: { type: String, required: true, trim: true, maxlength: 160 },
+  },
+  { _id: false }
+);
+
+const announcementItemSchema = new mongoose.Schema(
+  {
+    text: { type: String, required: true, trim: true, maxlength: 140 },
+    icon: {
+      type: String,
+      enum: ['truck', 'refresh', 'shield', 'star', 'zap', 'gift'],
+      default: 'shield',
+    },
   },
   { _id: false }
 );
@@ -35,6 +53,16 @@ const settingsSchema = new mongoose.Schema(
     expressShippingFee: { type: Number, default: 129 },
     taxPercent: { type: Number, default: 0 }, // GST handled inclusive by default
     announcement: { type: String, default: 'Free shipping on orders above ₹999 · Easy 14-day returns' },
+    // Small promotional messages shown above the storefront navigation. Admins
+    // can add, remove and reorder these without requiring a frontend deploy.
+    announcementItems: {
+      type: [announcementItemSchema],
+      default: () => DEFAULT_ANNOUNCEMENT_ITEMS.map((item) => ({ ...item })),
+      validate: {
+        validator: (items) => items.length >= 1 && items.length <= 12,
+        message: 'Between 1 and 12 announcement items are required',
+      },
+    },
     socialLinks: {
       instagram: String,
       facebook: String,

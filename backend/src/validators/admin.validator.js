@@ -99,6 +99,16 @@ export const updateSettingsSchema = {
     expressShippingFee: z.number().min(0).optional(),
     taxPercent: z.number().min(0).max(100).optional(),
     announcement: z.string().trim().max(300).optional(),
+    announcementItems: z
+      .array(
+        z.object({
+          text: z.string().trim().min(1).max(140),
+          icon: z.enum(['truck', 'refresh', 'shield', 'star', 'zap', 'gift']),
+        })
+      )
+      .min(1, 'At least one announcement item is required')
+      .max(12, 'A maximum of 12 announcement items is allowed')
+      .optional(),
     socialLinks: z
       .object({
         instagram: z.string().url().or(z.literal('')).optional(),

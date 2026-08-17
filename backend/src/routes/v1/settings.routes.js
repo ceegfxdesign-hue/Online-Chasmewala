@@ -2,10 +2,23 @@ import { Router } from 'express';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { sendSuccess } from '../../utils/ApiResponse.js';
 import { settingsService } from '../../services/settings.service.js';
+import { DEFAULT_ANNOUNCEMENT_ITEMS } from '../../models/Settings.js';
 
 const router = Router();
 
 /** Public storefront settings that do not contain account or operational data. */
+router.get(
+  '/announcements',
+  asyncHandler(async (_req, res) => {
+    const settings = await settingsService.get();
+    res.set('Cache-Control', 'public, max-age=300, s-maxage=600, stale-while-revalidate=900');
+    const announcementItems = settings.announcementItems?.length
+      ? settings.announcementItems
+      : DEFAULT_ANNOUNCEMENT_ITEMS;
+    return sendSuccess(res, { data: announcementItems });
+  })
+);
+
 router.get(
   '/home-category-images',
   asyncHandler(async (_req, res) => {

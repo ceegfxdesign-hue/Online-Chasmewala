@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { FiAlertTriangle, FiCheck, FiEdit2, FiPlus, FiTrash2 } from 'react-icons/fi';
@@ -356,10 +356,39 @@ const TRUST_BENEFIT_SLOTS = [
   },
 ];
 
+const DEFAULT_ANNOUNCEMENT_ITEMS = [
+  { text: 'Free shipping on orders above ₹999', icon: 'truck' },
+  { text: 'Easy 14-day returns', icon: 'refresh' },
+  { text: '1-year warranty on frames', icon: 'shield' },
+];
+
+const ANNOUNCEMENT_ICON_OPTIONS = [
+  { value: 'truck', label: 'Delivery truck' },
+  { value: 'refresh', label: 'Return arrows' },
+  { value: 'shield', label: 'Warranty shield' },
+  { value: 'star', label: 'Premium star' },
+  { value: 'zap', label: 'Lightning' },
+  { value: 'gift', label: 'Gift' },
+];
+
+const toAnnouncementDraft = (item) => ({
+  key: `${item.text}-${item.icon}-${Math.random().toString(36).slice(2)}`,
+  text: item.text || '',
+  icon: item.icon || 'shield',
+});
+
 export function SettingsPage() {
   const { data, isLoading } = useGetSettingsQuery();
   const [update, { isLoading: saving }] = useUpdateSettingsMutation();
   const toast = useToast();
+  const [announcementItems, setAnnouncementItems] = useState(() =>
+    DEFAULT_ANNOUNCEMENT_ITEMS.map(toAnnouncementDraft)
+  );
+
+  useEffect(() => {
+    if (!Array.isArray(data?.announcementItems) || !data.announcementItems.length) return;
+    setAnnouncementItems(data.announcementItems.map(toAnnouncementDraft));
+  }, [data?.announcementItems]);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -390,6 +419,7 @@ export function SettingsPage() {
       title: body[`trustBenefit${index}Title`].trim(),
       subtitle: body[`trustBenefit${index}Subtitle`].trim(),
     }));
+    body.announcementItems = announcementItems.map(({ text, icon }) => ({ text: text.trim(), icon }));
     [
       'instagram',
       'facebook',
@@ -430,7 +460,59 @@ export function SettingsPage() {
             <Input name="standardShippingFee" label="Standard shipping fee" type="number" defaultValue={data?.standardShippingFee} />
             <Input name="expressShippingFee" label="Express shipping fee" type="number" defaultValue={data?.expressShippingFee} />
             <Input name="taxPercent" label="Tax percent" type="number" defaultValue={data?.taxPercent} />
-            <div className="md:col-span-2"><Textarea name="announcement" label="Announcement" defaultValue={data?.announcement} /></div>
+            <div className="md:col-span-2 mt-3 border-t border-navy-100 pt-5">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-navy-900">Top announcement bar</h2>
+                  <p className="mt-1 text-sm text-navy-500">Edit the messages above the navigation. Add up to 12 items; visitors can scroll sideways when needed.</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={<FiPlus />}
+                  disabled={announcementItems.length >= 12}
+                  onClick={() => setAnnouncementItems((items) => [
+                    ...items,
+                    toAnnouncementDraft({ text: '', icon: 'shield' }),
+                  ])}
+                >
+                  Add announcement
+                </Button>
+              </div>
+            </div>
+            {announcementItems.map((item, index) => (
+              <div key={item.key} className="grid gap-4 rounded-2xl border border-navy-100 bg-surface-subtle p-4 md:col-span-2 md:grid-cols-[1fr_14rem_auto]">
+                <Input
+                  label={`Message ${index + 1}`}
+                  value={item.text}
+                  required
+                  maxLength={140}
+                  onChange={(event) => setAnnouncementItems((items) => items.map((entry, itemIndex) => (
+                    itemIndex === index ? { ...entry, text: event.target.value } : entry
+                  )))}
+                />
+                <Select
+                  label="Icon"
+                  value={item.icon}
+                  options={ANNOUNCEMENT_ICON_OPTIONS}
+                  onChange={(event) => setAnnouncementItems((items) => items.map((entry, itemIndex) => (
+                    itemIndex === index ? { ...entry, icon: event.target.value } : entry
+                  )))}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="self-end text-error hover:bg-error-light"
+                  aria-label={`Remove message ${index + 1}`}
+                  disabled={announcementItems.length === 1}
+                  onClick={() => setAnnouncementItems((items) => items.filter((_, itemIndex) => itemIndex !== index))}
+                >
+                  <FiTrash2 />
+                </Button>
+              </div>
+            ))}
             <Input name="instagram" label="Instagram URL" defaultValue={data?.socialLinks?.instagram} />
             <Input name="facebook" label="Facebook URL" defaultValue={data?.socialLinks?.facebook} />
             <Input name="twitter" label="Twitter URL" defaultValue={data?.socialLinks?.twitter} />

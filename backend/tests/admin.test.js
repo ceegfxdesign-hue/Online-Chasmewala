@@ -249,6 +249,28 @@ describe('Admin APIs', () => {
     expect(invalid.status).toBe(422);
   });
 
+  it('lets an admin manage a flexible storefront announcement bar', async () => {
+    const defaults = await request(app).get('/api/v1/settings/announcements');
+    expect(defaults.status).toBe(200);
+    expect(defaults.body.data).toHaveLength(3);
+
+    const announcementItems = [
+      { text: 'Free shipping above ₹1,499', icon: 'truck' },
+      { text: 'Same-day fitting available', icon: 'zap' },
+      { text: 'Authentic premium eyewear', icon: 'shield' },
+      { text: 'Exclusive frame offers', icon: 'gift' },
+    ];
+    const updated = await request(app)
+      .patch('/api/v1/admin/settings')
+      .set(asAdmin())
+      .send({ announcementItems });
+    expect(updated.status).toBe(200);
+    expect(updated.body.data.announcementItems).toEqual(announcementItems);
+
+    const publicItems = await request(app).get('/api/v1/settings/announcements');
+    expect(publicItems.body.data).toEqual(announcementItems);
+  });
+
   it('manages users: details, deactivate, and self-protection', async () => {
     const users = await request(app).get('/api/v1/admin/users?search=demo').set(asAdmin());
     const demo = users.body.data[0];

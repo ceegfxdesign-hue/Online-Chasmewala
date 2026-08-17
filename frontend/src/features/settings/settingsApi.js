@@ -5,6 +5,12 @@ const data = (response) => response.data;
 /** Public storefront configuration. Admin-only updates remain in adminApi. */
 export const settingsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    getAnnouncements: builder.query({
+      query: () => ({ url: '/settings/announcements' }),
+      transformResponse: data,
+      providesTags: ['Admin'],
+      keepUnusedDataFor: 300,
+    }),
     getHomeCategoryImages: builder.query({
       query: () => ({ url: '/settings/home-category-images' }),
       transformResponse: data,
@@ -26,4 +32,9 @@ export const settingsApi = baseApi.injectEndpoints({
   }),
 });
 
-export const { useGetHomeCategoryImagesQuery, useGetFooterSettingsQuery, useGetTrustBenefitsQuery } = settingsApi;
+export const {
+  useGetAnnouncementsQuery,
+  useGetHomeCategoryImagesQuery,
+  useGetFooterSettingsQuery,
+  useGetTrustBenefitsQuery,
+} = settingsApi;
