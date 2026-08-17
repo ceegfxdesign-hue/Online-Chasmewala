@@ -9,16 +9,19 @@ export const settingsApi = baseApi.injectEndpoints({
       query: () => ({ url: '/settings/home-category-images' }),
       transformResponse: data,
       providesTags: ['Admin'],
+      keepUnusedDataFor: 300,
     }),
     getFooterSettings: builder.query({
       query: () => ({ url: '/settings/footer' }),
       transformResponse: data,
       providesTags: ['Admin'],
+      keepUnusedDataFor: 300,
     }),
     getTrustBenefits: builder.query({
       query: () => ({ url: '/settings/trust-benefits' }),
       transformResponse: data,
       providesTags: ['Admin'],
+      keepUnusedDataFor: 300,
     }),
   }),
 });

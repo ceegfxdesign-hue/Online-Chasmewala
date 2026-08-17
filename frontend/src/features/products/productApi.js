@@ -25,6 +25,9 @@ export const productApi = baseApi.injectEndpoints({
       query: () => ({ url: '/products/collections' }),
       transformResponse: (res) => res.data,
       providesTags: [{ type: 'Product', id: 'COLLECTIONS' }],
+      // Home collection data is reused while customers navigate around the
+      // storefront, so avoid refetching it on every return to the home page.
+      keepUnusedDataFor: 300,
     }),
 
     getSuggestions: builder.query({
@@ -65,6 +68,7 @@ export const productApi = baseApi.injectEndpoints({
       query: (params) => ({ url: '/brands', params }),
       transformResponse: (res) => res.data,
       providesTags: [{ type: 'Brand', id: 'LIST' }],
+      keepUnusedDataFor: 300,
     }),
 
     // ── Admin ──────────────────────────────────────────────────────────────

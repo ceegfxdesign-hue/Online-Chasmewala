@@ -15,6 +15,10 @@ export const productController = {
 
   collections: asyncHandler(async (req, res) => {
     const data = await productService.collections();
+    // Curated storefront data changes only when an admin updates products.
+    // Short shared/browser caching removes repeat database work while stale
+    // content can be displayed immediately during a background revalidation.
+    res.set('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
     return sendSuccess(res, { data });
   }),
 

@@ -5,7 +5,7 @@ import { ContentPage } from '@/components/common/ContentPage';
 import { absoluteUrl } from '@/lib/seo';
 import { ROUTES } from '@/constants/routes';
 
-const MAP_URL = 'https://www.google.com/maps/search/?api=1&query=MG+Road%2C+Bengaluru%2C+Karnataka+560001';
+const MAP_URL = 'https://maps.app.goo.gl/grycwFB99wGAhEzH6';
 
 export default function FindUsPage() {
   return (
@@ -33,9 +33,9 @@ export default function FindUsPage() {
           <section className="rounded-3xl border border-navy-100 bg-surface p-7 shadow-card sm:p-8">
             <h2 className="text-h3 text-navy-900">Store details</h2>
             <ul className="mt-6 space-y-5 text-sm text-navy-600">
-              <li className="flex gap-3"><FiMapPin className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" /><span>MG Road, Bengaluru, Karnataka 560001</span></li>
+              <li className="flex gap-3"><FiMapPin className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" /><span>Opp.zam zam sweets the eye shopqe Dongri Mumbai 400008</span></li>
               <li className="flex gap-3"><FiClock className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" /><span>Open daily, 9:00 AM–8:00 PM</span></li>
-              <li className="flex gap-3"><FiPhone className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" /><a className="hover:text-brand-600" href="tel:+919000000000">+91 90000 00000</a></li>
+              <li className="flex gap-3"><FiPhone className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" /><a className="hover:text-brand-600" href="tel:+919000000000">+91 8169214553</a></li>
               <li className="flex gap-3"><FiMail className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" /><a className="hover:text-brand-600" href="mailto:support@onlinechasmewala.com">support@onlinechasmewala.com</a></li>
             </ul>
           </section>

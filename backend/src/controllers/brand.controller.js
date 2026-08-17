@@ -5,6 +5,7 @@ import { brandService } from '../services/brand.service.js';
 export const brandController = {
   list: asyncHandler(async (req, res) => {
     const data = await brandService.list({ featured: req.query.featured === 'true' });
+    res.set('Cache-Control', 'public, max-age=300, s-maxage=600, stale-while-revalidate=900');
     return sendSuccess(res, { data });
   }),
 

@@ -10,6 +10,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const data = await bannerService.listActive(req.query.placement);
+    res.set('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
     return sendSuccess(res, { data });
   })
 );

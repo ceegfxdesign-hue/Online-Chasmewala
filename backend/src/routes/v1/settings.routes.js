@@ -10,6 +10,7 @@ router.get(
   '/home-category-images',
   asyncHandler(async (_req, res) => {
     const settings = await settingsService.get();
+    res.set('Cache-Control', 'public, max-age=300, s-maxage=600, stale-while-revalidate=900');
     return sendSuccess(res, { data: settings.homeCategoryImages || {} });
   })
 );
@@ -18,6 +19,7 @@ router.get(
   '/trust-benefits',
   asyncHandler(async (_req, res) => {
     const settings = await settingsService.get();
+    res.set('Cache-Control', 'public, max-age=300, s-maxage=600, stale-while-revalidate=900');
     return sendSuccess(res, { data: settings.trustBenefits });
   })
 );
@@ -26,6 +28,7 @@ router.get(
   '/footer',
   asyncHandler(async (_req, res) => {
     const settings = await settingsService.get();
+    res.set('Cache-Control', 'public, max-age=300, s-maxage=600, stale-while-revalidate=900');
     return sendSuccess(res, {
       data: {
         storeName: settings.storeName,

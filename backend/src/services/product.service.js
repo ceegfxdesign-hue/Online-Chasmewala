@@ -229,22 +229,47 @@ export const productService = {
   /** Curated home-page collections in one call. */
   async collections() {
     const common = { isActive: true };
+    // The storefront carousel only needs card-level fields. Keeping product
+    // descriptions, specification arrays and unused gallery metadata out of
+    // this response makes the first homepage request substantially smaller.
+    const cardFields = [
+      'name',
+      'slug',
+      'price',
+      'mrp',
+      'discountPercent',
+      'brand',
+      'images',
+      'variants._id',
+      'variants.color',
+      'stock',
+      'rating',
+      'numReviews',
+      'soldCount',
+      'isBestSeller',
+      'isTrending',
+      'isNewArrival',
+    ].join(' ');
     const pick = (extra, sort) =>
       productRepository.find(
         { ...common, ...extra },
-        { sort, limit: 12, populate: 'brand', lean: true }
+        {
+          sort,
+          limit: 12,
+          select: cardFields,
+          populate: { path: 'brand', select: 'name slug' },
+          lean: true,
+        }
       );
-    const [bestSellers, trending, newArrivals, featured] = await Promise.all([
+    const [bestSellers, trending, newArrivals] = await Promise.all([
       pick({ isBestSeller: true }, { soldCount: -1 }),
       pick({ isTrending: true }, { createdAt: -1 }),
       pick({ isNewArrival: true }, { createdAt: -1 }),
-      pick({ isFeatured: true }, { rating: -1 }),
     ]);
     return {
       bestSellers: bestSellers.map(serializeImages),
       trending: trending.map(serializeImages),
       newArrivals: newArrivals.map(serializeImages),
-      featured: featured.map(serializeImages),
     };
   },
 
