@@ -39,15 +39,15 @@ import { absoluteUrl } from '@/lib/seo';
 import { ROUTES } from '@/constants/routes';
 import { cn } from '@/utils/cn';
 
-/** Build lens options for powered frames. */
-function lensOptionsFor(product) {
-  if (!product.powered) return [];
+/** Build lens options for eyeglass frames only. */
+function lensOptionsFor(product, isEyeglasses) {
+  if (!isEyeglasses) return [];
   if (product.lensOptions?.length) return product.lensOptions;
   return [
-    { type: 'single-vision', label: 'Single Vision', price: 0 },
-    { type: 'zero-power', label: 'Zero Power', price: 0 },
-    { type: 'blue-light', label: 'Blue-Light Block', price: 300 },
-    { type: 'progressive', label: 'Progressive', price: 1200 },
+    { type: 'single-vision', label: 'With Power', subtitle: 'Positive, negative or cylindrical', price: 0 },
+    { type: 'zero-power', label: 'Zero Power', subtitle: 'Screen glasses with no prescription', price: 0 },
+    { type: 'progressive', label: 'Progressive / Bifocals', subtitle: 'Two powers in one lens', price: 1200 },
+    { type: 'frame-only', label: 'Frame Only', subtitle: 'With no lenses', price: 0 },
   ];
 }
 
@@ -79,7 +79,9 @@ export default function ProductDetailsPage() {
   const [lensDrawerOpen, setLensDrawerOpen] = useState(false);
   const [qty, setQty] = useState(1);
 
-  const lensOptions = useMemo(() => (product ? lensOptionsFor(product) : []), [product]);
+  const isEyeglasses = product?.category?.slug?.toLowerCase() === 'eyeglasses';
+  const lensOptions = useMemo(() => (product ? lensOptionsFor(product, isEyeglasses) : []), [product, isEyeglasses]);
+  const needsLensSelection = isEyeglasses && !lens?.packageId;
   const featuredOffer = useMemo(() => {
     if (!product) return null;
     const productId = String(product._id);
@@ -157,11 +159,21 @@ export default function ProductDetailsPage() {
   });
 
   const onAddToCart = () => {
+    if (needsLensSelection) {
+      toast.info('Please select lenses before adding this eyeglass frame to your cart.');
+      setLensDrawerOpen(true);
+      return;
+    }
     dispatch(addToCart(buildCartItem()));
     dispatch(openCartDrawer());
   };
 
   const onBuyNow = () => {
+    if (needsLensSelection) {
+      toast.info('Please select lenses before buying this eyeglass frame.');
+      setLensDrawerOpen(true);
+      return;
+    }
     dispatch(addToCart(buildCartItem()));
     navigate(ROUTES.checkout);
   };
@@ -314,8 +326,8 @@ export default function ProductDetailsPage() {
               </div>
             )}
 
-            {/* Lens options */}
-            {lensOptions.length > 0 && (
+            {/* Lens choices are presented in the guided Select lenses drawer. */}
+            {false && lensOptions.length > 0 && (
               <div className="mt-6">
                 <p className="mb-2 text-sm font-semibold text-navy-900">Product type</p>
                 <div className="flex flex-wrap gap-2">
@@ -402,6 +414,20 @@ export default function ProductDetailsPage() {
               </div>
             </div>
 
+            {isEyeglasses && lensOptions.length > 0 && (
+              <div className="mt-6 border-t border-navy-100 pt-5">
+                {lens?.packageId && (
+                  <p className="mb-3 text-sm text-navy-600">
+                    Selected: <span className="font-semibold text-navy-900">{lens.label}</span>
+                  </p>
+                )}
+                <Button fullWidth size="lg" onClick={() => setLensDrawerOpen(true)}>
+                  {lens?.packageId ? 'Edit lenses' : 'Select lenses'}
+                </Button>
+                {needsLensSelection && <p className="mt-2 text-center text-xs text-navy-500">Select a lens option to enable Add to Cart and Buy Now.</p>}
+              </div>
+            )}
+
             {/* Quantity + actions */}
             <div className="mt-6 flex items-center gap-4">
               <div className="inline-flex items-center rounded-xl border border-navy-200">
@@ -420,10 +446,10 @@ export default function ProductDetailsPage() {
             </div>
 
             <div className="mt-5 flex flex-wrap gap-3">
-              <Button size="lg" onClick={onAddToCart} disabled={outOfStock} leftIcon={<FiShoppingBag />} className="flex-1">
+              <Button size="lg" onClick={onAddToCart} disabled={outOfStock || needsLensSelection} leftIcon={<FiShoppingBag />} className="flex-1">
                 Add to Cart
               </Button>
-              <Button size="lg" variant="secondary" onClick={onBuyNow} disabled={outOfStock} leftIcon={<FiZap />} className="flex-1">
+              <Button size="lg" variant="secondary" onClick={onBuyNow} disabled={outOfStock || needsLensSelection} leftIcon={<FiZap />} className="flex-1">
                 Buy Now
               </Button>
             </div>
@@ -503,7 +529,7 @@ export default function ProductDetailsPage() {
               <p className="text-xs text-navy-400 line-through">{formatPrice(product.mrp)}</p>
             )}
           </div>
-          <Button onClick={onAddToCart} disabled={outOfStock} leftIcon={<FiShoppingBag />} className="flex-1">
+          <Button onClick={onAddToCart} disabled={outOfStock || needsLensSelection} leftIcon={<FiShoppingBag />} className="flex-1">
             Add to Cart
           </Button>
         </div>
