@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { FiAlertTriangle, FiCheck, FiEdit2, FiPlus, FiTrash2 } from 'react-icons/fi';
+import { FiAlertTriangle, FiCheck, FiEdit2, FiPlus, FiSearch, FiTrash2 } from 'react-icons/fi';
 import { Button, Card, CardBody, EmptyState, Input, Modal, Select, Skeleton, Textarea } from '@/components/ui';
 import { useToast } from '@/contexts/ToastContext';
 import { formatDate, formatPrice } from '@/lib/format';
@@ -21,7 +21,19 @@ const colors = ['#087F7B', '#0B1428', '#C9A45C', '#526174', '#D95C55'];
 const title = (name) => <Helmet><title>{name} · Admin · Online Chasmewala</title></Helmet>;
 const Page = ({ name, children, action }) => <>{title(name)}<div className="mb-6 flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-h3 text-navy-900">{name}</h1><p className="mt-1 text-sm text-navy-500">Manage your store’s {name.toLowerCase()}.</p></div>{action}</div>{children}</>;
 const Loading = () => <div className="space-y-3"><Skeleton className="h-24" /><Skeleton className="h-48" /></div>;
-const Table = ({ columns, rows, render, empty = 'Nothing to show yet.' }) => rows.length ? <div className="overflow-x-auto rounded-2xl bg-surface shadow-card"><table className="w-full min-w-[650px] text-left text-sm"><thead className="border-b border-navy-100 text-xs uppercase tracking-wide text-navy-400"><tr>{columns.map((c) => <th key={c} className="px-4 py-3 font-semibold">{c}</th>)}</tr></thead><tbody className="divide-y divide-navy-100">{rows.map(render)}</tbody></table></div> : <EmptyState title={empty} />;
+const Table = ({ columns, rows, render, empty = 'Nothing to show yet.' }) => {
+  const [search, setSearch] = useState('');
+  const normalizedSearch = search.trim().toLowerCase();
+  const visibleRows = normalizedSearch
+    ? rows.filter((row) => JSON.stringify(row).toLowerCase().includes(normalizedSearch))
+    : rows;
+  if (!rows.length) return <EmptyState title={empty} />;
+  return <>
+    <div className="mb-4 max-w-md"><Input value={search} onChange={(event) => setSearch(event.target.value)} leftIcon={<FiSearch />} placeholder={`Search ${columns.slice(0, 3).join(', ').toLowerCase()}`} aria-label={`Search ${columns.join(', ')}`} /></div>
+    <div className="overflow-x-auto rounded-2xl bg-surface shadow-card"><table className="w-full min-w-[650px] text-left text-sm"><thead className="border-b border-navy-100 text-xs uppercase tracking-wide text-navy-400"><tr>{columns.map((column) => <th key={column} className="px-4 py-3 font-semibold">{column}</th>)}</tr></thead><tbody className="divide-y divide-navy-100">{visibleRows.map(render)}</tbody></table></div>
+    {!visibleRows.length && <p className="mt-4 text-sm text-navy-500">No matching results for “{search}”.</p>}
+  </>;
+};
 const StatusSelect = ({ value, options, onChange }) => <select value={value} onChange={(e) => onChange(e.target.value)} className="rounded-lg border border-navy-200 bg-surface px-2 py-1 text-xs font-medium text-navy-700 focus:border-brand-500 focus:outline-none">{options.map((o) => <option key={o} value={o}>{o.replaceAll('_', ' ')}</option>)}</select>;
 
 export function DashboardPage() {

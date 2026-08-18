@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { FiEdit2, FiPackage, FiPlus, FiTrash2 } from 'react-icons/fi';
-import { Button, EmptyState, Skeleton } from '@/components/ui';
+import { FiEdit2, FiPackage, FiPlus, FiSearch, FiTrash2 } from 'react-icons/fi';
+import { Button, EmptyState, Input, Skeleton } from '@/components/ui';
 import { ProductEditorModal } from '@/components/admin/ProductEditorModal';
 import {
   useCreateProductMutation,
@@ -31,6 +31,7 @@ export default function AdminContactLensesPage() {
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
   const toast = useToast();
 
   const contactCategory = categories.find((category) => category.slug === 'contact-lenses');
@@ -38,7 +39,13 @@ export default function AdminContactLensesPage() {
     const categoryId = product.category?._id || product.category;
     return product.category?.slug === 'contact-lenses' || (contactCategory && String(categoryId) === String(contactCategory._id));
   }), [contactCategory, data?.items]);
-  const filtered = filter === 'all' ? products : products.filter((product) => product.contactLens?.kind === filter);
+  const filtered = (filter === 'all' ? products : products.filter((product) => product.contactLens?.kind === filter))
+    .filter((product) => {
+      const term = search.trim().toLowerCase();
+      return !term || [product.name, product.sku, product.brand?.name, product.contactLens?.kind]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(term));
+    });
 
   const save = async (body) => {
     setSaving(true);
@@ -82,6 +89,7 @@ export default function AdminContactLensesPage() {
       <div className="mb-5 flex flex-wrap gap-2">
         {FILTERS.map(([value, label]) => <button key={value} type="button" onClick={() => setFilter(value)} className={`rounded-full px-3 py-2 text-sm font-medium transition-colors ${filter === value ? 'bg-brand-500 text-white' : 'border border-navy-200 bg-surface text-navy-600 hover:bg-navy-50'}`}>{label}</button>)}
       </div>
+      <div className="mb-4 max-w-md"><Input value={search} onChange={(event) => setSearch(event.target.value)} leftIcon={<FiSearch />} placeholder="Search contact products, SKU or brand" aria-label="Search contact lens products" /></div>
 
       {isLoading ? <div className="space-y-3"><Skeleton className="h-20" /><Skeleton className="h-52" /></div> : filtered.length ? (
         <div className="overflow-x-auto rounded-2xl bg-surface shadow-card"><table className="w-full min-w-[760px] text-left text-sm"><thead className="border-b border-navy-100 text-xs uppercase tracking-wide text-navy-400"><tr><th className="px-4 py-3">Product</th><th className="px-4 py-3">Type</th><th className="px-4 py-3">Pack / quantity</th><th className="px-4 py-3">Price</th><th className="px-4 py-3">Stock</th><th className="px-4 py-3">Actions</th></tr></thead><tbody className="divide-y divide-navy-100">{filtered.map((product) => <tr key={product._id}><td className="px-4 py-3"><p className="font-medium text-navy-900">{product.name}</p><p className="mt-0.5 text-xs text-navy-400">{product.sku}</p></td><td className="px-4 py-3 capitalize text-navy-600">{product.contactLens?.kind || 'clear'} contacts</td><td className="px-4 py-3 text-navy-600">{product.contactLens?.packOptions?.[0]?.label || (product.contactLens?.lensesPerBox ? `${product.contactLens.lensesPerBox} lenses/box` : '—')}</td><td className="px-4 py-3">{formatPrice(product.price)}</td><td className="px-4 py-3">{product.stock}</td><td className="px-4 py-3"><div className="flex gap-2"><Button size="icon" variant="ghost" aria-label={`Edit ${product.name}`} onClick={() => setEditing(product)}><FiEdit2 /></Button><Button size="icon" variant="ghost" aria-label={`Delete ${product.name}`} onClick={() => destroy(product)}><FiTrash2 /></Button></div></td></tr>)}</tbody></table></div>

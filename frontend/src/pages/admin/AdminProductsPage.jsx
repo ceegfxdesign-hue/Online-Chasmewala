@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { FiEdit2, FiPlus, FiTrash2 } from 'react-icons/fi';
-import { Button, EmptyState, Skeleton } from '@/components/ui';
+import { FiEdit2, FiPlus, FiSearch, FiTrash2 } from 'react-icons/fi';
+import { Button, EmptyState, Input, Skeleton } from '@/components/ui';
 import { ProductEditorModal } from '@/components/admin/ProductEditorModal';
 import {
   useCreateProductMutation,
@@ -23,8 +23,16 @@ export function AdminProductsPage() {
   const [remove] = useDeleteProductMutation();
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
   const toast = useToast();
   const products = data?.items || [];
+  const visibleProducts = products.filter((product) => {
+    const term = search.trim().toLowerCase();
+    if (!term) return true;
+    return [product.name, product.sku, product.brand?.name, product.category?.name]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(term));
+  });
 
   const save = async (body) => {
     setSaving(true);
@@ -59,13 +67,15 @@ export function AdminProductsPage() {
       {isLoading ? (
         <div className="space-y-3"><Skeleton className="h-20" /><Skeleton className="h-52" /></div>
       ) : products.length ? (
-        <div className="overflow-x-auto rounded-2xl bg-surface shadow-card">
+        <>
+          <div className="mb-4 max-w-md"><Input value={search} onChange={(event) => setSearch(event.target.value)} leftIcon={<FiSearch />} placeholder="Search products, SKU, brand or category" aria-label="Search products" /></div>
+          <div className="overflow-x-auto rounded-2xl bg-surface shadow-card">
           <table className="w-full min-w-[760px] text-left text-sm">
             <thead className="border-b border-navy-100 text-xs uppercase tracking-wide text-navy-400">
               <tr><th className="px-4 py-3 font-semibold">Product</th><th className="px-4 py-3 font-semibold">SKU</th><th className="px-4 py-3 font-semibold">Price</th><th className="px-4 py-3 font-semibold">Stock</th><th className="px-4 py-3 font-semibold">Published</th><th className="px-4 py-3 font-semibold">Actions</th></tr>
             </thead>
             <tbody className="divide-y divide-navy-100">
-              {products.map((product) => (
+              {visibleProducts.map((product) => (
                 <tr key={product._id}>
                   <td className="px-4 py-3"><p className="font-medium text-navy-900">{product.name}</p><p className="mt-0.5 text-xs text-navy-400">{product.variants?.length || 0} colours · {product.frameSize || 'standard'} fit</p></td>
                   <td className="px-4 py-3 text-navy-500">{product.sku}</td>
@@ -77,7 +87,9 @@ export function AdminProductsPage() {
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+          {!visibleProducts.length && <p className="mt-4 text-sm text-navy-500">No products match “{search}”.</p>}
+        </>
       ) : (
         <EmptyState title="No products found" description="Create your first product to start building the catalogue." action={<Button onClick={() => setEditing({})}>Add product</Button>} />
       )}
