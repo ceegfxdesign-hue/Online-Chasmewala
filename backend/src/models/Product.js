@@ -61,6 +61,10 @@ const contactLensSchema = new mongoose.Schema(
     lensesPerBox: { type: Number, min: 1 },
     powerModes: [{ type: String, enum: ['zero-power', 'with-power'] }],
     prescriptionFields: [{ type: String, trim: true }],
+    // Selected per product by the admin; values stay within the normal
+    // customer-facing optical range.
+    sphericalPowerMin: { type: Number, min: -20, max: 0 },
+    sphericalPowerMax: { type: Number, min: 0, max: 20 },
     packOptions: [contactLensPackOptionSchema],
     availableColors: [contactLensColorSchema],
   },

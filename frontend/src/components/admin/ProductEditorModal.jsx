@@ -15,11 +15,13 @@ const MAX_IMAGE_DATA_URL_LENGTH = 750000;
 
 const EMPTY_CONTACT_LENS = {
   kind: 'clear',
-  wearSchedule: 'Monthly disposable',
-  lensesPerBox: 3,
+  wearSchedule: '',
+  lensesPerBox: '',
   powerModes: ['with-power'],
   prescriptionFields: ['Spherical', 'SPH'],
-  packOptions: [{ label: '3 lenses/box', units: 3, price: 0, mrp: 0 }],
+  sphericalPowerMin: -3,
+  sphericalPowerMax: 3,
+  packOptions: [],
   availableColors: [],
 };
 
@@ -33,7 +35,7 @@ const normalizeContactLens = (value) => ({
   ...(value || {}),
   powerModes: value?.powerModes?.length ? value.powerModes : EMPTY_CONTACT_LENS.powerModes,
   prescriptionFields: value?.prescriptionFields?.length ? value.prescriptionFields : EMPTY_CONTACT_LENS.prescriptionFields,
-  packOptions: value?.packOptions?.length ? value.packOptions : EMPTY_CONTACT_LENS.packOptions,
+  packOptions: value?.packOptions || EMPTY_CONTACT_LENS.packOptions,
   availableColors: value?.availableColors || [],
 });
 
@@ -299,19 +301,22 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
           mrp: Number(item.mrp || 0),
         }))
         .filter((item) => item.label);
-      if (!packOptions.length) {
-        setValidationErrors({ contactLens: 'Add at least one lenses-per-box, volume, or accessory option.' });
-        toast.error('Add at least one contact lens pack option.');
-        return;
-      }
       body.contactLens = {
         kind: contactLens.kind,
         wearSchedule: String(contactLens.wearSchedule || '').trim() || undefined,
-        lensesPerBox: Number(contactLens.lensesPerBox || 1),
+        lensesPerBox: contactLens.lensesPerBox === '' || contactLens.lensesPerBox == null
+          ? undefined
+          : Number(contactLens.lensesPerBox),
         powerModes: contactLens.kind === 'clear' || contactLens.kind === 'color'
           ? contactLens.powerModes.filter(Boolean)
           : ['zero-power'],
         prescriptionFields: contactLens.prescriptionFields.map((field) => String(field).trim()).filter(Boolean),
+        sphericalPowerMin: contactLens.sphericalPowerMin === '' || contactLens.sphericalPowerMin == null
+          ? undefined
+          : Number(contactLens.sphericalPowerMin),
+        sphericalPowerMax: contactLens.sphericalPowerMax === '' || contactLens.sphericalPowerMax == null
+          ? undefined
+          : Number(contactLens.sphericalPowerMax),
         packOptions,
         availableColors: contactLens.kind === 'color'
           ? contactLens.availableColors
@@ -401,8 +406,8 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
                   { value: 'accessory', label: 'Accessories' },
                 ]}
               />
-              <Input label="Wear schedule / product label" value={contactLens.wearSchedule || ''} onChange={(event) => updateContactLens('wearSchedule', event.target.value)} placeholder="Monthly disposable, 60 ml, travel kit" />
-              <Input label="Lenses per box" type="number" min="1" value={contactLens.lensesPerBox || ''} onChange={(event) => updateContactLens('lensesPerBox', event.target.value)} helper="Shown on clear and colour-contact cards." />
+              <Input label="Wear schedule / product label (optional)" value={contactLens.wearSchedule || ''} onChange={(event) => updateContactLens('wearSchedule', event.target.value)} placeholder="Monthly disposable, 60 ml, travel kit" />
+              <Input label="Lenses per box (optional)" type="number" min="1" value={contactLens.lensesPerBox || ''} onChange={(event) => updateContactLens('lensesPerBox', event.target.value)} helper="Leave blank when this information is not needed." />
             </div>
 
             {(contactLens.kind === 'clear' || contactLens.kind === 'color') && (
@@ -431,12 +436,20 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
                   helper="For example: Spherical, SPH, Cylindrical, Axis. Customers can type/select a value for every field."
                   rows={3}
                 />
+                <div className="mt-4 rounded-xl border border-navy-100 bg-surface p-3">
+                  <p className="text-sm font-semibold text-navy-800">Spherical power limits</p>
+                  <p className="mt-1 text-xs text-navy-500">Negative choices will appear on the left and positive choices on the right. Select limits from −20 to +20.</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <Input label="Negative limit" type="number" min="-20" max="0" step="0.25" value={contactLens.sphericalPowerMin ?? ''} onChange={(event) => updateContactLens('sphericalPowerMin', event.target.value)} placeholder="-3.00" />
+                    <Input label="Positive limit" type="number" min="0" max="20" step="0.25" value={contactLens.sphericalPowerMax ?? ''} onChange={(event) => updateContactLens('sphericalPowerMax', event.target.value)} placeholder="+3.00" />
+                  </div>
+                </div>
               </div>
             )}
 
             <div className="mt-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div><p className="text-sm font-semibold text-navy-800">Pack / quantity options</p><p className="text-xs text-navy-500">For example 3 lenses/box, 60 ml, or a designer case.</p></div>
+                <div><p className="text-sm font-semibold text-navy-800">Pack / quantity options (optional)</p><p className="text-xs text-navy-500">Add only when the product has choices, such as 3 lenses/box, 60 ml, or a designer case.</p></div>
                 <Button type="button" variant="outline" size="sm" onClick={() => updateContactLens('packOptions', [...contactLens.packOptions, createContactPack()])}>Add option</Button>
               </div>
               <div className="mt-3 space-y-3">
@@ -446,7 +459,7 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
                     <Input label="Units" type="number" min="1" value={pack.units} onChange={(event) => updateContactLens('packOptions', contactLens.packOptions.map((item, itemIndex) => itemIndex === index ? { ...item, units: event.target.value } : item))} />
                     <Input label="Price (₹)" type="number" min="0" value={pack.price} onChange={(event) => updateContactLens('packOptions', contactLens.packOptions.map((item, itemIndex) => itemIndex === index ? { ...item, price: event.target.value } : item))} />
                     <Input label="MRP (₹)" type="number" min="0" value={pack.mrp} onChange={(event) => updateContactLens('packOptions', contactLens.packOptions.map((item, itemIndex) => itemIndex === index ? { ...item, mrp: event.target.value } : item))} />
-                    <Button type="button" variant="ghost" size="sm" className="self-end text-error hover:bg-error/10 hover:text-error" disabled={contactLens.packOptions.length === 1} onClick={() => updateContactLens('packOptions', contactLens.packOptions.filter((_, itemIndex) => itemIndex !== index))}>Remove</Button>
+                    <Button type="button" variant="ghost" size="sm" className="self-end text-error hover:bg-error/10 hover:text-error" onClick={() => updateContactLens('packOptions', contactLens.packOptions.filter((_, itemIndex) => itemIndex !== index))}>Remove</Button>
                   </div>
                 ))}
               </div>

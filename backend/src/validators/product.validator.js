@@ -99,6 +99,8 @@ const contactLensSchema = z.object({
   lensesPerBox: z.number().int().positive().optional(),
   powerModes: z.array(z.enum(['zero-power', 'with-power'])).min(1).max(2).optional(),
   prescriptionFields: z.array(z.string().trim().min(1).max(40)).max(8).optional(),
+  sphericalPowerMin: z.number().min(-20).max(0).optional(),
+  sphericalPowerMax: z.number().min(0).max(20).optional(),
   packOptions: z.array(contactLensPackOptionSchema).max(12).optional(),
   availableColors: z.array(contactLensColorSchema).max(20).optional(),
 });

@@ -160,6 +160,13 @@ describe('Catalog admin CRUD', () => {
         powered: true,
         genders: ['men', 'women'],
         lensOptions: [{ type: 'zero-power', label: 'Zero Power', subtitle: 'Screen glasses', price: 0 }],
+        contactLens: {
+          kind: 'clear',
+          powerModes: ['with-power'],
+          prescriptionFields: ['Spherical', 'SPH'],
+          sphericalPowerMin: -8,
+          sphericalPowerMax: 10,
+        },
       });
     expect(created.status).toBe(201);
     expect(created.body.data.discountPercent).toBe(50);
@@ -167,6 +174,8 @@ describe('Catalog admin CRUD', () => {
     expect(created.body.data.genders).toEqual(['men', 'women']);
     expect(created.body.data.gender).toBe('men');
     expect(created.body.data.lensOptions).toHaveLength(1);
+    expect(created.body.data.contactLens.sphericalPowerMin).toBe(-8);
+    expect(created.body.data.contactLens.sphericalPowerMax).toBe(10);
     const id = created.body.data._id;
 
     const womenCatalog = await request(app).get('/api/v1/products?gender=women&limit=60');
