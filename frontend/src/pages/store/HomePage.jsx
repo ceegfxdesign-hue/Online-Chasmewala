@@ -63,6 +63,17 @@ export default function HomePage() {
       </Helmet>
 
       <TrendingCatalogHero />
+
+      <div className="bg-surface">
+        <ProductCarousel
+          eyebrow="Hot right now"
+          title="Trending now"
+          action={{ label: 'View all', to: `${ROUTES.products}?sort=newest` }}
+          products={displayCollections?.trending || []}
+          loading={showCollectionSkeletons}
+        />
+      </div>
+
       <ShopByCategory />
 
       <section className="border-y border-navy-100 bg-surface">
@@ -81,6 +92,14 @@ export default function HomePage() {
         </div>
       </section>
 
+      <ProductCarousel
+        eyebrow="Just landed"
+        title="New arrivals"
+        action={{ label: 'View all', to: ROUTES.products }}
+        products={displayCollections?.newArrivals || []}
+        loading={showCollectionSkeletons}
+      />
+
       <ShopByFaceShape />
 
       <ProductCarousel
@@ -94,25 +113,7 @@ export default function HomePage() {
 
       <SunglassesPromo />
 
-      <div className="bg-surface">
-        <ProductCarousel
-          eyebrow="Hot right now"
-          title="Trending now"
-          action={{ label: 'View all', to: `${ROUTES.products}?sort=newest` }}
-          products={displayCollections?.trending || []}
-          loading={showCollectionSkeletons}
-        />
-      </div>
-
       <FeaturedBrands />
-
-      <ProductCarousel
-        eyebrow="Just landed"
-        title="New arrivals"
-        action={{ label: 'View all', to: ROUTES.products }}
-        products={displayCollections?.newArrivals || []}
-        loading={showCollectionSkeletons}
-      />
 
       {recentlyViewed.length > 0 && <ProductCarousel title="Recently viewed" products={recentlyViewed} />}
 
