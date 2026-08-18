@@ -47,6 +47,7 @@ export const ROUTES = Object.freeze({
   adminInventory: '/admin/inventory',
   adminReports: '/admin/reports',
   adminSettings: '/admin/settings',
+  adminNavigation: '/admin/navigation',
 
   // Static
   services: '/services',

@@ -14,6 +14,7 @@ import { openCartDrawer, toggleMobileMenu } from '@/features/ui/uiSlice';
 import { logout } from '@/features/auth/authSlice';
 import { useAuth } from '@/hooks/useAuth';
 import { useOnClickOutside } from '@/hooks/useOnClickOutside';
+import { useGetNavigationMenusQuery } from '@/features/settings/settingsApi';
 import { cn } from '@/utils/cn';
 
 const PAGE_LINKS = [
@@ -24,7 +25,7 @@ const PAGE_LINKS = [
 
 // Computer Glasses and Kids remain available through search and the mobile
 // menu, while the desktop header focuses on the primary shopping sections.
-const DESKTOP_SHOP_LINKS = MEGA_MENU.filter((item) => !['computer-glasses', 'kids-glasses'].includes(item.slug));
+const DEFAULT_DESKTOP_SHOP_LINKS = MEGA_MENU.filter((item) => ['eyeglasses', 'sunglasses', 'contact-lenses'].includes(item.slug));
 
 function IconButton({ icon, label, count, onClick, to, className }) {
   const Comp = to ? Link : 'button';
@@ -52,11 +53,15 @@ export function Navbar() {
   const { isAuthenticated, isAdmin, user } = useAuth();
   const cartCount = useSelector(selectCartCount);
   const wishlistCount = useSelector(selectWishlistCount);
+  const { data: navigationMenus } = useGetNavigationMenusQuery();
 
   const [activeMenu, setActiveMenu] = useState(null);
   const [accountOpen, setAccountOpen] = useState(false);
   const accountRef = useRef(null);
   useOnClickOutside(accountRef, () => setAccountOpen(false));
+  const desktopShopLinks = Array.isArray(navigationMenus) && navigationMenus.length
+    ? navigationMenus
+    : DEFAULT_DESKTOP_SHOP_LINKS;
 
   return (
     <header className="sticky top-0 z-40 border-b border-navy-100 bg-surface/95 backdrop-blur">
@@ -78,7 +83,7 @@ export function Navbar() {
           {/* Desktop nav */}
           <nav className="ml-5 hidden xl:block xl:ml-7" onMouseLeave={() => setActiveMenu(null)}>
             <ul className="flex items-center gap-6 xl:gap-7 2xl:gap-9">
-              {DESKTOP_SHOP_LINKS.map((item) => (
+              {desktopShopLinks.map((item) => (
                 <li key={item.slug} onMouseEnter={() => setActiveMenu(item.slug)}>
                   <Link
                     to={`/products?category=${item.slug}`}
@@ -105,7 +110,7 @@ export function Navbar() {
 
             {activeMenu && (
               <MegaMenu
-                item={DESKTOP_SHOP_LINKS.find((m) => m.slug === activeMenu)}
+                item={desktopShopLinks.find((m) => m.slug === activeMenu)}
                 onNavigate={() => setActiveMenu(null)}
               />
             )}

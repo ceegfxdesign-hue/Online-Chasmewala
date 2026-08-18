@@ -13,6 +13,39 @@ export const DEFAULT_ANNOUNCEMENT_ITEMS = [
   { text: '1-year warranty on frames', icon: 'shield' },
 ];
 
+export const DEFAULT_NAVIGATION_MENUS = [
+  {
+    key: 'eyeglasses',
+    label: 'Eyeglasses',
+    slug: 'eyeglasses',
+    columns: [
+      { title: 'Shop by Gender', links: [{ label: 'Men', to: '/products?category=eyeglasses&gender=men' }, { label: 'Women', to: '/products?category=eyeglasses&gender=women' }, { label: 'Unisex', to: '/products?category=eyeglasses&gender=unisex' }] },
+      { title: 'Shop by Shape', links: [{ label: 'Rectangle', to: '/products?category=eyeglasses&frameShape=rectangle' }, { label: 'Round', to: '/products?category=eyeglasses&frameShape=round' }, { label: 'Cat-Eye', to: '/products?category=eyeglasses&frameShape=cat-eye' }, { label: 'Wayfarer', to: '/products?category=eyeglasses&frameShape=wayfarer' }] },
+      { title: 'Shop by Type', links: [{ label: 'Full Rim', to: '/products?category=eyeglasses&frameType=full-rim' }, { label: 'Half Rim', to: '/products?category=eyeglasses&frameType=half-rim' }, { label: 'Rimless', to: '/products?category=eyeglasses&frameType=rimless' }] },
+    ],
+  },
+  {
+    key: 'sunglasses',
+    label: 'Sunglasses',
+    slug: 'sunglasses',
+    columns: [
+      { title: 'Shop by Gender', links: [{ label: 'Men', to: '/products?category=sunglasses&gender=men' }, { label: 'Women', to: '/products?category=sunglasses&gender=women' }] },
+      { title: 'Popular Styles', links: [{ label: 'Aviator', to: '/products?category=sunglasses&frameShape=aviator' }, { label: 'Wayfarer', to: '/products?category=sunglasses&frameShape=wayfarer' }, { label: 'Round', to: '/products?category=sunglasses&frameShape=round' }] },
+      { title: 'Features', links: [{ label: 'Polarized', to: '/products?category=sunglasses&polarized=true' }, { label: 'UV Protection', to: '/products?category=sunglasses&uvProtection=true' }] },
+    ],
+  },
+  {
+    key: 'contact-lenses',
+    label: 'Contact Lenses',
+    slug: 'contact-lenses',
+    columns: [
+      { title: 'Clear Contacts', links: [{ label: 'Distance Power', to: '/products?category=contact-lenses&contactLensType=clear&powerType=with-power' }, { label: 'Toric / Cylindrical', to: '/products?category=contact-lenses&contactLensType=clear&lensType=toric' }, { label: 'Multifocal', to: '/products?category=contact-lenses&contactLensType=clear&lensType=multifocal' }] },
+      { title: 'Colour Contacts', links: [{ label: 'Zero Power', to: '/products?category=contact-lenses&contactLensType=color&powerType=zero-power' }, { label: 'With Power', to: '/products?category=contact-lenses&contactLensType=color&powerType=with-power' }] },
+      { title: 'Solutions & Accessories', links: [{ label: 'Solutions', to: '/products?category=contact-lenses&contactLensType=solution' }, { label: 'Accessories', to: '/products?category=contact-lenses&contactLensType=accessory' }] },
+    ],
+  },
+];
+
 const trustBenefitSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true, maxlength: 80 },
@@ -28,6 +61,46 @@ const announcementItemSchema = new mongoose.Schema(
       type: String,
       enum: ['truck', 'refresh', 'shield', 'star', 'zap', 'gift'],
       default: 'shield',
+    },
+  },
+  { _id: false }
+);
+
+const navigationLinkSchema = new mongoose.Schema(
+  {
+    label: { type: String, required: true, trim: true, maxlength: 60 },
+    to: { type: String, required: true, trim: true, maxlength: 300 },
+  },
+  { _id: false }
+);
+
+const navigationColumnSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true, trim: true, maxlength: 80 },
+    links: {
+      type: [navigationLinkSchema],
+      required: true,
+      validate: {
+        validator: (links) => links.length >= 1 && links.length <= 12,
+        message: 'Between 1 and 12 navigation links are required per column',
+      },
+    },
+  },
+  { _id: false }
+);
+
+const navigationMenuSchema = new mongoose.Schema(
+  {
+    key: { type: String, required: true, enum: ['eyeglasses', 'sunglasses', 'contact-lenses'] },
+    label: { type: String, required: true, trim: true, maxlength: 40 },
+    slug: { type: String, required: true, trim: true, maxlength: 80 },
+    columns: {
+      type: [navigationColumnSchema],
+      required: true,
+      validate: {
+        validator: (columns) => columns.length >= 1 && columns.length <= 4,
+        message: 'Between 1 and 4 navigation columns are required per menu',
+      },
     },
   },
   { _id: false }
@@ -89,6 +162,14 @@ const settingsSchema = new mongoose.Schema(
       validate: {
         validator: (benefits) => benefits.length >= 1 && benefits.length <= 12,
         message: 'Between 1 and 12 trust benefits are required',
+      },
+    },
+    navigationMenus: {
+      type: [navigationMenuSchema],
+      default: () => DEFAULT_NAVIGATION_MENUS.map((menu) => ({ ...menu })),
+      validate: {
+        validator: (menus) => menus.length === 3,
+        message: 'Exactly three navigation menus are required',
       },
     },
   },

@@ -272,6 +272,33 @@ describe('Admin APIs', () => {
     expect(publicItems.body.data).toEqual(announcementItems);
   });
 
+  it('lets an admin manage storefront dropdown menus', async () => {
+    const defaults = await request(app).get('/api/v1/settings/navigation-menus');
+    expect(defaults.status).toBe(200);
+    expect(defaults.body.data).toHaveLength(3);
+    expect(defaults.body.data.map((menu) => menu.key)).toEqual(['eyeglasses', 'sunglasses', 'contact-lenses']);
+
+    const navigationMenus = JSON.parse(JSON.stringify(defaults.body.data));
+    navigationMenus[0].columns[0].links.push({ label: 'New arrivals', to: '/products?category=eyeglasses&sort=newest' });
+    navigationMenus[2].columns[0].title = 'Clear contact lenses';
+
+    const updated = await request(app)
+      .patch('/api/v1/admin/settings')
+      .set(asAdmin())
+      .send({ navigationMenus });
+    expect(updated.status).toBe(200);
+    expect(updated.body.data.navigationMenus).toEqual(navigationMenus);
+
+    const publicMenus = await request(app).get('/api/v1/settings/navigation-menus');
+    expect(publicMenus.body.data).toEqual(navigationMenus);
+
+    const invalid = await request(app)
+      .patch('/api/v1/admin/settings')
+      .set(asAdmin())
+      .send({ navigationMenus: [{ ...navigationMenus[0], key: 'eyeglasses' }] });
+    expect(invalid.status).toBe(422);
+  });
+
   it('manages users: details, deactivate, and self-protection', async () => {
     const users = await request(app).get('/api/v1/admin/users?search=demo').set(asAdmin());
     const demo = users.body.data[0];

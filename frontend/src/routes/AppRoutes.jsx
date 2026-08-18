@@ -60,6 +60,7 @@ const DashboardPage = adminPage('DashboardPage');
 const AdminOrdersPage = adminPage('OrdersPage');
 const AdminProductsPage = lazy(() => import('@/pages/admin/AdminProductsPage'));
 const AdminContactLensesPage = lazy(() => import('@/pages/admin/AdminContactLensesPage'));
+const AdminNavigationPage = lazy(() => import('@/pages/admin/AdminNavigationPage'));
 const CategoriesPage = adminPage('CategoriesPage');
 const BrandsPage = adminPage('BrandsPage');
 const AdminCouponsPage = adminPage('CouponsPage');
@@ -166,6 +167,7 @@ export function AppRoutes() {
             <Route path="orders" element={<AdminOrdersPage />} />
             <Route path="products" element={<AdminProductsPage />} />
             <Route path="contact-lenses" element={<AdminContactLensesPage />} />
+            <Route path="navigation" element={<AdminNavigationPage />} />
             <Route path="categories" element={<CategoriesPage />} />
             <Route path="brands" element={<BrandsPage />} />
             <Route path="coupons" element={<AdminCouponsPage />} />

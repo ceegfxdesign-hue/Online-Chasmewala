@@ -29,6 +29,12 @@ export const settingsApi = baseApi.injectEndpoints({
       providesTags: ['Admin'],
       keepUnusedDataFor: 300,
     }),
+    getNavigationMenus: builder.query({
+      query: () => ({ url: '/settings/navigation-menus' }),
+      transformResponse: data,
+      providesTags: ['Admin'],
+      keepUnusedDataFor: 300,
+    }),
   }),
 });
 
@@ -37,4 +43,5 @@ export const {
   useGetHomeCategoryImagesQuery,
   useGetFooterSettingsQuery,
   useGetTrustBenefitsQuery,
+  useGetNavigationMenusQuery,
 } = settingsApi;

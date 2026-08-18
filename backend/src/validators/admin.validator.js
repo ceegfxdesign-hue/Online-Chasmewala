@@ -141,5 +141,38 @@ export const updateSettingsSchema = {
       .min(1, 'At least one trust benefit is required')
       .max(12, 'A maximum of 12 trust benefits is allowed')
       .optional(),
+    navigationMenus: z
+      .array(
+        z.object({
+          key: z.enum(['eyeglasses', 'sunglasses', 'contact-lenses']),
+          label: z.string().trim().min(1).max(40),
+          slug: z.string().trim().min(1).max(80),
+          columns: z
+            .array(
+              z.object({
+                title: z.string().trim().min(1).max(80),
+                links: z
+                  .array(
+                    z.object({
+                      label: z.string().trim().min(1).max(60),
+                      to: z.string().trim().regex(/^\//, 'Link destination must start with /').max(300),
+                    })
+                  )
+                  .min(1)
+                  .max(12),
+              })
+            )
+            .min(1)
+            .max(4),
+        })
+      )
+      .length(3, 'Exactly three navigation menus are required')
+      .superRefine((menus, context) => {
+        const keys = menus.map((menu) => menu.key);
+        if (new Set(keys).size !== keys.length) {
+          context.addIssue({ code: z.ZodIssueCode.custom, message: 'Navigation menu keys must be unique' });
+        }
+      })
+      .optional(),
   }),
 };

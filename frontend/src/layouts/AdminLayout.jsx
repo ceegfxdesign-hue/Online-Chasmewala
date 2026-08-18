@@ -1,5 +1,5 @@
 import { NavLink, Outlet, Link } from 'react-router-dom';
-import { FiBarChart2, FiBox, FiCircle, FiGrid, FiImage, FiPackage, FiPercent, FiRefreshCw, FiSettings, FiStar, FiTruck, FiUsers } from 'react-icons/fi';
+import { FiBarChart2, FiBox, FiCircle, FiGrid, FiImage, FiMenu, FiPackage, FiPercent, FiRefreshCw, FiSettings, FiStar, FiTruck, FiUsers } from 'react-icons/fi';
 import { Helmet } from 'react-helmet-async';
 import { Logo } from '@/components/common/Logo';
 import { ROUTES } from '@/constants/routes';
@@ -10,6 +10,7 @@ const navigation = [
   [ROUTES.adminCategories, 'Categories', FiGrid], [ROUTES.adminBrands, 'Brands', FiGrid], [ROUTES.adminInventory, 'Inventory', FiTruck],
   [ROUTES.adminCoupons, 'Coupons', FiPercent], [ROUTES.adminBanners, 'Banners', FiImage], [ROUTES.adminReviews, 'Reviews', FiStar],
   [ROUTES.adminReturns, 'Returns', FiRefreshCw], [ROUTES.adminUsers, 'Users', FiUsers], [ROUTES.adminReports, 'Reports', FiBarChart2],
+  [ROUTES.adminNavigation, 'Dropdown Menus', FiMenu],
   [ROUTES.adminSettings, 'Settings', FiSettings],
 ];
 

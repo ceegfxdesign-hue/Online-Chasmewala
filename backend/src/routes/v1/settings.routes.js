@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { sendSuccess } from '../../utils/ApiResponse.js';
 import { settingsService } from '../../services/settings.service.js';
-import { DEFAULT_ANNOUNCEMENT_ITEMS } from '../../models/Settings.js';
+import { DEFAULT_ANNOUNCEMENT_ITEMS, DEFAULT_NAVIGATION_MENUS } from '../../models/Settings.js';
 
 const router = Router();
 
@@ -34,6 +34,18 @@ router.get(
     const settings = await settingsService.get();
     res.set('Cache-Control', 'public, max-age=300, s-maxage=600, stale-while-revalidate=900');
     return sendSuccess(res, { data: settings.trustBenefits });
+  })
+);
+
+router.get(
+  '/navigation-menus',
+  asyncHandler(async (_req, res) => {
+    const settings = await settingsService.get();
+    res.set('Cache-Control', 'public, max-age=300, s-maxage=600, stale-while-revalidate=900');
+    const navigationMenus = settings.navigationMenus?.length
+      ? settings.navigationMenus
+      : DEFAULT_NAVIGATION_MENUS;
+    return sendSuccess(res, { data: navigationMenus });
   })
 );
 
