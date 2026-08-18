@@ -188,14 +188,6 @@ export function TrendingCatalogHero() {
           className="catalog-hero-image absolute inset-0 -z-20 h-full w-full animate-catalog-pan object-cover object-[68%_center]"
         />
       </picture>
-      <div
-        className={
-          dark
-            ? 'catalog-hero-overlay absolute inset-0 -z-10 bg-gradient-to-r from-navy-900/85 via-navy-900/45 to-navy-900/5'
-            : 'catalog-hero-overlay absolute inset-0 -z-10 bg-gradient-to-r from-hero/95 via-hero/60 to-transparent'
-        }
-      />
-
       <div className="container-page flex min-h-[25rem] flex-col pb-20 pt-10 sm:min-h-[29rem] lg:min-h-[32rem] lg:pb-20 lg:pt-14">
         <div className="max-w-xl animate-catalog-enter">
           <span

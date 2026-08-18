@@ -254,12 +254,12 @@ export function BannersPage() {
           />
           <Select
             name="theme"
-            label="Image/theme treatment"
+            label="Text colour"
             defaultValue={editing?.theme || 'dark'}
-            helper="Choose the option that gives the best contrast against the banner image."
+            helper="This only changes banner text and controls. Your image stays unchanged."
             options={[
-              { value: 'dark', label: 'Dark image — white text' },
-              { value: 'light', label: 'Light image — navy text' },
+              { value: 'dark', label: 'White text' },
+              { value: 'light', label: 'Navy text' },
             ]}
           />
           <Input
