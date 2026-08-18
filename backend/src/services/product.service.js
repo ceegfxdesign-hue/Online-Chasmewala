@@ -117,7 +117,15 @@ async function buildFilter(query) {
     const vals = asArray(value).filter(Boolean);
     if (vals.length) filter[field] = { $in: vals };
   };
-  multi('gender', query.gender);
+  // A gender-specific storefront view should also include products designed
+  // for everyone. This keeps the Men and Women navigation useful without
+  // making the customer choose a separate Unisex filter.
+  const requestedGenders = asArray(query.gender).filter(Boolean);
+  if (requestedGenders.length) {
+    const genders = new Set(requestedGenders);
+    if (genders.has('men') || genders.has('women')) genders.add('unisex');
+    filter.gender = { $in: [...genders] };
+  }
   multi('frameShape', query.frameShape);
   multi('frameType', query.frameType);
   multi('frameMaterial', query.frameMaterial);

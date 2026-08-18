@@ -32,6 +32,26 @@ describe('Catalog API', () => {
     res.body.data.forEach((p) => expect(p.category.slug).toBe('sunglasses'));
   });
 
+  it('includes unisex products in men and women catalog filters', async () => {
+    const [men, women] = await Promise.all([
+      request(app).get('/api/v1/products?gender=men&limit=60'),
+      request(app).get('/api/v1/products?gender=women&limit=60'),
+    ]);
+
+    [men, women].forEach((res) => {
+      expect(res.status).toBe(200);
+      expect(res.body.data.length).toBeGreaterThan(0);
+      res.body.data.forEach((product) => {
+        expect(['men', 'women', 'unisex']).toContain(product.gender);
+      });
+    });
+
+    expect(men.body.data.some((product) => product.gender === 'unisex')).toBe(true);
+    expect(women.body.data.some((product) => product.gender === 'unisex')).toBe(true);
+    expect(men.body.data.every((product) => ['men', 'unisex'].includes(product.gender))).toBe(true);
+    expect(women.body.data.every((product) => ['women', 'unisex'].includes(product.gender))).toBe(true);
+  });
+
   it('filters by price range and sorts ascending', async () => {
     const res = await request(app).get('/api/v1/products?maxPrice=1000&sort=price-asc');
     expect(res.status).toBe(200);
