@@ -116,6 +116,7 @@ export const createProductSchema = {
     images: z.array(z.string()).min(1, 'At least one image is required'),
     variants: z.array(variantSchema).optional(),
     gender: z.enum(GENDERS).optional(),
+    genders: z.array(z.enum(GENDERS)).min(1).max(GENDERS.length).optional(),
     frameShape: z.enum(FRAME_SHAPES).optional(),
     frameType: z.enum(FRAME_TYPES).optional(),
     frameMaterial: z.enum(FRAME_MATERIALS).optional(),

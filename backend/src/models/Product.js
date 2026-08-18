@@ -86,7 +86,10 @@ const productSchema = new mongoose.Schema(
     variants: [variantSchema],
 
     // Eyewear attributes (also power the filter facets)
+    // `gender` remains the primary, legacy-compatible value. `genders` lets
+    // one product be intentionally listed for more than one customer group.
     gender: { type: String, enum: GENDERS, default: 'unisex', index: true },
+    genders: [{ type: String, enum: GENDERS, index: true }],
     frameShape: { type: String, enum: FRAME_SHAPES, index: true },
     frameType: { type: String, enum: FRAME_TYPES, index: true },
     frameMaterial: { type: String, enum: FRAME_MATERIALS, index: true },

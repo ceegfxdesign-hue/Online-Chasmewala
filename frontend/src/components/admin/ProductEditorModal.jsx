@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, Input, Modal, Select, Textarea } from '@/components/ui';
+import { Button, Checkbox, Input, Modal, Select, Textarea } from '@/components/ui';
 import { useToast } from '@/contexts/ToastContext';
 import { getOptimizedImageUrl } from '@/lib/images';
 
@@ -246,6 +246,17 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
       body[key] = String(body[key] || '').split(',').map((value) => value.trim()).filter(Boolean);
     });
 
+    const selectedGenders = form.getAll('genders').filter(Boolean);
+    if (!selectedGenders.length) {
+      setValidationErrors({ genders: 'Select at least one customer group.' });
+      toast.error('Select at least one customer group.');
+      return;
+    }
+    body.genders = selectedGenders;
+    // Keep the original field populated for existing catalogue views and
+    // integrations that still read a single primary gender.
+    body.gender = selectedGenders[0];
+
     const productVariants = variants.map((variant) => ({
       color: String(variant.color || [variant.primaryColor, variant.secondaryColor].filter(Boolean).join(' / ')).trim(),
       colorHex: variant.primaryColorHex || undefined,
@@ -320,7 +331,7 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
       body[key] = form.get(key) === 'on';
     });
 
-    ['gender', 'frameShape', 'frameType', 'frameMaterial', 'frameSize', 'rimType', 'lensType', 'lensThickness', 'frameColor'].forEach((key) => {
+    ['frameShape', 'frameType', 'frameMaterial', 'frameSize', 'rimType', 'lensType', 'lensThickness', 'frameColor'].forEach((key) => {
       if (!body[key]) delete body[key];
     });
 
@@ -586,7 +597,25 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
         <section>
           <h3 className="mb-3 font-semibold text-navy-900">Frame specifications</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            <Select name="gender" label="Designed for" defaultValue={product?.gender || 'unisex'} options={GENDERS.map((value) => ({ value, label: humanize(value) }))} error={getFieldError('gender')} />
+            <div className="rounded-xl border border-navy-100 bg-surface p-3">
+              <p className="text-sm font-medium text-navy-700">Designed for</p>
+              <p className="mt-1 text-xs text-navy-500">Select every customer group this product is designed for.</p>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                {GENDERS.map((value) => {
+                  const selected = product?.genders?.length ? product.genders : [product?.gender || 'unisex'];
+                  return (
+                    <Checkbox
+                      key={value}
+                      name="genders"
+                      value={value}
+                      label={humanize(value)}
+                      defaultChecked={selected.includes(value)}
+                    />
+                  );
+                })}
+              </div>
+              {getFieldError('genders') && <p className="mt-2 text-sm text-error">{getFieldError('genders')}</p>}
+            </div>
             <Select name="frameShape" label="Frame shape" defaultValue={product?.frameShape || ''} placeholder="Select shape" options={FRAME_SHAPES.map((value) => ({ value, label: humanize(value) }))} error={getFieldError('frameShape')} />
             <Select name="frameType" label="Frame type" defaultValue={product?.frameType || ''} placeholder="Select type" options={FRAME_TYPES.map((value) => ({ value, label: humanize(value) }))} error={getFieldError('frameType')} />
             <Select name="rimType" label="Rim type" defaultValue={product?.rimType || ''} placeholder="Select rim type" options={FRAME_TYPES.map((value) => ({ value, label: humanize(value) }))} error={getFieldError('rimType')} />

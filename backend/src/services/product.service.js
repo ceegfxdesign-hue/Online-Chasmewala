@@ -124,7 +124,13 @@ async function buildFilter(query) {
   if (requestedGenders.length) {
     const genders = new Set(requestedGenders);
     if (genders.has('men') || genders.has('women')) genders.add('unisex');
-    filter.gender = { $in: [...genders] };
+    const selectedGenders = [...genders];
+    // Legacy products store a single `gender`; newly edited products may have
+    // several values in `genders`. Query both so no catalogue items disappear.
+    filter.$or = [
+      { gender: { $in: selectedGenders } },
+      { genders: { $in: selectedGenders } },
+    ];
   }
   multi('frameShape', query.frameShape);
   multi('frameType', query.frameType);
@@ -299,6 +305,7 @@ export const productService = {
   // ── Admin CRUD ─────────────────────────────────────────────────────────────
   async create(data) {
     if (data.mrp < data.price) throw ApiError.badRequest('MRP cannot be less than price');
+    if (data.genders?.length) data.gender = data.genders[0];
     const product = await productRepository.create(data);
     return serializeImages(product.toObject());
   },
@@ -308,6 +315,7 @@ export const productService = {
     if (!product) throw ApiError.notFound('Product not found');
     if (data.images) data.images = restoreImageReferences(product, data.images);
     if (data.variants) data.variants = restoreVariantImageReferences(product, data.variants);
+    if (data.genders?.length) data.gender = data.genders[0];
     Object.assign(product, data);
     if (product.mrp < product.price) throw ApiError.badRequest('MRP cannot be less than price');
     await product.save(); // triggers slug + discountPercent hooks + validation
