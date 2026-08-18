@@ -34,14 +34,14 @@ export default function HomePage() {
   const [cachedCollections, setCachedCollections] = useState(() => loadState(HOME_COLLECTIONS_CACHE_KEY, null));
   const displayCollections = collections || cachedCollections;
   const showCollectionSkeletons = collectionsLoading && !displayCollections;
-  const valueProps = VALUE_PROP_DEFAULTS.map((fallback, index) => {
-    const benefit = trustBenefits?.[index];
-    return {
-      icon: VALUE_PROP_ICONS[index],
-      title: benefit?.title || fallback.title,
-      text: benefit?.subtitle || fallback.subtitle,
-    };
-  });
+  const configuredBenefits = Array.isArray(trustBenefits) && trustBenefits.length
+    ? trustBenefits
+    : VALUE_PROP_DEFAULTS;
+  const valueProps = configuredBenefits.map((benefit, index) => ({
+    icon: VALUE_PROP_ICONS[index % VALUE_PROP_ICONS.length],
+    title: benefit.title,
+    text: benefit.subtitle,
+  }));
 
   useEffect(() => {
     if (!collections) return;

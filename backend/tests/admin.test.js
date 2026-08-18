@@ -216,7 +216,7 @@ describe('Admin APIs', () => {
     expect(hidden.body.data.isActive).toBe(false);
   });
 
-  it('exposes and updates the four homepage trust benefits', async () => {
+  it('exposes and updates flexible homepage trust benefits', async () => {
     const defaults = await request(app).get('/api/v1/settings/trust-benefits');
     expect(defaults.status).toBe(200);
     expect(defaults.body.data).toEqual([
@@ -230,6 +230,7 @@ describe('Admin APIs', () => {
       { title: 'Authentic Eyewear', subtitle: 'Sourced from trusted brands' },
       { title: 'Easy Returns', subtitle: 'Return eligible orders within 14 days' },
       { title: 'Frame Warranty', subtitle: 'One year of frame protection' },
+      { title: 'Expert support', subtitle: 'Helpful advice before and after purchase' },
       { title: 'Complimentary Delivery', subtitle: 'Available above ₹1,499' },
     ];
     const updated = await request(app)
@@ -245,7 +246,7 @@ describe('Admin APIs', () => {
     const invalid = await request(app)
       .patch('/api/v1/admin/settings')
       .set(asAdmin())
-      .send({ trustBenefits: trustBenefits.slice(0, 3) });
+      .send({ trustBenefits: [] });
     expect(invalid.status).toBe(422);
   });
 

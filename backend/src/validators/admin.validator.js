@@ -138,7 +138,8 @@ export const updateSettingsSchema = {
           subtitle: z.string().trim().min(1).max(160),
         })
       )
-      .length(4, 'Exactly four trust benefits are required')
+      .min(1, 'At least one trust benefit is required')
+      .max(12, 'A maximum of 12 trust benefits is allowed')
       .optional(),
   }),
 };

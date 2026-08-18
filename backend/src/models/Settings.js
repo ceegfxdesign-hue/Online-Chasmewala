@@ -87,8 +87,8 @@ const settingsSchema = new mongoose.Schema(
       type: [trustBenefitSchema],
       default: () => DEFAULT_TRUST_BENEFITS.map((benefit) => ({ ...benefit })),
       validate: {
-        validator: (benefits) => benefits.length === 4,
-        message: 'Exactly four trust benefits are required',
+        validator: (benefits) => benefits.length >= 1 && benefits.length <= 12,
+        message: 'Between 1 and 12 trust benefits are required',
       },
     },
   },
