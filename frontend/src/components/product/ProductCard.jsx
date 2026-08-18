@@ -25,6 +25,9 @@ function ProductCardBase({ product, className, priority = false }) {
   const discount = product.discountPercent ?? discountPercent(product.mrp, product.price);
   const brandName = product.brand?.name;
   const image = product.images?.[0];
+  const isContactLens = product.category?.slug === 'contact-lenses';
+  const contactPack = product.contactLens?.packOptions?.[0];
+  const contactQuantity = contactPack?.label || (product.contactLens?.lensesPerBox ? `${product.contactLens.lensesPerBox} lenses/box` : '');
 
   const onWishlist = (e) => {
     e.preventDefault();
@@ -105,7 +108,7 @@ function ProductCardBase({ product, className, priority = false }) {
           )}
 
           {/* Quick add on hover (desktop) */}
-          {product.stock !== 0 && (
+          {product.stock !== 0 && !isContactLens && (
             <button
               type="button"
               onClick={onQuickAdd}
@@ -119,6 +122,8 @@ function ProductCardBase({ product, className, priority = false }) {
         <div className="flex min-h-[148px] flex-1 flex-col p-4">
           {brandName && <p className="text-xs font-medium uppercase tracking-wide text-navy-400">{brandName}</p>}
           <h3 className="mt-1 line-clamp-2 text-sm font-medium text-navy-900">{product.name}</h3>
+
+          {isContactLens && contactQuantity && <p className="mt-1 text-xs font-semibold text-brand-700">{contactQuantity}</p>}
 
           <div className="mt-1.5">
             <RatingStars value={product.rating} count={product.numReviews} size={14} />

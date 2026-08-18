@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Helmet } from 'react-helmet-async';
@@ -18,6 +18,7 @@ import {
 import { useGetProductBySlugQuery, useGetRelatedProductsQuery } from '@/features/products/productApi';
 import { ProductGallery } from '@/components/product/ProductGallery';
 import { LensSelectionDrawer } from '@/components/product/LensSelectionDrawer';
+import { ContactLensConfigurator } from '@/components/product/ContactLensConfigurator';
 import { ReviewsSection } from '@/components/product/ReviewsSection';
 import { ProductCarousel } from '@/components/product/ProductCarousel';
 import { PincodeChecker } from '@/components/product/PincodeChecker';
@@ -78,8 +79,13 @@ export default function ProductDetailsPage() {
   const [prescription, setPrescription] = useState(null);
   const [lensDrawerOpen, setLensDrawerOpen] = useState(false);
   const [qty, setQty] = useState(1);
+  const [contactSelection, setContactSelection] = useState(null);
+  const [contactGalleryImages, setContactGalleryImages] = useState(null);
+  const onContactSelection = useCallback((selection) => setContactSelection(selection), []);
+  const onContactGallery = useCallback((images) => setContactGalleryImages(images), []);
 
   const isEyeglasses = product?.category?.slug?.toLowerCase() === 'eyeglasses';
+  const isContactLens = product?.category?.slug?.toLowerCase() === 'contact-lenses';
   const lensOptions = useMemo(() => (product ? lensOptionsFor(product, isEyeglasses) : []), [product, isEyeglasses]);
   const needsLensSelection = isEyeglasses && !lens?.packageId;
   const featuredOffer = useMemo(() => {
@@ -119,6 +125,8 @@ export default function ProductDetailsPage() {
       setLens(null);
       setPrescription(null);
       setLensDrawerOpen(false);
+      setContactSelection(null);
+      setContactGalleryImages(null);
       setQty(1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -141,8 +149,9 @@ export default function ProductDetailsPage() {
     item?.color || item?.colorHex || item?.primaryColor || item?.primaryColorHex
   ));
   const selectedColourLabel = variant?.color || [variant?.primaryColor, variant?.secondaryColor].filter(Boolean).join(' / ');
-  const galleryImages = variant?.images?.length ? variant.images : product.images;
-  const unitPrice = product.price + (lens?.price || 0);
+  const galleryImages = contactGalleryImages?.length ? contactGalleryImages : (variant?.images?.length ? variant.images : product.images);
+  const activeOption = isContactLens ? contactSelection : lens;
+  const unitPrice = product.price + (activeOption?.price || 0);
   const outOfStock = product.stock === 0;
 
   const buildCartItem = () => ({
@@ -153,8 +162,8 @@ export default function ProductDetailsPage() {
     price: product.price,
     color: variant?.color,
     variantId: variant?._id,
-    lensOption: lens || undefined,
-    prescription: lens ? prescription || undefined : undefined,
+    lensOption: activeOption || undefined,
+    prescription: isContactLens ? contactSelection?.prescription : (lens ? prescription || undefined : undefined),
     quantity: qty,
   });
 
@@ -162,6 +171,10 @@ export default function ProductDetailsPage() {
     if (needsLensSelection) {
       toast.info('Please select lenses before adding this eyeglass frame to your cart.');
       setLensDrawerOpen(true);
+      return;
+    }
+    if (isContactLens && !contactSelection) {
+      toast.info('Please choose a contact lens option before adding it to your cart.');
       return;
     }
     dispatch(addToCart(buildCartItem()));
@@ -172,6 +185,10 @@ export default function ProductDetailsPage() {
     if (needsLensSelection) {
       toast.info('Please select lenses before buying this eyeglass frame.');
       setLensDrawerOpen(true);
+      return;
+    }
+    if (isContactLens && !contactSelection) {
+      toast.info('Please choose a contact lens option before buying it.');
       return;
     }
     dispatch(addToCart(buildCartItem()));
@@ -203,6 +220,7 @@ export default function ProductDetailsPage() {
       /* user dismissed share sheet */
     }
   };
+
 
   const specsTab = (
     <div className="max-w-xl">
@@ -362,8 +380,16 @@ export default function ProductDetailsPage() {
               </div>
             )}
 
+            {isContactLens && (
+              <ContactLensConfigurator
+                product={product}
+                onChange={onContactSelection}
+                onGalleryImages={onContactGallery}
+              />
+            )}
+
             {/* Colors / variants */}
-            {hasColourVariants && (
+            {!isContactLens && hasColourVariants && (
               <div className="mt-6">
                 <p className="mb-2 text-sm font-semibold text-navy-900">
                   Frame color: <span className="font-normal text-navy-500">{selectedColourLabel || 'Selected colour'}</span>
@@ -390,7 +416,7 @@ export default function ProductDetailsPage() {
               </div>
             )}
 
-            <div className="mt-6">
+            {!isContactLens && <div className="mt-6">
               <p className="mb-2 text-sm font-semibold text-navy-900">Frame size</p>
               <div className="flex gap-2">
                 {['small', 'medium', 'large'].map((size) => {
@@ -412,7 +438,7 @@ export default function ProductDetailsPage() {
                 })}
                 <span className="self-center text-xs text-navy-400">{titleCase(product.frameSize)} fit</span>
               </div>
-            </div>
+            </div>}
 
             {isEyeglasses && lensOptions.length > 0 && (
               <div className="mt-6 border-t border-navy-100 pt-5">

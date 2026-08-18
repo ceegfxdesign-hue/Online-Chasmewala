@@ -80,6 +80,29 @@ const lensOptionSchema = z.object({
   price: z.number().min(0).optional(),
 });
 
+const contactLensPackOptionSchema = z.object({
+  label: z.string().trim().min(1).max(60),
+  units: z.number().int().positive().optional(),
+  price: z.number().min(0).optional(),
+  mrp: z.number().min(0).optional(),
+});
+
+const contactLensColorSchema = z.object({
+  name: z.string().trim().min(1).max(60),
+  hex: z.string().trim().max(20).optional(),
+  images: z.array(z.string()).max(5).optional(),
+});
+
+const contactLensSchema = z.object({
+  kind: z.enum(['clear', 'color', 'solution', 'accessory']),
+  wearSchedule: z.string().trim().max(80).optional(),
+  lensesPerBox: z.number().int().positive().optional(),
+  powerModes: z.array(z.enum(['zero-power', 'with-power'])).min(1).max(2).optional(),
+  prescriptionFields: z.array(z.string().trim().min(1).max(40)).max(8).optional(),
+  packOptions: z.array(contactLensPackOptionSchema).max(12).optional(),
+  availableColors: z.array(contactLensColorSchema).max(20).optional(),
+});
+
 export const createProductSchema = {
   body: z.object({
     name: z.string().trim().min(2),
@@ -102,6 +125,7 @@ export const createProductSchema = {
     lensType: z.enum(LENS_TYPES).optional(),
     lensThickness: z.string().trim().optional(),
     lensOptions: z.array(lensOptionSchema).optional(),
+    contactLens: contactLensSchema.optional(),
     suitableFaceShapes: z.array(z.enum(FACE_SHAPES)).optional(),
     tryOnImage: z.string().trim().optional(),
     model3dUrl: z.string().trim().optional(),

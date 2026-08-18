@@ -16,6 +16,11 @@ const orderItemSchema = new mongoose.Schema(
       label: { type: String },
       price: { type: Number, default: 0 },
     },
+    prescription: {
+      method: { type: String },
+      fileName: { type: String },
+      values: { type: Map, of: String },
+    },
   },
   { _id: true }
 );

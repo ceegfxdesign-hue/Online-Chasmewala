@@ -120,6 +120,18 @@ export default function ProductsPage() {
   const items = data?.items || [];
   const meta = data?.meta;
   const title = filters.category ? titleCase(filters.category) : 'All Eyewear';
+  const isContactLensCatalog = filters.category === 'contact-lenses';
+  const contactGroups = isContactLensCatalog ? [
+    ['clear', 'Clear contacts'],
+    ['color', 'Colour contacts'],
+    ['care', 'Solutions & accessories'],
+  ].map(([key, label]) => ({
+    key,
+    label,
+    items: items.filter((product) => key === 'care'
+      ? ['solution', 'accessory'].includes(product.contactLens?.kind)
+      : product.contactLens?.kind === key),
+  })).filter((group) => group.items.length) : [];
 
   const sidebar = shouldLoadFilters ? (
     <Suspense fallback={<div className="h-96 animate-pulse rounded-2xl bg-surface-subtle" />}>
@@ -226,6 +238,15 @@ export default function ProductsPage() {
                 description="Try removing a filter or widening your price range."
                 action={<Button onClick={onClear}>Clear filters</Button>}
               />
+            ) : isContactLensCatalog && contactGroups.length ? (
+              <div className="space-y-10">
+                {contactGroups.map((group) => (
+                  <section key={group.key}>
+                    <div className="mb-4 flex items-center gap-3 border-b border-navy-100 pb-3"><h2 className="text-xl font-semibold text-navy-900">{group.label}</h2><span className="rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-brand-700">{group.key === 'clear' ? 'Prescription ready' : group.key === 'color' ? 'Daily colour' : 'Care essentials'}</span></div>
+                    <div className="grid grid-cols-1 gap-4 min-[375px]:grid-cols-2 sm:grid-cols-3 xl:grid-cols-4">{group.items.map((product, index) => <ProductCard key={product._id} product={product} priority={index === 0} />)}</div>
+                  </section>
+                ))}
+              </div>
             ) : (
               <>
                 <div className="grid grid-cols-1 gap-4 min-[375px]:grid-cols-2 sm:grid-cols-3 xl:grid-cols-4">

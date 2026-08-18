@@ -13,9 +13,29 @@ const MAX_UPLOADED_IMAGES = 5;
 const MAX_IMAGE_EDGE = 1200;
 const MAX_IMAGE_DATA_URL_LENGTH = 750000;
 
+const EMPTY_CONTACT_LENS = {
+  kind: 'clear',
+  wearSchedule: 'Monthly disposable',
+  lensesPerBox: 3,
+  powerModes: ['with-power'],
+  prescriptionFields: ['Spherical', 'SPH'],
+  packOptions: [{ label: '3 lenses/box', units: 3, price: 0, mrp: 0 }],
+  availableColors: [],
+};
+
 const asLines = (items = []) => items.join('\n');
 const asCommaList = (items = []) => items.join(', ');
 const humanize = (value) => value.replaceAll('-', ' ');
+const createContactPack = () => ({ label: '', units: 1, price: 0, mrp: 0 });
+const createContactColor = () => ({ name: '', hex: '#6B7280', images: [] });
+const normalizeContactLens = (value) => ({
+  ...EMPTY_CONTACT_LENS,
+  ...(value || {}),
+  powerModes: value?.powerModes?.length ? value.powerModes : EMPTY_CONTACT_LENS.powerModes,
+  prescriptionFields: value?.prescriptionFields?.length ? value.prescriptionFields : EMPTY_CONTACT_LENS.prescriptionFields,
+  packOptions: value?.packOptions?.length ? value.packOptions : EMPTY_CONTACT_LENS.packOptions,
+  availableColors: value?.availableColors || [],
+});
 
 const createEmptyVariant = () => ({
   color: '',
@@ -91,7 +111,7 @@ function Toggle({ name, label, defaultChecked = false }) {
  * Complete product editor for the admin area. Array fields use one item per
  * line (or comma-separated chips) so the request matches the product API.
  */
-export function ProductEditorModal({ product, categories, brands, onClose, onSave, saving = false }) {
+export function ProductEditorModal({ product, categories, brands, onClose, onSave, saving = false, contactLensMode = false, fixedCategoryId }) {
   const toast = useToast();
   const editing = Boolean(product?._id);
   const [validationErrors, setValidationErrors] = useState({});
@@ -99,6 +119,7 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
   const [uploadedImages, setUploadedImages] = useState([]);
   const [preparingImages, setPreparingImages] = useState(false);
   const [variants, setVariants] = useState([]);
+  const [contactLens, setContactLens] = useState(EMPTY_CONTACT_LENS);
   const mainImageInputRef = useRef(null);
   const mainImageUploadModeRef = useRef('add');
   const variantImageInputRefs = useRef({});
@@ -111,6 +132,7 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
     setUploadedImages([]);
     setPreparingImages(false);
     setVariants(product?.variants?.map((variant) => ({ ...createEmptyVariant(), ...variant, images: variant.images || [] })) || []);
+    setContactLens(normalizeContactLens(product?.contactLens));
     // Reset only when opening a different product; edits must not reset the form.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?._id]);
@@ -170,6 +192,8 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
       itemIndex === index ? { ...variant, [field]: value } : variant
     )));
   };
+
+  const updateContactLens = (field, value) => setContactLens((current) => ({ ...current, [field]: value }));
 
   const uploadVariantImages = async (index, event) => {
     const files = Array.from(event.target.files || []);
@@ -254,6 +278,44 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
     }
     body.lensOptions = lensOptions;
 
+    if (contactLensMode) {
+      body.category = fixedCategoryId || body.category;
+      const packOptions = contactLens.packOptions
+        .map((item) => ({
+          label: String(item.label || '').trim(),
+          units: Number(item.units || 1),
+          price: Number(item.price || 0),
+          mrp: Number(item.mrp || 0),
+        }))
+        .filter((item) => item.label);
+      if (!packOptions.length) {
+        setValidationErrors({ contactLens: 'Add at least one lenses-per-box, volume, or accessory option.' });
+        toast.error('Add at least one contact lens pack option.');
+        return;
+      }
+      body.contactLens = {
+        kind: contactLens.kind,
+        wearSchedule: String(contactLens.wearSchedule || '').trim() || undefined,
+        lensesPerBox: Number(contactLens.lensesPerBox || 1),
+        powerModes: contactLens.kind === 'clear' || contactLens.kind === 'color'
+          ? contactLens.powerModes.filter(Boolean)
+          : ['zero-power'],
+        prescriptionFields: contactLens.prescriptionFields.map((field) => String(field).trim()).filter(Boolean),
+        packOptions,
+        availableColors: contactLens.kind === 'color'
+          ? contactLens.availableColors
+            .map((color) => ({
+              name: String(color.name || '').trim(),
+              hex: String(color.hex || '').trim() || undefined,
+              images: (color.images || []).map(normalizeImageSource).filter(Boolean),
+            }))
+            .filter((color) => color.name)
+          : [],
+      };
+    } else {
+      delete body.contactLens;
+    }
+
     ['powered', 'blueLightFilter', 'polarized', 'uvProtection', 'isActive', 'isBestSeller', 'isTrending', 'isNewArrival', 'isFeatured'].forEach((key) => {
       body[key] = form.get(key) === 'on';
     });
@@ -291,7 +353,15 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
           <div className="grid gap-4 md:grid-cols-2">
             <Input name="name" label="Product name" defaultValue={product?.name} minLength="2" error={getFieldError('name')} required />
             <Input name="sku" label="SKU" defaultValue={product?.sku} error={getFieldError('sku')} required />
-            <Select name="category" label="Category" defaultValue={product?.category?._id || product?.category || ''} placeholder="Select a category" options={categories.map((item) => ({ value: item._id, label: item.name }))} error={getFieldError('category')} required />
+            {contactLensMode ? (
+              <div>
+                <input name="category" type="hidden" value={fixedCategoryId || product?.category?._id || product?.category || ''} readOnly />
+                <p className="mb-1.5 text-sm font-medium text-navy-700">Category</p>
+                <div className="flex h-11 items-center rounded-xl border border-brand-200 bg-brand-50 px-3 text-sm font-semibold text-brand-700">Contact lenses</div>
+              </div>
+            ) : (
+              <Select name="category" label="Category" defaultValue={product?.category?._id || product?.category || ''} placeholder="Select a category" options={categories.map((item) => ({ value: item._id, label: item.name }))} error={getFieldError('category')} required />
+            )}
             <Select name="brand" label="Brand" defaultValue={product?.brand?._id || product?.brand || ''} placeholder="Select a brand" options={brands.map((item) => ({ value: item._id, label: item.name }))} error={getFieldError('brand')} required />
             <Input name="price" label="Selling price (₹)" type="number" min="0" step="0.01" defaultValue={product?.price} error={getFieldError('price')} required />
             <Input name="mrp" label="MRP (₹)" type="number" min="0" step="0.01" defaultValue={product?.mrp} error={getFieldError('mrp')} required />
@@ -301,6 +371,91 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
             <div className="md:col-span-2"><Textarea name="highlights" label="Highlights (one per line)" defaultValue={asLines(product?.highlights)} helper="Shown as product benefits on the detail page." /></div>
           </div>
         </section>
+
+        {contactLensMode && (
+          <section className="rounded-2xl border border-brand-200 bg-brand-50/40 p-4 sm:p-5">
+            <div className="mb-4">
+              <h3 className="font-semibold text-navy-900">Contact lens configuration</h3>
+              <p className="mt-1 text-sm text-navy-500">Configure clear lenses, colour lenses, solutions, or accessories for the customer product page.</p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              <Select
+                label="Contact product type"
+                value={contactLens.kind}
+                onChange={(event) => updateContactLens('kind', event.target.value)}
+                options={[
+                  { value: 'clear', label: 'Clear contacts' },
+                  { value: 'color', label: 'Colour contacts' },
+                  { value: 'solution', label: 'Solutions' },
+                  { value: 'accessory', label: 'Accessories' },
+                ]}
+              />
+              <Input label="Wear schedule / product label" value={contactLens.wearSchedule || ''} onChange={(event) => updateContactLens('wearSchedule', event.target.value)} placeholder="Monthly disposable, 60 ml, travel kit" />
+              <Input label="Lenses per box" type="number" min="1" value={contactLens.lensesPerBox || ''} onChange={(event) => updateContactLens('lensesPerBox', event.target.value)} helper="Shown on clear and colour-contact cards." />
+            </div>
+
+            {(contactLens.kind === 'clear' || contactLens.kind === 'color') && (
+              <div className="mt-5">
+                <p className="text-sm font-semibold text-navy-800">Power types customers can choose</p>
+                <div className="mt-2 flex flex-wrap gap-3">
+                  {[['zero-power', 'Zero Power'], ['with-power', 'With Power']].map(([value, label]) => (
+                    <label key={value} className="inline-flex items-center gap-2 rounded-lg border border-navy-200 bg-surface px-3 py-2 text-sm text-navy-700">
+                      <input
+                        type="checkbox"
+                        checked={contactLens.powerModes.includes(value)}
+                        onChange={(event) => updateContactLens('powerModes', event.target.checked
+                          ? [...new Set([...contactLens.powerModes, value])]
+                          : contactLens.powerModes.filter((item) => item !== value))}
+                        className="accent-brand-500"
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+                <Textarea
+                  className="mt-4"
+                  label="Manual prescription fields (one per line)"
+                  value={asLines(contactLens.prescriptionFields)}
+                  onChange={(event) => updateContactLens('prescriptionFields', event.target.value.split('\n').map((item) => item.trim()).filter(Boolean))}
+                  helper="For example: Spherical, SPH, Cylindrical, Axis. Customers can type/select a value for every field."
+                  rows={3}
+                />
+              </div>
+            )}
+
+            <div className="mt-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div><p className="text-sm font-semibold text-navy-800">Pack / quantity options</p><p className="text-xs text-navy-500">For example 3 lenses/box, 60 ml, or a designer case.</p></div>
+                <Button type="button" variant="outline" size="sm" onClick={() => updateContactLens('packOptions', [...contactLens.packOptions, createContactPack()])}>Add option</Button>
+              </div>
+              <div className="mt-3 space-y-3">
+                {contactLens.packOptions.map((pack, index) => (
+                  <div key={index} className="grid gap-3 rounded-xl border border-navy-100 bg-surface p-3 md:grid-cols-[minmax(0,1.6fr)_0.7fr_0.8fr_0.8fr_auto]">
+                    <Input label={`Option ${index + 1}`} value={pack.label} onChange={(event) => updateContactLens('packOptions', contactLens.packOptions.map((item, itemIndex) => itemIndex === index ? { ...item, label: event.target.value } : item))} placeholder="3 lenses/box" />
+                    <Input label="Units" type="number" min="1" value={pack.units} onChange={(event) => updateContactLens('packOptions', contactLens.packOptions.map((item, itemIndex) => itemIndex === index ? { ...item, units: event.target.value } : item))} />
+                    <Input label="Price (₹)" type="number" min="0" value={pack.price} onChange={(event) => updateContactLens('packOptions', contactLens.packOptions.map((item, itemIndex) => itemIndex === index ? { ...item, price: event.target.value } : item))} />
+                    <Input label="MRP (₹)" type="number" min="0" value={pack.mrp} onChange={(event) => updateContactLens('packOptions', contactLens.packOptions.map((item, itemIndex) => itemIndex === index ? { ...item, mrp: event.target.value } : item))} />
+                    <Button type="button" variant="ghost" size="sm" className="self-end text-error hover:bg-error/10 hover:text-error" disabled={contactLens.packOptions.length === 1} onClick={() => updateContactLens('packOptions', contactLens.packOptions.filter((_, itemIndex) => itemIndex !== index))}>Remove</Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {contactLens.kind === 'color' && (
+              <div className="mt-5 border-t border-brand-100 pt-5">
+                <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-sm font-semibold text-navy-800">Available colours</p><p className="text-xs text-navy-500">Colour selection can change the product gallery.</p></div><Button type="button" variant="outline" size="sm" onClick={() => updateContactLens('availableColors', [...contactLens.availableColors, createContactColor()])}>Add colour</Button></div>
+                <div className="mt-3 space-y-3">
+                  {contactLens.availableColors.map((color, index) => (
+                    <div key={index} className="rounded-xl border border-navy-100 bg-surface p-3">
+                      <div className="grid gap-3 md:grid-cols-[1fr_120px_auto]"><Input label="Colour name" value={color.name} onChange={(event) => updateContactLens('availableColors', contactLens.availableColors.map((item, itemIndex) => itemIndex === index ? { ...item, name: event.target.value } : item))} placeholder="Spicy Gray" /><label className="text-sm font-medium text-navy-700">Swatch<input type="color" value={color.hex || '#6B7280'} onChange={(event) => updateContactLens('availableColors', contactLens.availableColors.map((item, itemIndex) => itemIndex === index ? { ...item, hex: event.target.value } : item))} className="mt-1.5 block h-11 w-full rounded-xl border border-navy-200 bg-surface p-1" /></label><Button type="button" variant="ghost" size="sm" className="self-end text-error hover:bg-error/10 hover:text-error" onClick={() => updateContactLens('availableColors', contactLens.availableColors.filter((_, itemIndex) => itemIndex !== index))}>Remove</Button></div>
+                      <Textarea label="Images for this colour (one URL per line)" value={asLines(color.images)} onChange={(event) => updateContactLens('availableColors', contactLens.availableColors.map((item, itemIndex) => itemIndex === index ? { ...item, images: event.target.value.split('\n').map(normalizeImageSource).filter(Boolean) } : item))} rows={2} containerClassName="mt-3" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
         <section>
           <h3 className="mb-3 font-semibold text-navy-900">Gallery and colour variants</h3>

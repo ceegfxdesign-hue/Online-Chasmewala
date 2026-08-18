@@ -100,6 +100,7 @@ export const orderService = {
       quantity: i.quantity,
       price: i.basePrice,
       lensOption: i.lensOption,
+      prescription: i.prescription,
     }));
 
     const estimatedDeliveryAt = new Date();

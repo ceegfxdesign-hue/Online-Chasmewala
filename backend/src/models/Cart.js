@@ -17,6 +17,9 @@ const cartItemSchema = new mongoose.Schema(
     prescription: {
       method: { type: String, enum: ['manual', 'later', 'upload'] },
       fileName: { type: String },
+      // Custom contact-lens fields such as Spherical/SPH are configured by
+      // admins per product and stored by field + eye (e.g. `SPH:Right eye`).
+      values: { type: Map, of: String },
       leftEye: { sph: String, cyl: String, axis: String },
       rightEye: { sph: String, cyl: String, axis: String },
       pd: String,

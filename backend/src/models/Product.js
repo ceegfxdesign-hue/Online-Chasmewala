@@ -35,6 +35,38 @@ const lensOptionSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const contactLensPackOptionSchema = new mongoose.Schema(
+  {
+    label: { type: String, required: true, trim: true },
+    units: { type: Number, min: 1 },
+    price: { type: Number, min: 0 },
+    mrp: { type: Number, min: 0 },
+  },
+  { _id: false }
+);
+
+const contactLensColorSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    hex: { type: String, trim: true },
+    images: [{ type: String }],
+  },
+  { _id: false }
+);
+
+const contactLensSchema = new mongoose.Schema(
+  {
+    kind: { type: String, enum: ['clear', 'color', 'solution', 'accessory'], default: 'clear', index: true },
+    wearSchedule: { type: String, trim: true },
+    lensesPerBox: { type: Number, min: 1 },
+    powerModes: [{ type: String, enum: ['zero-power', 'with-power'] }],
+    prescriptionFields: [{ type: String, trim: true }],
+    packOptions: [contactLensPackOptionSchema],
+    availableColors: [contactLensColorSchema],
+  },
+  { _id: false }
+);
+
 const productSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -68,6 +100,10 @@ const productSchema = new mongoose.Schema(
     lensType: { type: String, enum: LENS_TYPES, index: true },
     lensThickness: { type: String },
     lensOptions: [lensOptionSchema],
+    // Contact-lens-specific configuration. This is only used for products in
+    // the contact-lenses category and keeps clear, colour, solution and case
+    // products in the same catalogue/order pipeline.
+    contactLens: { type: contactLensSchema, default: undefined },
     suitableFaceShapes: [{ type: String, enum: FACE_SHAPES }],
     // Optional assets retained for future virtual try-on and 3D viewing.
     tryOnImage: { type: String },
