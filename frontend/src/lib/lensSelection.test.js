@@ -18,6 +18,14 @@ describe('lens selection helpers', () => {
     expect(first).not.toBe(second);
   });
 
+  it('separates uploaded prescription attachments', () => {
+    const base = { lensOption: { baseType: 'single-vision', packageId: 'anti-glare' } };
+    const first = lensConfigurationKey({ ...base, prescription: { method: 'upload', fileName: 'rx.pdf', mimeType: 'application/pdf', fileData: 'data:application/pdf;base64,YQ==' } });
+    const second = lensConfigurationKey({ ...base, prescription: { method: 'upload', fileName: 'rx.pdf', mimeType: 'application/pdf', fileData: 'data:application/pdf;base64,Yg==' } });
+
+    expect(first).not.toBe(second);
+  });
+
   it('separates contact selections by full type and colour', () => {
     const blue = lensConfigurationKey({
       lensOption: { type: 'contact-color-zero-power-0-0', baseType: 'zero-power', packageId: 'contact-0', colour: 'Ocean Blue' },

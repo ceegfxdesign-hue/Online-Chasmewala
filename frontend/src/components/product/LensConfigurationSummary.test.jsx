@@ -21,6 +21,24 @@ describe('LensConfigurationSummary', () => {
     expect(screen.getByText('+₹500')).toBeInTheDocument();
   });
 
+  it('shows a downloadable uploaded prescription in customer and admin summaries', () => {
+    render(
+      <LensConfigurationSummary
+        lensOption={{ baseType: 'single-vision', label: 'Single Vision' }}
+        prescription={{
+          method: 'upload',
+          fileName: 'eye-power.pdf',
+          mimeType: 'application/pdf',
+          fileData: 'data:application/pdf;base64,aGVsbG8=',
+        }}
+      />
+    );
+
+    const link = screen.getByRole('link', { name: 'eye-power.pdf' });
+    expect(link).toHaveAttribute('download', 'eye-power.pdf');
+    expect(link).toHaveAttribute('href', 'data:application/pdf;base64,aGVsbG8=');
+  });
+
   it('does not duplicate a legacy combined lens label', () => {
     render(
       <LensConfigurationSummary

@@ -6,6 +6,10 @@ export function LensConfigurationSummary({ lensOption, prescription, compact = f
   if (!lensOption) return null;
 
   const values = prescriptionEntries(prescription);
+  const uploadedFile = prescription?.method === 'upload' ? prescription : null;
+  const safeUploadUrl = uploadedFile?.fileData && /^(data:(image\/jpeg|image\/png|image\/webp|application\/pdf);base64,)/.test(uploadedFile.fileData)
+    ? uploadedFile.fileData
+    : '';
   const powerLabel = lensOption.powerTypeLabel || lensOption.baseType;
   const title = lensOption.packageName
     ? [powerLabel, lensOption.packageName].filter((value, index, list) => value && list.indexOf(value) === index).join(' · ')
@@ -43,6 +47,18 @@ export function LensConfigurationSummary({ lensOption, prescription, compact = f
             </div>
           ))}
         </dl>
+      )}
+      {uploadedFile?.fileName && (
+        <p className="mt-2 text-xs text-navy-600">
+          Uploaded prescription:{' '}
+          {safeUploadUrl ? (
+            <a className="font-semibold text-brand-700 underline" href={safeUploadUrl} download={uploadedFile.fileName}>
+              {uploadedFile.fileName}
+            </a>
+          ) : (
+            <span className="font-semibold text-navy-800">{uploadedFile.fileName}</span>
+          )}
+        </p>
       )}
     </div>
   );

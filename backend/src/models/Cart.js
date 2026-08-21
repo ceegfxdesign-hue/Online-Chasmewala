@@ -31,10 +31,12 @@ const cartItemSchema = new mongoose.Schema(
     // lines while identical configurations can still merge quantities.
     configurationFingerprint: { type: String },
     prescription: {
-      // `later` and `upload` remain in the stored schema solely so historical
-      // carts can still be read. New API writes only accept `manual`.
+      // `later` remains solely so historical carts can still be read.
+      // Current writes accept admin-configured manual values or an attachment.
       method: { type: String, enum: ['manual', 'later', 'upload'] },
       fileName: { type: String },
+      mimeType: { type: String },
+      fileData: { type: String },
       // New prescriptions use this generic field-name -> selected-value map.
       values: { type: Map, of: String },
       // Legacy fields retained for old carts.

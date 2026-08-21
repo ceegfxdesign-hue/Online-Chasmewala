@@ -1188,7 +1188,7 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
             <div>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h4 className="text-sm font-semibold text-navy-800">1. Power modes</h4>
+                  <h4 className="text-sm font-semibold text-navy-800">1. Power types shown to customers</h4>
                   <p className="mt-1 text-xs text-navy-500">The stable ID connects each mode to its packages and prescription fields. Labels can be changed freely.</p>
                 </div>
                 <Button
@@ -1415,7 +1415,7 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
             <div className="mt-6 border-t border-brand-100 pt-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h4 className="text-sm font-semibold text-navy-800">3. Manual prescription fields</h4>
+                  <h4 className="text-sm font-semibold text-navy-800">3. Enter eye power fields</h4>
                   <p className="mt-1 text-xs text-navy-500">Set each value&apos;s range and whether customers enter it once or separately for the right and left eye.</p>
                 </div>
                 <Button

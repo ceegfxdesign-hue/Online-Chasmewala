@@ -23,17 +23,32 @@ const lensOption = z
   })
   .optional();
 
-const prescription = z
-  .object({
-    method: z.literal('manual').optional().default('manual'),
-    values: z
-      .record(z.union([z.string().max(100), z.number().finite()]))
-      .refine((values) => Object.keys(values).length <= 100, 'Too many prescription values')
-      .transform((values) => Object.fromEntries(
-        Object.entries(values).map(([key, value]) => [key, String(value).trim()])
-      )),
-  })
-  .optional();
+const prescriptionValues = z
+  .record(z.union([z.string().max(100), z.number().finite()]))
+  .refine((values) => Object.keys(values).length <= 100, 'Too many prescription values')
+  .transform((values) => Object.fromEntries(
+    Object.entries(values).map(([key, value]) => [key, String(value).trim()])
+  ));
+
+const manualPrescription = z.object({
+  method: z.literal('manual').optional().default('manual'),
+  values: prescriptionValues,
+});
+
+const uploadedPrescription = z.object({
+  method: z.literal('upload'),
+  fileName: z.string().trim().min(1).max(180),
+  mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']),
+  fileData: z.string().max(2_800_000),
+}).superRefine(({ mimeType, fileData }, context) => {
+  const prefix = `data:${mimeType};base64,`;
+  const encoded = fileData.startsWith(prefix) ? fileData.slice(prefix.length) : '';
+  if (!encoded || !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['fileData'], message: 'Invalid prescription file' });
+  }
+});
+
+const prescription = z.union([manualPrescription, uploadedPrescription]).optional();
 
 export const addCartItemSchema = {
   body: z.object({

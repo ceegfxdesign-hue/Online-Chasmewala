@@ -177,13 +177,13 @@ describe('LensSelectionDrawer', () => {
     expect(within(poweredPackage).getByText('₹750')).toBeInTheDocument();
   });
 
-  it('uses generated per-eye selects and has no later or upload choices', () => {
+  it('offers admin-generated manual fields and upload, without submit later', () => {
     renderDrawer();
     continueToPower();
 
     expect(screen.queryByText(/Submit power later/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Upload prescription/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/upload/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Enter your eye power/i })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /Upload prescription/i })).toBeInTheDocument();
 
     const rightSph = screen.getByLabelText(/Right eye · SPH/);
     const leftSph = screen.getByLabelText(/Left eye · SPH/);
@@ -196,6 +196,26 @@ describe('LensSelectionDrawer', () => {
       '+0.5',
       '+1.0',
     ]);
+  });
+
+  it('uploads a prescription and completes with its attachment snapshot', async () => {
+    const { onComplete } = renderDrawer();
+    continueToPower();
+    fireEvent.click(screen.getByRole('button', { name: /Upload prescription/i }));
+
+    const file = new File(['prescription'], 'eye-power.pdf', { type: 'application/pdf' });
+    fireEvent.change(screen.getByLabelText('Upload prescription file'), { target: { files: [file] } });
+    expect(await screen.findByText('eye-power.pdf')).toBeInTheDocument();
+
+    const finish = screen.getByRole('button', { name: 'Use these lenses' });
+    expect(finish).toBeEnabled();
+    fireEvent.click(finish);
+    expect(onComplete.mock.calls[0][0].prescription).toMatchObject({
+      method: 'upload',
+      fileName: 'eye-power.pdf',
+      mimeType: 'application/pdf',
+    });
+    expect(onComplete.mock.calls[0][0].prescription.fileData).toMatch(/^data:application\/pdf;base64,/);
   });
 
   it('requires configured fields and completes with clean lens and prescription snapshots', () => {

@@ -85,7 +85,7 @@ function legacyPrescriptionValues(raw) {
   return values;
 }
 
-/** New writes are generic manual maps; historical shapes are preserved on read. */
+/** New writes are generic manual maps or validated uploads; historical shapes are preserved on read. */
 function normalizePrescription(rawPrescription, { allowLegacy = false } = {}) {
   if (!rawPrescription) return undefined;
   const raw = toPlain(rawPrescription);
@@ -93,6 +93,14 @@ function normalizePrescription(rawPrescription, { allowLegacy = false } = {}) {
   // undefined. Treat it exactly like an omitted prescription.
   if (!raw || typeof raw !== 'object') return undefined;
   const values = { ...legacyPrescriptionValues(raw), ...valuesObject(raw.values) };
+  if (raw.method === 'upload') {
+    return {
+      method: 'upload',
+      fileName: text(raw.fileName),
+      mimeType: text(raw.mimeType),
+      fileData: text(raw.fileData),
+    };
+  }
   if (raw.method === 'manual' || Object.keys(values).length > 0 || !allowLegacy) {
     return { method: 'manual', values };
   }
@@ -167,6 +175,15 @@ function appliesToPowerType(item, powerType) {
 
 function validateConfiguredPrescription(product, mode, prescription, { allowLegacy = false } = {}) {
   if (!mode.requiresPrescription) return undefined;
+  if (prescription?.method === 'upload') {
+    // Old uploaded prescriptions only stored a filename. Preserve those on
+    // reads, while all current API writes must carry the validated attachment.
+    if (allowLegacy && prescription.fileName && !prescription.fileData) return prescription;
+    if (!prescription.fileName || !prescription.mimeType || !prescription.fileData) {
+      throw ApiError.badRequest(`A prescription file is required for ${mode.label}`);
+    }
+    return prescription;
+  }
   if (allowLegacy && prescription && prescription.method !== 'manual') return prescription;
   const values = prescription?.values || {};
   const fields = (product.lensPrescriptionFields || []).filter(

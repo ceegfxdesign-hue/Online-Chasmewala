@@ -31,6 +31,8 @@ const orderItemSchema = new mongoose.Schema(
     prescription: {
       method: { type: String },
       fileName: { type: String },
+      mimeType: { type: String },
+      fileData: { type: String },
       values: { type: Map, of: String },
       // Legacy fields retained so older orders remain readable.
       leftEye: { sph: String, cyl: String, axis: String },

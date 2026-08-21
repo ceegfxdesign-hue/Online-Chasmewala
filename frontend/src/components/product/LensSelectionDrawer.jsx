@@ -4,8 +4,10 @@ import {
   FiArrowRight,
   FiCheck,
   FiEye,
+  FiFileText,
   FiImage,
   FiShield,
+  FiUpload,
 } from 'react-icons/fi';
 import { Button, Drawer, Select } from '@/components/ui';
 import { formatPrice } from '@/lib/format';
@@ -68,6 +70,33 @@ const POWER_COPY = {
 };
 
 const STEPS = ['Power type', 'Lenses', 'Add power'];
+const MAX_PRESCRIPTION_FILE_BYTES = 2 * 1024 * 1024;
+const MAX_PRESCRIPTION_DATA_URL_LENGTH = 2_800_000;
+const PRESCRIPTION_FILE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
+
+export function readPrescriptionFile(file) {
+  return new Promise((resolve, reject) => {
+    if (!file || !PRESCRIPTION_FILE_TYPES.has(file.type)) {
+      reject(new Error('Choose a JPG, PNG, WebP, or PDF prescription.'));
+      return;
+    }
+    if (file.size > MAX_PRESCRIPTION_FILE_BYTES) {
+      reject(new Error('Prescription files must be 2 MB or smaller.'));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('The prescription file could not be read.'));
+    reader.onload = () => {
+      const fileData = String(reader.result || '');
+      if (!fileData.startsWith(`data:${file.type};base64,`) || fileData.length > MAX_PRESCRIPTION_DATA_URL_LENGTH) {
+        reject(new Error('The prescription file is invalid or too large.'));
+        return;
+      }
+      resolve({ fileName: file.name, mimeType: file.type, fileData });
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
 const isAllowedForPowerType = (item, powerType) => {
   const allowed = Array.isArray(item?.powerTypes) ? item.powerTypes : [];
@@ -125,7 +154,7 @@ const restorePrescriptionValues = (selectedPrescription, fields) => {
 
   Object.entries(source).forEach(([key, value]) => {
     if (typeof value === 'string' || typeof value === 'number') {
-      if (!['method', 'fileName'].includes(key)) restored[key] = String(value);
+      if (!['method', 'fileName', 'mimeType', 'fileData'].includes(key)) restored[key] = String(value);
     }
   });
 
@@ -189,6 +218,10 @@ export function LensSelectionDrawer({
   const [packageId, setPackageId] = useState('');
   const [activeTag, setActiveTag] = useState('all');
   const [prescriptionValues, setPrescriptionValues] = useState({});
+  const [prescriptionMethod, setPrescriptionMethod] = useState('manual');
+  const [uploadedPrescription, setUploadedPrescription] = useState(null);
+  const [uploadError, setUploadError] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   const selectedPower = useMemo(
     () => activeOptions.find((option) => option.type === powerType) || activeOptions[0],
@@ -233,6 +266,16 @@ export function LensSelectionDrawer({
     setPackageId(initialPackage?.id || initialPackage?._id || '');
     setActiveTag('all');
     setPrescriptionValues(restorePrescriptionValues(selectedPrescription, availableFields));
+    setPrescriptionMethod(selectedPrescription?.method === 'upload' ? 'upload' : 'manual');
+    setUploadedPrescription(selectedPrescription?.method === 'upload' && selectedPrescription.fileName
+      ? {
+          fileName: selectedPrescription.fileName,
+          mimeType: selectedPrescription.mimeType || '',
+          fileData: selectedPrescription.fileData || '',
+        }
+      : null);
+    setUploadError('');
+    setUploading(false);
   }, [open, activeOptions, availablePackages, availableFields, selectedOption, selectedPrescription]);
 
   useEffect(() => {
@@ -260,6 +303,22 @@ export function LensSelectionDrawer({
     setPrescriptionValues((current) => ({ ...current, [key]: value }));
   };
 
+  const uploadPrescription = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setUploading(true);
+    setUploadError('');
+    try {
+      setUploadedPrescription(await readPrescriptionFile(file));
+    } catch (error) {
+      setUploadedPrescription(null);
+      setUploadError(error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const hasAnyApplicablePowerValue = applicableFields.some((field) => {
     if (field.scope === 'per-eye') {
       return ['Right', 'Left'].some((eye) => {
@@ -270,7 +329,7 @@ export function LensSelectionDrawer({
     const value = prescriptionValues[fieldSnapshotKey(field)];
     return value !== undefined && value !== '';
   });
-  const requiredComplete = !needsPrescription || (
+  const manualPrescriptionComplete = (
     applicableFields.length > 0 && hasAnyApplicablePowerValue && applicableFields.every((field) => {
       if (!field.required) return true;
       if (field.scope === 'per-eye') {
@@ -278,6 +337,12 @@ export function LensSelectionDrawer({
       }
       return prescriptionValues[fieldSnapshotKey(field)] !== undefined && prescriptionValues[fieldSnapshotKey(field)] !== '';
     })
+  );
+  const uploadPrescriptionComplete = Boolean(
+    uploadedPrescription?.fileName && uploadedPrescription?.mimeType && uploadedPrescription?.fileData
+  );
+  const requiredComplete = !needsPrescription || (
+    prescriptionMethod === 'upload' ? uploadPrescriptionComplete : manualPrescriptionComplete
   );
 
   const finish = () => {
@@ -319,9 +384,11 @@ export function LensSelectionDrawer({
         }
       }
     });
-    const prescription = needsPrescription
-      ? { method: 'manual', values: completedValues }
-      : undefined;
+    const prescription = !needsPrescription
+      ? undefined
+      : prescriptionMethod === 'upload'
+        ? { method: 'upload', ...uploadedPrescription }
+        : { method: 'manual', values: completedValues };
 
     onComplete?.({ lensOption, prescription });
     onClose?.();
@@ -540,12 +607,45 @@ export function LensSelectionDrawer({
         {step === 2 && (
           <section aria-labelledby="eye-power-heading">
             <h3 id="eye-power-heading" className="text-h4 text-navy-900">
-              {needsPrescription ? 'Enter your eye power' : 'Your lens selection is ready'}
+              {needsPrescription ? 'How would you like to provide your power?' : 'Your lens selection is ready'}
             </h3>
             {needsPrescription ? (
               <>
-                <p className="mt-1 text-sm text-navy-500">Choose the values from your latest eye prescription. Required fields are marked with an asterisk.</p>
-                {applicableFields.length > 0 ? (
+                <p className="mt-1 text-sm text-navy-500">Choose a convenient prescription method. You can change this before adding the frame.</p>
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  {[
+                    { method: 'manual', title: 'Enter your eye power', subtitle: 'Choose values from your latest prescription.', icon: FiEye },
+                    { method: 'upload', title: 'Upload prescription', subtitle: 'Upload a JPG, PNG, WebP, or PDF up to 2 MB.', icon: FiUpload },
+                  ].map(({ method, title, subtitle, icon: Icon }) => (
+                    <button
+                      key={method}
+                      type="button"
+                      aria-pressed={prescriptionMethod === method}
+                      onClick={() => {
+                        setPrescriptionMethod(method);
+                        setUploadError('');
+                      }}
+                      className={cn(
+                        'flex items-start gap-3 rounded-2xl border p-4 text-left transition',
+                        prescriptionMethod === method
+                          ? 'border-brand-600 bg-brand-50 text-brand-900'
+                          : 'border-navy-100 bg-white text-navy-800 hover:border-brand-300'
+                      )}
+                    >
+                      <span className={cn('rounded-xl p-2', prescriptionMethod === method ? 'bg-brand-600 text-white' : 'bg-surface-muted text-brand-700')}>
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <span>
+                        <span className="block font-semibold">{title}</span>
+                        <span className="mt-0.5 block text-sm text-navy-500">{subtitle}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                {prescriptionMethod === 'manual' && (
+                  <p className="mt-5 text-sm text-navy-500">Required fields are marked with an asterisk.</p>
+                )}
+                {prescriptionMethod === 'manual' && (applicableFields.length > 0 ? (
                   <div className="mt-5 space-y-5">
                     {applicableFields.map((field) => {
                       const choices = buildPowerChoices(field).map((value) => ({ label: value, value }));
@@ -590,9 +690,44 @@ export function LensSelectionDrawer({
                   </div>
                 ) : (
                   <p className="mt-5 rounded-2xl bg-surface-muted p-5 text-sm text-navy-600">No prescription fields are configured for this power type.</p>
-                )}
-                {!requiredComplete && (
+                ))}
+                {prescriptionMethod === 'manual' && !manualPrescriptionComplete && (
                   <p className="mt-4 text-sm font-medium text-navy-600" role="status">Complete all required power values to continue.</p>
+                )}
+                {prescriptionMethod === 'upload' && (
+                  <div className="mt-5 rounded-2xl border border-dashed border-brand-300 bg-brand-50/40 p-5">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <label className={cn('inline-flex cursor-pointer items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white', uploading && 'cursor-wait opacity-60')}>
+                        <FiUpload />
+                        {uploading ? 'Reading file…' : uploadedPrescription ? 'Replace prescription' : 'Choose prescription file'}
+                        <input
+                          type="file"
+                          className="sr-only"
+                          accept="image/jpeg,image/png,image/webp,application/pdf"
+                          aria-label="Upload prescription file"
+                          disabled={uploading}
+                          onChange={uploadPrescription}
+                        />
+                      </label>
+                      {uploadedPrescription && (
+                        <button type="button" className="text-sm font-semibold text-error" onClick={() => setUploadedPrescription(null)}>
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    {uploadedPrescription ? (
+                      <div className="mt-4 flex items-center gap-3 rounded-xl bg-white p-3 text-sm text-navy-700">
+                        <FiFileText className="h-5 w-5 shrink-0 text-brand-700" />
+                        <span className="min-w-0">
+                          <span className="block truncate font-semibold text-navy-900">{uploadedPrescription.fileName}</span>
+                          <span className="block text-xs text-navy-500">Ready to attach to this order</span>
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="mt-3 text-sm text-navy-500" role="status">Upload a prescription to continue.</p>
+                    )}
+                    {uploadError && <p className="mt-3 text-sm font-medium text-error" role="alert">{uploadError}</p>}
+                  </div>
                 )}
               </>
             ) : (

@@ -481,6 +481,50 @@ describe('Cart & checkout flow', () => {
     });
   });
 
+  it('copies an uploaded prescription into the cart and order snapshots', async () => {
+    await configureLenses();
+    const selection = poweredSelection();
+    selection.prescription = {
+      method: 'upload',
+      fileName: 'eye-power.pdf',
+      mimeType: 'application/pdf',
+      fileData: 'data:application/pdf;base64,aGVsbG8=',
+    };
+
+    const added = await request(app).post('/api/v1/cart/items').set(auth()).send(selection);
+    expect(added.status).toBe(200);
+    expect(added.body.data.items[0].prescription).toEqual(selection.prescription);
+
+    const order = await request(app)
+      .post('/api/v1/orders')
+      .set(auth())
+      .send({ shippingAddress: address, paymentMethod: 'cod' });
+    expect(order.status).toBe(201);
+    expect(order.body.data.items[0].prescription).toEqual(selection.prescription);
+  });
+
+  it('rejects unsafe or malformed prescription uploads', async () => {
+    await configureLenses();
+    const selection = poweredSelection();
+    selection.prescription = {
+      method: 'upload',
+      fileName: 'prescription.svg',
+      mimeType: 'image/svg+xml',
+      fileData: 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=',
+    };
+    const unsafe = await request(app).post('/api/v1/cart/items').set(auth()).send(selection);
+    expect(unsafe.status).toBe(422);
+
+    selection.prescription = {
+      method: 'upload',
+      fileName: 'eye-power.pdf',
+      mimeType: 'application/pdf',
+      fileData: 'not-a-data-url',
+    };
+    const malformed = await request(app).post('/api/v1/cart/items').set(auth()).send(selection);
+    expect(malformed.status).toBe(422);
+  });
+
   it('updates and removes cart items', async () => {
     await request(app).post('/api/v1/cart/items').set(auth()).send({ productId: product._id, quantity: 1 });
     let cart = (await request(app).get('/api/v1/cart').set(auth())).body.data;
