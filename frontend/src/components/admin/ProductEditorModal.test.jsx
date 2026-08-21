@@ -102,6 +102,7 @@ describe('ProductEditorModal eyeglass lens configuration', () => {
     fireEvent.change(screen.getByRole('combobox', { name: /Category/ }), { target: { value: EYEGLASSES_CATEGORY._id } });
 
     expect(await screen.findByLabelText('Power mode 1 name')).toHaveValue('With Power');
+    expect(screen.getByRole('button', { name: 'Go to lens setup' })).toBeInTheDocument();
     expect(screen.getByLabelText('Power mode 2 name')).toHaveValue('Zero Power');
     expect(screen.getByLabelText('Power mode 3 name')).toHaveValue('Progressive/Bifocal');
     expect(screen.getAllByLabelText(/Additional price/)[2]).toHaveValue(1200);

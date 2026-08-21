@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FiEdit2, FiPlus, FiSearch, FiTrash2 } from 'react-icons/fi';
+import { FiEdit2, FiEye, FiPlus, FiSearch, FiTrash2 } from 'react-icons/fi';
 import { Button, EmptyState, Input, Skeleton } from '@/components/ui';
 import { ProductEditorModal } from '@/components/admin/ProductEditorModal';
 import {
@@ -33,6 +33,11 @@ export function AdminProductsPage() {
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(term));
   });
+  const supportsLensSetup = (product) => {
+    const category = String(product.category?.slug || product.category?.name || '').toLowerCase();
+    return category.includes('eyeglass')
+      || Boolean(product.lensOptions?.length || product.lensPackages?.length || product.lensPrescriptionFields?.length);
+  };
 
   const save = async (body) => {
     setSaving(true);
@@ -82,7 +87,7 @@ export function AdminProductsPage() {
                   <td className="px-4 py-3">{formatPrice(product.price)}</td>
                   <td className="px-4 py-3">{product.stock}</td>
                   <td className="px-4 py-3">{product.isActive ? 'Yes' : 'No'}</td>
-                  <td className="px-4 py-3"><div className="flex gap-2"><Button size="icon" variant="ghost" aria-label={`Edit ${product.name}`} onClick={() => setEditing(product)}><FiEdit2 /></Button><Button size="icon" variant="ghost" aria-label={`Delete ${product.name}`} onClick={() => destroy(product)}><FiTrash2 /></Button></div></td>
+                  <td className="px-4 py-3"><div className="flex gap-2">{supportsLensSetup(product) && <Button size="sm" variant="outline" leftIcon={<FiEye />} onClick={() => setEditing({ ...product, _focusLensConfiguration: true })}>Lens setup</Button>}<Button size="icon" variant="ghost" aria-label={`Edit ${product.name}`} onClick={() => setEditing(product)}><FiEdit2 /></Button><Button size="icon" variant="ghost" aria-label={`Delete ${product.name}`} onClick={() => destroy(product)}><FiTrash2 /></Button></div></td>
                 </tr>
               ))}
             </tbody>
