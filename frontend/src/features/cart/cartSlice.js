@@ -5,12 +5,13 @@
  */
 import { createSlice } from '@reduxjs/toolkit';
 import { loadState, saveState } from '@/lib/storage';
+import { lensConfigurationKey } from '@/lib/lensSelection';
 
 const persisted = loadState('cart', { items: [], coupon: null });
 
 /** Stable identity for a line item (product + variant + lens choice). */
 const lineKey = (item) =>
-  `${item.productId}::${item.variantId || 'default'}::${item.lensOption?.type || 'none'}`;
+  `${item.productId}::${item.variantId || 'default'}::${lensConfigurationKey(item)}`;
 
 const initialState = {
   items: persisted.items || [],

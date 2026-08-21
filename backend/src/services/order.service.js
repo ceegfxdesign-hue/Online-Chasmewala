@@ -73,6 +73,9 @@ export const orderService = {
     if (!cart || cart.items.length === 0) throw ApiError.badRequest('Your cart is empty');
 
     const hydrated = await cartService.get(userId);
+    if (hydrated.items.length === 0) {
+      throw ApiError.badRequest('Your cart has no available items');
+    }
     // Stock guard
     for (const item of hydrated.items) {
       if (!item.inStock) throw ApiError.badRequest(`${item.product.name} is out of stock`);

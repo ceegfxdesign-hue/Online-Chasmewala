@@ -13,13 +13,29 @@ const orderItemSchema = new mongoose.Schema(
     price: { type: Number, required: true }, // unit price snapshot
     lensOption: {
       type: { type: String },
+      baseType: { type: String },
+      powerTypeLabel: { type: String },
+      packageId: { type: String },
+      packageName: { type: String },
+      colour: { type: String },
       label: { type: String },
+      subtitle: { type: String },
       price: { type: Number, default: 0 },
+      mrp: { type: Number },
+      badge: { type: String },
+      image: { type: String },
+      features: [{ type: String }],
+      warrantyMonths: { type: Number },
+      tags: [{ type: String }],
     },
     prescription: {
       method: { type: String },
       fileName: { type: String },
       values: { type: Map, of: String },
+      // Legacy fields retained so older orders remain readable.
+      leftEye: { sph: String, cyl: String, axis: String },
+      rightEye: { sph: String, cyl: String, axis: String },
+      pd: String,
     },
   },
   { _id: true }
@@ -77,7 +93,12 @@ const orderSchema = new mongoose.Schema(
     cancelledAt: { type: Date },
     cancelReason: { type: String },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    // API responses must expose generic prescription maps as JSON objects.
+    toJSON: { flattenMaps: true },
+    toObject: { flattenMaps: true },
+  }
 );
 
 orderSchema.pre('validate', function setOrderNumber(next) {

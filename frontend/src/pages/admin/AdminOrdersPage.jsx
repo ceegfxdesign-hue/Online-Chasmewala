@@ -13,6 +13,7 @@ import {
   FiUser,
 } from 'react-icons/fi';
 import { OrderStatusBadge } from '@/components/account/StatusBadge';
+import { LensConfigurationSummary } from '@/components/product/LensConfigurationSummary';
 import {
   Badge,
   Button,
@@ -113,11 +114,12 @@ function OrderItems({ order }) {
                   {item.sku ? `SKU ${item.sku} · ` : ''}Qty {item.quantity}
                   {item.color ? ` · ${item.color}` : ''}
                 </p>
-                {item.lensOption?.label && (
-                  <p className="mt-1 text-xs font-medium text-brand-700">
-                    Lens: {item.lensOption.label}
-                  </p>
-                )}
+                <LensConfigurationSummary
+                  lensOption={item.lensOption}
+                  prescription={item.prescription}
+                  showPrice
+                  className="mt-3"
+                />
               </div>
               <p className="shrink-0 font-semibold text-navy-900">
                 {formatPrice(

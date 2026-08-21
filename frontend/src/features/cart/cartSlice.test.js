@@ -34,6 +34,17 @@ describe('cartSlice', () => {
     expect(state.items).toHaveLength(2);
   });
 
+  it('treats different prescriptions as separate lines', () => {
+    const configured = {
+      ...itemA,
+      lensOption: { type: 'single-vision:anti-glare', baseType: 'single-vision', packageId: 'anti-glare' },
+    };
+    let state = reducer(base, addToCart({ ...configured, prescription: { values: { 'Right eye · SPH': '-1.00' } } }));
+    state = reducer(state, addToCart({ ...configured, prescription: { values: { 'Right eye · SPH': '-2.00' } } }));
+
+    expect(state.items).toHaveLength(2);
+  });
+
   it('updates and removes items by line key', () => {
     let state = reducer(base, addToCart(itemA));
     const key = cartLineKey(state.items[0]);

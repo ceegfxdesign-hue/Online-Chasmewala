@@ -5,9 +5,33 @@ const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
 
 const lensOption = z
   .object({
-    type: z.string(),
+    type: z.string().trim().min(1),
+    baseType: z.string().trim().min(1).optional(),
+    powerTypeLabel: z.string().optional(),
+    packageId: z.string().trim().min(1).optional(),
+    packageName: z.string().optional(),
+    colour: z.string().optional(),
     label: z.string().optional(),
+    subtitle: z.string().optional(),
     price: z.number().min(0).optional(),
+    mrp: z.number().min(0).optional(),
+    badge: z.string().optional(),
+    image: z.string().optional(),
+    features: z.array(z.string()).optional(),
+    warrantyMonths: z.number().min(0).optional(),
+    tags: z.array(z.string()).optional(),
+  })
+  .optional();
+
+const prescription = z
+  .object({
+    method: z.literal('manual').optional().default('manual'),
+    values: z
+      .record(z.union([z.string().max(100), z.number().finite()]))
+      .refine((values) => Object.keys(values).length <= 100, 'Too many prescription values')
+      .transform((values) => Object.fromEntries(
+        Object.entries(values).map(([key, value]) => [key, String(value).trim()])
+      )),
   })
   .optional();
 
@@ -18,7 +42,7 @@ export const addCartItemSchema = {
     color: z.string().optional(),
     quantity: z.number().int().min(1).max(20).default(1),
     lensOption,
-    prescription: z.any().optional(),
+    prescription,
   }),
 };
 
@@ -39,6 +63,7 @@ export const mergeCartSchema = {
           color: z.string().optional(),
           quantity: z.number().int().min(1).optional(),
           lensOption,
+          prescription,
         })
       )
       .default([]),

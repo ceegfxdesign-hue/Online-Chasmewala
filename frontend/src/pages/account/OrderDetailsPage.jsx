@@ -5,6 +5,7 @@ import { FiCheck, FiMapPin, FiCreditCard, FiXCircle, FiRefreshCw, FiStar } from 
 import { useGetOrderQuery, useCancelOrderMutation } from '@/features/cart/cartApi';
 import { useCreateReturnMutation, useCreateReviewMutation } from '@/features/account/accountApi';
 import { OrderStatusBadge } from '@/components/account/StatusBadge';
+import { LensConfigurationSummary } from '@/components/product/LensConfigurationSummary';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -178,11 +179,16 @@ export default function OrderDetailsPage() {
                     <p className="text-sm text-navy-400">
                       Qty {item.quantity}
                       {item.color && ` · ${item.color}`}
-                      {item.lensOption?.label && ` · ${item.lensOption.label}`}
                     </p>
+                    <LensConfigurationSummary
+                      lensOption={item.lensOption}
+                      prescription={item.prescription}
+                      showPrice
+                      className="mt-3"
+                    />
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-navy-900">{formatPrice(item.price * item.quantity)}</p>
+                    <p className="font-semibold text-navy-900">{formatPrice((item.price + Number(item.lensOption?.price || 0)) * item.quantity)}</p>
                     {canReturn && item.slug && (
                       <button
                         type="button"

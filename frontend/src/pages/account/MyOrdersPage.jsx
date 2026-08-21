@@ -10,6 +10,12 @@ import { Button } from '@/components/ui/Button';
 import { formatPrice, formatDate } from '@/lib/format';
 import { ROUTES } from '@/constants/routes';
 
+const firstLensLabel = (order) => {
+  const item = order.items?.find((entry) => entry.lensOption);
+  if (!item) return '';
+  return [item.lensOption.powerTypeLabel, item.lensOption.packageName || item.lensOption.label].filter(Boolean).join(' · ');
+};
+
 export default function MyOrdersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Number(searchParams.get('page')) || 1;
@@ -73,6 +79,7 @@ export default function MyOrdersPage() {
                     <p className="mt-0.5 text-sm text-navy-400">
                       {formatDate(order.createdAt)} · {order.items.length} item{order.items.length > 1 ? 's' : ''}
                     </p>
+                    {firstLensLabel(order) && <p className="mt-1 truncate text-xs font-medium text-brand-700">Lens: {firstLensLabel(order)}</p>}
                   </div>
 
                   <div className="text-right">

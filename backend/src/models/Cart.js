@@ -10,16 +10,34 @@ const cartItemSchema = new mongoose.Schema(
     price: { type: Number, required: true },
     // Optional lens/prescription selection captured during add-to-cart.
     lensOption: {
-      type: { type: String }, // e.g. 'single-vision', 'zero-power'
+      type: { type: String }, // composite e.g. 'single-vision:blu-screen'
+      baseType: { type: String },
+      powerTypeLabel: { type: String },
+      packageId: { type: String },
+      packageName: { type: String },
+      colour: { type: String },
       label: { type: String },
+      subtitle: { type: String },
       price: { type: Number, default: 0 },
+      mrp: { type: Number },
+      badge: { type: String },
+      image: { type: String },
+      features: [{ type: String }],
+      warrantyMonths: { type: Number },
+      tags: [{ type: String }],
     },
+    // Generated from the resolved lens package and sorted prescription values;
+    // clients cannot choose it. It keeps distinct prescriptions on distinct
+    // lines while identical configurations can still merge quantities.
+    configurationFingerprint: { type: String },
     prescription: {
+      // `later` and `upload` remain in the stored schema solely so historical
+      // carts can still be read. New API writes only accept `manual`.
       method: { type: String, enum: ['manual', 'later', 'upload'] },
       fileName: { type: String },
-      // Custom contact-lens fields such as Spherical/SPH are configured by
-      // admins per product and stored by field + eye (e.g. `SPH:Right eye`).
+      // New prescriptions use this generic field-name -> selected-value map.
       values: { type: Map, of: String },
+      // Legacy fields retained for old carts.
       leftEye: { sph: String, cyl: String, axis: String },
       rightEye: { sph: String, cyl: String, axis: String },
       pd: String,

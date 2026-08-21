@@ -33,7 +33,6 @@ import { addToCart } from '@/features/cart/cartSlice';
 import { toggleWishlist } from '@/features/wishlist/wishlistSlice';
 import { pushRecentlyViewed, selectRecentlyViewed } from '@/features/recentlyViewed/recentlyViewedSlice';
 import { openCartDrawer } from '@/features/ui/uiSlice';
-import { useGetOffersQuery } from '@/features/cart/cartApi';
 import { useToast } from '@/contexts/ToastContext';
 import { formatPrice, titleCase } from '@/lib/format';
 import { absoluteUrl } from '@/lib/seo';
@@ -70,7 +69,6 @@ export default function ProductDetailsPage() {
 
   const { data: product, isLoading, isError } = useGetProductBySlugQuery(slug);
   const { data: related } = useGetRelatedProductsQuery(slug, { skip: !slug });
-  const { data: offers = [] } = useGetOffersQuery();
   const recentlyViewed = useSelector(selectRecentlyViewed);
   const wishlisted = useSelector((s) => product && s.wishlist.items.some((i) => i.productId === product._id));
 
@@ -87,21 +85,9 @@ export default function ProductDetailsPage() {
   const isEyeglasses = product?.category?.slug?.toLowerCase() === 'eyeglasses';
   const isContactLens = product?.category?.slug?.toLowerCase() === 'contact-lenses';
   const lensOptions = useMemo(() => (product ? lensOptionsFor(product, isEyeglasses) : []), [product, isEyeglasses]);
-  const needsLensSelection = isEyeglasses && !lens?.packageId;
-  const featuredOffer = useMemo(() => {
-    if (!product) return null;
-    const productId = String(product._id);
-    const categoryId = String(product.category?._id || '');
-    const brandId = String(product.brand?._id || '');
-    const includes = (items, id) => items?.some((item) => String(item?._id || item) === id);
-
-    return offers.find((offer) =>
-      offer.appliesTo === 'all' ||
-      (offer.appliesTo === 'products' && includes(offer.products, productId)) ||
-      (offer.appliesTo === 'category' && includes(offer.categories, categoryId)) ||
-      (offer.appliesTo === 'brand' && includes(offer.brands, brandId))
-    );
-  }, [offers, product]);
+  const needsLensSelection = isEyeglasses && !lens;
+  const needsContactSelection = isContactLens && !contactSelection?.isComplete;
+  const productPromotion = product?.promotion?.title ? product.promotion : null;
 
   // Record recently-viewed once the product loads.
   useEffect(() => {
@@ -160,9 +146,17 @@ export default function ProductDetailsPage() {
     name: product.name,
     image: galleryImages?.[0],
     price: product.price,
-    color: variant?.color,
+    // Contact-lens colour lives in the verified lens snapshot; `color` is
+    // reserved for the selected frame variant so order summaries do not repeat it.
+    color: isContactLens ? undefined : variant?.color,
     variantId: variant?._id,
-    lensOption: activeOption || undefined,
+    lensOption: isContactLens && activeOption ? {
+      type: activeOption.type,
+      label: activeOption.label,
+      price: activeOption.price,
+      packageId: activeOption.packageId,
+      colour: activeOption.colour,
+    } : activeOption || undefined,
     prescription: isContactLens ? contactSelection?.prescription : (lens ? prescription || undefined : undefined),
     quantity: qty,
   });
@@ -173,8 +167,8 @@ export default function ProductDetailsPage() {
       setLensDrawerOpen(true);
       return;
     }
-    if (isContactLens && !contactSelection) {
-      toast.info('Please choose a contact lens option before adding it to your cart.');
+    if (needsContactSelection) {
+      toast.info('Please complete your contact lens selection before adding it to your cart.');
       return;
     }
     dispatch(addToCart(buildCartItem()));
@@ -187,8 +181,8 @@ export default function ProductDetailsPage() {
       setLensDrawerOpen(true);
       return;
     }
-    if (isContactLens && !contactSelection) {
-      toast.info('Please choose a contact lens option before buying it.');
+    if (needsContactSelection) {
+      toast.info('Please complete your contact lens selection before buying it.');
       return;
     }
     dispatch(addToCart(buildCartItem()));
@@ -326,57 +320,15 @@ export default function ProductDetailsPage() {
             </div>
             <p className="mt-1 text-xs text-navy-400">Inclusive of all taxes</p>
 
-            {(featuredOffer || product.discountPercent > 0) && (
+            {productPromotion && (
               <div className="mt-5 overflow-hidden rounded-xl border border-brand-100">
                 <div className="flex items-center gap-2 bg-brand-50 px-4 py-2 text-sm font-bold text-navy-800">
-                  <FiGift className="h-4 w-4 text-brand-600" /> Limited period offer
+                  <FiGift className="h-4 w-4 text-brand-600" /> {productPromotion?.heading || 'Limited period offer'}
                 </div>
                 <div className="px-4 py-3 text-sm text-navy-600">
-                  {featuredOffer ? (
-                    <>
-                      <p className="font-medium text-navy-800">{featuredOffer.title}</p>
-                      <p className="mt-0.5 text-xs">{featuredOffer.subtitle || featuredOffer.badge}</p>
-                    </>
-                  ) : (
-                    <p>Save {formatPrice(Math.max(product.mrp - product.price, 0))} on this frame today.</p>
-                  )}
+                  <p className="font-medium text-navy-800">{productPromotion.title}</p>
+                  {productPromotion.subtitle && <p className="mt-0.5 text-xs">{productPromotion.subtitle}</p>}
                 </div>
-              </div>
-            )}
-
-            {/* Lens choices are presented in the guided Select lenses drawer. */}
-            {false && lensOptions.length > 0 && (
-              <div className="mt-6">
-                <p className="mb-2 text-sm font-semibold text-navy-900">Product type</p>
-                <div className="flex flex-wrap gap-2">
-                  {lensOptions.map((opt) => (
-                    <button
-                      key={opt.type}
-                      type="button"
-                      onClick={() => {
-                        const selected = lens?.baseType === opt.type || lens?.type === opt.type;
-                        setLens(selected ? null : opt);
-                        setPrescription(null);
-                      }}
-                      className={cn(
-                        'min-w-[132px] rounded-xl border px-3 py-2.5 text-left text-sm transition-colors',
-                        lens?.baseType === opt.type || lens?.type === opt.type
-                          ? 'border-brand-500 bg-brand-50 text-brand-700'
-                          : 'border-navy-200 text-navy-600 hover:border-navy-300'
-                      )}
-                    >
-                      <span className="block font-semibold">{opt.label}</span>
-                      <span className="mt-0.5 block text-xs text-navy-400">
-                        {opt.subtitle ? `${opt.subtitle}${opt.price > 0 ? ` · Add ${formatPrice(opt.price)}` : ''}` : (opt.price > 0 ? `Add ${formatPrice(opt.price)}` : 'Included with frame')}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                {lens && (
-                  <Button className="mt-3" variant="secondary" onClick={() => setLensDrawerOpen(true)}>
-                    {lens.packageId ? 'Edit lenses' : 'Select lenses'}
-                  </Button>
-                )}
               </div>
             )}
 
@@ -442,13 +394,13 @@ export default function ProductDetailsPage() {
 
             {isEyeglasses && lensOptions.length > 0 && (
               <div className="mt-6 border-t border-navy-100 pt-5">
-                {lens?.packageId && (
+                {lens && (
                   <p className="mb-3 text-sm text-navy-600">
                     Selected: <span className="font-semibold text-navy-900">{lens.label}</span>
                   </p>
                 )}
                 <Button fullWidth size="lg" onClick={() => setLensDrawerOpen(true)}>
-                  {lens?.packageId ? 'Edit lenses' : 'Select lenses'}
+                  {lens ? 'Edit lenses' : 'Select lenses'}
                 </Button>
                 {needsLensSelection && <p className="mt-2 text-center text-xs text-navy-500">Select a lens option to enable Add to Cart and Buy Now.</p>}
               </div>
@@ -472,10 +424,10 @@ export default function ProductDetailsPage() {
             </div>
 
             <div className="mt-5 flex flex-wrap gap-3">
-              <Button size="lg" onClick={onAddToCart} disabled={outOfStock || needsLensSelection} leftIcon={<FiShoppingBag />} className="flex-1">
+              <Button size="lg" onClick={onAddToCart} disabled={outOfStock || needsLensSelection || needsContactSelection} leftIcon={<FiShoppingBag />} className="flex-1">
                 Add to Cart
               </Button>
-              <Button size="lg" variant="secondary" onClick={onBuyNow} disabled={outOfStock || needsLensSelection} leftIcon={<FiZap />} className="flex-1">
+              <Button size="lg" variant="secondary" onClick={onBuyNow} disabled={outOfStock || needsLensSelection || needsContactSelection} leftIcon={<FiZap />} className="flex-1">
                 Buy Now
               </Button>
             </div>
@@ -539,7 +491,10 @@ export default function ProductDetailsPage() {
         open={lensDrawerOpen}
         onClose={() => setLensDrawerOpen(false)}
         options={lensOptions}
+        packages={product.lensPackages}
+        prescriptionFields={product.lensPrescriptionFields}
         selectedOption={lens}
+        selectedPrescription={prescription}
         onComplete={({ lensOption, prescription: selectedPrescription }) => {
           setLens(lensOption);
           setPrescription(selectedPrescription || null);
@@ -555,7 +510,7 @@ export default function ProductDetailsPage() {
               <p className="text-xs text-navy-400 line-through">{formatPrice(product.mrp)}</p>
             )}
           </div>
-          <Button onClick={onAddToCart} disabled={outOfStock || needsLensSelection} leftIcon={<FiShoppingBag />} className="flex-1">
+          <Button onClick={onAddToCart} disabled={outOfStock || needsLensSelection || needsContactSelection} leftIcon={<FiShoppingBag />} className="flex-1">
             Add to Cart
           </Button>
         </div>

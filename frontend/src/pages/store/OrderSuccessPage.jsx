@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { FiCheckCircle, FiPackage, FiArrowRight } from 'react-icons/fi';
 import { Button } from '@/components/ui/Button';
+import { LensConfigurationSummary } from '@/components/product/LensConfigurationSummary';
 import { useGetOrderQuery } from '@/features/cart/cartApi';
 import { formatPrice, formatDate } from '@/lib/format';
 import { ROUTES } from '@/constants/routes';
@@ -70,8 +71,9 @@ export default function OrderSuccessPage() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-navy-900">{item.name}</p>
                       <p className="text-xs text-navy-400">Qty {item.quantity}</p>
+                      <LensConfigurationSummary lensOption={item.lensOption} prescription={item.prescription} compact className="mt-1" />
                     </div>
-                    <span className="text-sm font-semibold text-navy-900">{formatPrice(item.price * item.quantity)}</span>
+                    <span className="text-sm font-semibold text-navy-900">{formatPrice((item.price + Number(item.lensOption?.price || 0)) * item.quantity)}</span>
                   </li>
                 ))}
               </ul>

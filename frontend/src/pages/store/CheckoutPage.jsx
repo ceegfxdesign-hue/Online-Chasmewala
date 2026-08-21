@@ -10,12 +10,13 @@ import { Button } from '@/components/ui/Button';
 import { Radio } from '@/components/ui/Radio';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { OrderSummary } from '@/components/cart/OrderSummary';
+import { LensConfigurationSummary } from '@/components/product/LensConfigurationSummary';
 import { zodResolver } from '@/lib/validators';
 import {
   useMergeCartMutation,
   usePlaceOrderMutation,
 } from '@/features/cart/cartApi';
-import { selectCartItems, selectCartSubtotal, selectCoupon, clearCart } from '@/features/cart/cartSlice';
+import { selectCartItems, selectCartSubtotal, selectCoupon, clearCart, cartLineKey } from '@/features/cart/cartSlice';
 import { selectIsAuthenticated, selectUser } from '@/features/auth/authSlice';
 import { useToast } from '@/contexts/ToastContext';
 import { formatPrice } from '@/lib/format';
@@ -98,6 +99,7 @@ export default function CheckoutPage() {
           color: i.color,
           quantity: i.quantity,
           lensOption: i.lensOption,
+          prescription: i.prescription,
         }))
       ).unwrap();
 
@@ -136,6 +138,20 @@ export default function CheckoutPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-8 lg:grid-cols-[1fr_380px]">
           <div className="space-y-6">
+            {items.some((item) => item.lensOption) && (
+              <section className="rounded-2xl bg-surface p-6 shadow-card">
+                <h2 className="mb-4 text-h4 text-navy-900">Review lenses &amp; power</h2>
+                <div className="space-y-3">
+                  {items.filter((item) => item.lensOption).map((item) => (
+                    <div key={cartLineKey(item)}>
+                      <p className="mb-2 text-sm font-semibold text-navy-900">{item.name}</p>
+                      <LensConfigurationSummary lensOption={item.lensOption} prescription={item.prescription} showPrice />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {/* Address */}
             <section className="rounded-2xl bg-surface p-6 shadow-card">
               <h2 className="mb-4 flex items-center gap-2 text-h4 text-navy-900">

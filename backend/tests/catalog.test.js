@@ -159,13 +159,35 @@ describe('Catalog admin CRUD', () => {
         lensThickness: '1.56 index',
         powered: true,
         genders: ['men', 'women'],
-        lensOptions: [{ type: 'zero-power', label: 'Zero Power', subtitle: 'Screen glasses', price: 0 }],
+        lensOptions: [{
+          type: 'zero-power', label: 'Zero Power', subtitle: 'Screen glasses', badge: 'No prescription',
+          requiresPrescription: false, isActive: true, price: 0,
+        }],
+        lensPackages: [{
+          id: 'clear-lens', name: 'Clear Lens', description: 'Everyday clear lenses', badge: 'Included',
+          features: ['Anti-glare'], warrantyMonths: 6, price: 0, mrp: 100,
+          tags: ['everyday'], powerTypes: ['zero-power'], isActive: true,
+        }],
+        lensPrescriptionFields: [{
+          key: 'pd', label: 'PD', min: 40, max: 80, step: 1, scope: 'shared',
+          required: false, powerTypes: ['zero-power'], isActive: true,
+        }],
         contactLens: {
           kind: 'clear',
           powerModes: ['with-power'],
+          powerTypes: [
+            { name: 'Spherical', min: -8, max: 10, step: 0.25 },
+            { name: 'Cylindrical', min: -6, max: 0, step: 0.25 },
+            { name: 'Axis', min: 0, max: 180, step: 1 },
+          ],
           prescriptionFields: ['Spherical', 'SPH'],
           sphericalPowerMin: -8,
           sphericalPowerMax: 10,
+        },
+        promotion: {
+          heading: 'Limited period offer',
+          title: 'Buy 1 Get 1 Free',
+          subtitle: 'On selected eyeglasses',
         },
       });
     expect(created.status).toBe(201);
@@ -174,8 +196,20 @@ describe('Catalog admin CRUD', () => {
     expect(created.body.data.genders).toEqual(['men', 'women']);
     expect(created.body.data.gender).toBe('men');
     expect(created.body.data.lensOptions).toHaveLength(1);
+    expect(created.body.data.lensPackages[0]).toMatchObject({
+      id: 'clear-lens', name: 'Clear Lens', powerTypes: ['zero-power'], mrp: 100,
+    });
+    expect(created.body.data.lensPrescriptionFields[0]).toMatchObject({
+      key: 'pd', scope: 'shared', required: false,
+    });
     expect(created.body.data.contactLens.sphericalPowerMin).toBe(-8);
     expect(created.body.data.contactLens.sphericalPowerMax).toBe(10);
+    expect(created.body.data.contactLens.powerTypes).toEqual([
+      { name: 'Spherical', min: -8, max: 10, step: 0.25 },
+      { name: 'Cylindrical', min: -6, max: 0, step: 0.25 },
+      { name: 'Axis', min: 0, max: 180, step: 1 },
+    ]);
+    expect(created.body.data.promotion.title).toBe('Buy 1 Get 1 Free');
     const id = created.body.data._id;
 
     const womenCatalog = await request(app).get('/api/v1/products?gender=women&limit=60');
@@ -195,6 +229,91 @@ describe('Catalog admin CRUD', () => {
       .delete(`/api/v1/products/${id}`)
       .set('Authorization', `Bearer ${token}`);
     expect(removed.status).toBe(200);
+  });
+
+  it('rejects duplicate lens IDs and unknown applicability references', async () => {
+    const token = await adminToken();
+    const list = await request(app).get('/api/v1/products?limit=1');
+    const id = list.body.data[0]._id;
+    const duplicate = await request(app)
+      .patch(`/api/v1/products/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        lensOptions: [
+          { type: 'with-power', label: 'With Power' },
+          { type: 'with-power', label: 'Duplicate' },
+        ],
+      });
+    expect(duplicate.status).toBe(422);
+    expect(duplicate.body.errors[0].message).toMatch(/unique/i);
+
+    const unknownReference = await request(app)
+      .patch(`/api/v1/products/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        lensOptions: [{ type: 'with-power', label: 'With Power' }],
+        lensPackages: [{
+          id: 'premium', name: 'Premium', price: 100, mrp: 200,
+          powerTypes: ['not-configured'],
+        }],
+      });
+    expect(unknownReference.status).toBe(422);
+    expect(unknownReference.body.errors[0].message).toMatch(/unknown power type/i);
+  });
+
+  it('requires every active lens mode to have a complete compatible configuration', async () => {
+    const token = await adminToken();
+    const list = await request(app).get('/api/v1/products?limit=1');
+    const id = list.body.data[0]._id;
+    const patchLensConfig = (body) => request(app)
+      .patch(`/api/v1/products/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send(body);
+
+    const noActiveMode = await patchLensConfig({
+      lensOptions: [{ type: 'zero-power', label: 'Zero Power', isActive: false }],
+      lensPackages: [],
+      lensPrescriptionFields: [],
+    });
+    expect(noActiveMode.status).toBe(422);
+    expect(noActiveMode.body.errors.some((error) => /at least one active power type/i.test(error.message)))
+      .toBe(true);
+
+    const noCompatiblePackage = await patchLensConfig({
+      lensOptions: [{ type: 'zero-power', label: 'Zero Power', isActive: true }],
+      lensPackages: [{
+        id: 'inactive-clear', name: 'Inactive Clear', price: 0, mrp: 0,
+        powerTypes: ['zero-power'], isActive: false,
+      }],
+      lensPrescriptionFields: [],
+    });
+    expect(noCompatiblePackage.status).toBe(422);
+    expect(noCompatiblePackage.body.errors.some((error) => /active compatible lens package/i.test(error.message)))
+      .toBe(true);
+
+    const inferredPoweredModeWithoutField = await patchLensConfig({
+      // Omitting requiresPrescription exercises legacy inference.
+      lensOptions: [{ type: 'single-vision', label: 'Single Vision', isActive: true }],
+      lensPackages: [{
+        id: 'premium', name: 'Premium', price: 100, mrp: 200,
+        powerTypes: ['single-vision'], isActive: true,
+      }],
+      lensPrescriptionFields: [{
+        key: 'optional-note', label: 'Optional power', min: -10, max: 10, step: 0.25,
+        scope: 'shared', required: false, powerTypes: ['single-vision'], isActive: true,
+      }],
+    });
+    expect(inferredPoweredModeWithoutField.status).toBe(422);
+    expect(inferredPoweredModeWithoutField.body.errors.some((error) => /prescription field/i.test(error.message)))
+      .toBe(true);
+
+    const frameOnly = await patchLensConfig({
+      lensOptions: [{ type: 'frame-only', label: 'Frame Only', isActive: true }],
+      lensPackages: [],
+      lensPrescriptionFields: [],
+    });
+    expect(frameOnly.status).toBe(200);
+    expect(frameOnly.body.data.lensOptions[0].type).toBe('frame-only');
   });
 
   it('persists replacement product and colour-variant images with fresh media references', async () => {

@@ -4,6 +4,7 @@ import { FiShoppingBag, FiPlus, FiMinus, FiTrash2 } from 'react-icons/fi';
 import { Drawer } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LensConfigurationSummary } from '@/components/product/LensConfigurationSummary';
 import { closeCartDrawer } from '@/features/ui/uiSlice';
 import {
   selectCartItems,
@@ -80,6 +81,7 @@ export function CartDrawer() {
                     {item.name}
                   </Link>
                   {item.color && <p className="text-xs text-navy-400">{item.color}</p>}
+                  <LensConfigurationSummary lensOption={item.lensOption} prescription={item.prescription} compact className="mt-1" />
                   <div className="mt-2 flex items-center justify-between">
                     <div className="inline-flex items-center rounded-lg border border-navy-200">
                       <button
