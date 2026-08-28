@@ -8,7 +8,6 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { OrderSummary } from '@/components/cart/OrderSummary';
 import { CouponField } from '@/components/cart/CouponField';
-import { LensConfigurationSummary } from '@/components/product/LensConfigurationSummary';
 import {
   selectCartItems,
   selectCartSubtotal,
@@ -100,12 +99,12 @@ export default function CartPage() {
                             {item.name}
                           </Link>
                           {item.color && <p className="mt-0.5 text-sm text-navy-400">Color: {item.color}</p>}
-                          <LensConfigurationSummary
-                            lensOption={item.lensOption}
-                            prescription={item.prescription}
-                            showPrice
-                            className="mt-2"
-                          />
+                          {item.lensOption && (
+                            <p className="text-sm text-navy-400">
+                              Lens: {item.lensOption.label}
+                              {item.lensOption.price > 0 && ` (+${formatPrice(item.lensOption.price)})`}
+                            </p>
+                          )}
                         </div>
                         <button
                           type="button"
