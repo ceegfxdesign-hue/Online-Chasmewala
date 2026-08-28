@@ -38,19 +38,9 @@ export function prescriptionEntries(prescription) {
 
 export function lensConfigurationKey(item = {}) {
   const lens = item.lensOption || {};
-  const manualPrescription = prescriptionEntries(item.prescription)
+  const prescription = prescriptionEntries(item.prescription)
     .map(({ label, value }) => `${label}=${value}`)
     .join('|');
-  const upload = item.prescription?.method === 'upload' ? item.prescription : null;
-  const uploadData = upload?.fileData || '';
-  let uploadHash = 2166136261;
-  for (let index = 0; index < uploadData.length; index += 1) {
-    uploadHash ^= uploadData.charCodeAt(index);
-    uploadHash = Math.imul(uploadHash, 16777619);
-  }
-  const prescription = upload
-    ? `upload=${upload.fileName || ''}:${upload.mimeType || ''}:${uploadData.length}:${uploadHash >>> 0}`
-    : manualPrescription;
 
   return [
     lens.type || lens.baseType || 'none',

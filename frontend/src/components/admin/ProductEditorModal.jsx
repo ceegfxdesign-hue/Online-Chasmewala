@@ -545,7 +545,6 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
   const variantImageInputRefs = useRef({});
   const variantImageUploadModesRef = useRef({});
   const lensDefaultsInitializedRef = useRef(false);
-  const lensConfigurationRef = useRef(null);
 
   const getFieldError = (field) => validationErrors[field];
   const selectedCategoryDetails = categories.find((item) => String(item._id) === String(selectedCategory))
@@ -555,21 +554,10 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
     product?.lensOptions?.length || product?.lensPackages?.length || product?.lensPrescriptionFields?.length
   );
   const showEyeglassLensConfiguration = !contactLensMode && (
-    categorySlug.includes('eyeglass')
+    categorySlug === 'eyeglasses'
+    || categorySlug === 'eyeglass'
     || hasSavedEyeglassLensConfiguration
   );
-
-  const scrollToLensConfiguration = () => {
-    lensConfigurationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
-  useEffect(() => {
-    if (!product?._focusLensConfiguration || !showEyeglassLensConfiguration) return undefined;
-    const frame = window.requestAnimationFrame(() => {
-      lensConfigurationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [product?._focusLensConfiguration, showEyeglassLensConfiguration]);
 
   useEffect(() => {
     const initialCategoryId = product?.category?._id || product?.category || '';
@@ -577,7 +565,8 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
       || (product?.category && typeof product.category === 'object' ? product.category : null);
     const initialCategorySlug = String(initialCategory?.slug || initialCategory?.name || '').toLowerCase();
     const shouldInitializeLensDefaults = !contactLensMode && (
-      initialCategorySlug.includes('eyeglass')
+      initialCategorySlug === 'eyeglasses'
+      || initialCategorySlug === 'eyeglass'
       || Boolean(product?.lensOptions?.length || product?.lensPackages?.length || product?.lensPrescriptionFields?.length)
     );
     setMainImageUrls(asLines(product?.images));
@@ -927,15 +916,6 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
             <Input name="lowStockThreshold" label="Low-stock alert at" type="number" min="0" defaultValue={product?.lowStockThreshold ?? 5} />
             <div className="md:col-span-2"><Textarea name="description" label="Description" defaultValue={product?.description} minLength="10" error={getFieldError('description')} required /></div>
             <div className="md:col-span-2"><Textarea name="highlights" label="Highlights (one per line)" defaultValue={asLines(product?.highlights)} helper="Shown as product benefits on the detail page." /></div>
-            {showEyeglassLensConfiguration && (
-              <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-200 bg-brand-50 p-3">
-                <div>
-                  <p className="text-sm font-semibold text-brand-900">Need to add or edit lenses?</p>
-                  <p className="mt-0.5 text-xs text-navy-500">Power types, lens packages, prices, and eye-power fields are configured below.</p>
-                </div>
-                <Button type="button" variant="outline" size="sm" onClick={scrollToLensConfiguration}>Go to lens setup</Button>
-              </div>
-            )}
           </div>
         </section>
 
@@ -1199,7 +1179,7 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
         </section>
 
         {showEyeglassLensConfiguration && (
-          <section ref={lensConfigurationRef} className="scroll-mt-4 rounded-2xl border border-brand-200 bg-brand-50/30 p-4 sm:p-5">
+          <section className="rounded-2xl border border-brand-200 bg-brand-50/30 p-4 sm:p-5">
             <div className="mb-5">
               <h3 className="font-semibold text-navy-900">Eyeglass lens configuration</h3>
               <p className="mt-1 text-sm text-navy-500">Control the power choices, compatible lens packages, and manual prescription fields shown after a customer selects lenses.</p>
@@ -1208,7 +1188,7 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
             <div>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h4 className="text-sm font-semibold text-navy-800">1. Power types shown to customers</h4>
+                  <h4 className="text-sm font-semibold text-navy-800">1. Power modes</h4>
                   <p className="mt-1 text-xs text-navy-500">The stable ID connects each mode to its packages and prescription fields. Labels can be changed freely.</p>
                 </div>
                 <Button
@@ -1435,7 +1415,7 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
             <div className="mt-6 border-t border-brand-100 pt-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h4 className="text-sm font-semibold text-navy-800">3. Enter eye power fields</h4>
+                  <h4 className="text-sm font-semibold text-navy-800">3. Manual prescription fields</h4>
                   <p className="mt-1 text-xs text-navy-500">Set each value&apos;s range and whether customers enter it once or separately for the right and left eye.</p>
                 </div>
                 <Button

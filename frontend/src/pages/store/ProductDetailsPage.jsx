@@ -146,9 +146,7 @@ export default function ProductDetailsPage() {
     name: product.name,
     image: galleryImages?.[0],
     price: product.price,
-    // Contact-lens colour lives in the verified lens snapshot; `color` is
-    // reserved for the selected frame variant so order summaries do not repeat it.
-    color: isContactLens ? undefined : variant?.color,
+    color: variant?.color,
     variantId: variant?._id,
     lensOption: isContactLens && activeOption ? {
       type: activeOption.type,

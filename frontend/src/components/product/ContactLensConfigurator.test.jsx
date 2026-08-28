@@ -42,8 +42,6 @@ describe('contact lens power choices', () => {
 
     expect(screen.getByText('Spherical')).toBeInTheDocument();
     expect(screen.getByText('Cylindrical')).toBeInTheDocument();
-    expect(screen.queryByText(/Upload prescription/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Submit power later/i)).not.toBeInTheDocument();
     const axisRow = screen.getByText('Axis').parentElement;
     fireEvent.click(within(axisRow).getAllByRole('button')[0]);
 

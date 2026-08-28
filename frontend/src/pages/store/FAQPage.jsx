@@ -18,7 +18,7 @@ const FAQS = [
     key: 'prescription',
     title: 'Can I add my prescription to eyeglasses?',
     content:
-      'Yes. On any powered frame you can choose an available lens type and package, then enter your power manually or upload your prescription during lens selection.',
+      'Yes. On any powered frame you can choose single-vision, bifocal, progressive or zero-power lenses and enter your prescription during checkout.',
   },
   {
     key: 'bluelight',

@@ -48,9 +48,6 @@ export function ContactLensConfigurator({ product, onChange, onGalleryImages }) 
   const [values, setValues] = useState({});
   const [selectedEyes, setSelectedEyes] = useState({ right: true, left: true });
   const [picker, setPicker] = useState(null);
-  const selectionLabel = supportsEyePower
-    ? (powerMode === 'with-power' ? 'With Power' : 'Zero Power')
-    : (contactKind === 'solution' ? 'Solution' : 'Accessory');
   const powerTypes = useMemo(() => {
     if (config.powerTypes?.length) return config.powerTypes;
     const legacyFields = config.prescriptionFields?.length ? config.prescriptionFields : ['Spherical'];
@@ -91,7 +88,7 @@ export function ContactLensConfigurator({ product, onChange, onGalleryImages }) 
   useEffect(() => {
     onChange({
       type: `contact-${contactKind}-${powerMode}-${packIndex}-${colourIndex}`,
-      label: [selectionLabel, selectedPack?.label]
+      label: [powerMode === 'with-power' ? 'With Power' : 'Zero Power', selectedPack?.label]
         .filter(Boolean)
         .join(' · '),
       price: selectedPack ? Math.max(0, Number(selectedPack.price ?? product.price) - Number(product.price)) : 0,
@@ -100,7 +97,7 @@ export function ContactLensConfigurator({ product, onChange, onGalleryImages }) 
       colour: colours[colourIndex]?.name,
       isComplete,
     });
-  }, [colourIndex, colours, contactKind, emittedValues, isComplete, onChange, packIndex, powerMode, product.price, selectedPack, selectionLabel]);
+  }, [colourIndex, colours, contactKind, emittedValues, isComplete, onChange, packIndex, powerMode, product.price, selectedPack]);
 
   useEffect(() => {
     const images = colours[colourIndex]?.images;
