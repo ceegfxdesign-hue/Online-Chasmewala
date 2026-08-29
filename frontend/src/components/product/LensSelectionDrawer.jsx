@@ -50,10 +50,14 @@ const POWER_COPY = {
 const STEPS = ['Power type', 'Lenses', 'Add power'];
 
 /** Guided lens/prescription configuration for the product details page. */
-export function LensSelectionDrawer({ open, onClose, options = [], selectedOption, onComplete }) {
+export function LensSelectionDrawer({ open, onClose, options = [], packages, selectedOption, onComplete }) {
+  const availablePackages = useMemo(() => {
+    const configured = Array.isArray(packages) && packages.length ? packages : LENS_PACKAGES;
+    return configured.filter((item) => item?.isActive !== false && item?.id);
+  }, [packages]);
   const [step, setStep] = useState(0);
   const [powerType, setPowerType] = useState('');
-  const [packageId, setPackageId] = useState(LENS_PACKAGES[0].id);
+  const [packageId, setPackageId] = useState('');
   const [prescriptionMethod, setPrescriptionMethod] = useState('later');
   const [fileName, setFileName] = useState('');
   const [prescription, setPrescription] = useState({ leftEye: { sph: '', cyl: '', axis: '' }, rightEye: { sph: '', cyl: '', axis: '' }, pd: '' });
@@ -62,18 +66,23 @@ export function LensSelectionDrawer({ open, onClose, options = [], selectedOptio
     () => options.find((option) => option.type === powerType) || options[0],
     [options, powerType]
   );
-  const selectedPackage = LENS_PACKAGES.find((item) => item.id === packageId) || LENS_PACKAGES[0];
+  const compatiblePackages = useMemo(() => availablePackages.filter((item) => {
+    const appliesTo = item.powerTypes || [];
+    return appliesTo.length === 0 || appliesTo.includes(selectedPower?.type);
+  }), [availablePackages, selectedPower?.type]);
+  const selectedPackage = compatiblePackages.find((item) => item.id === packageId) || compatiblePackages[0];
   const needsPrescription = !['zero-power', 'frame-only'].includes(selectedPower?.type);
 
   useEffect(() => {
     if (!open) return;
     setStep(0);
-    setPowerType(selectedOption?.baseType || selectedOption?.type || options[0]?.type || '');
-    setPackageId(LENS_PACKAGES[0].id);
+    const initialPower = selectedOption?.baseType || selectedOption?.type || options[0]?.type || '';
+    setPowerType(initialPower);
+    setPackageId(availablePackages.find((item) => !item.powerTypes?.length || item.powerTypes.includes(initialPower))?.id || '');
     setPrescriptionMethod('later');
     setFileName('');
     setPrescription({ leftEye: { sph: '', cyl: '', axis: '' }, rightEye: { sph: '', cyl: '', axis: '' }, pd: '' });
-  }, [open, options, selectedOption]);
+  }, [availablePackages, open, options, selectedOption]);
 
   const updateEye = (eye, field, value) => {
     setPrescription((current) => ({ ...current, [eye]: { ...current[eye], [field]: value } }));
@@ -82,12 +91,12 @@ export function LensSelectionDrawer({ open, onClose, options = [], selectedOptio
   const finish = () => {
     const lensOption = {
       ...selectedPower,
-      type: `${selectedPower.type}:${selectedPackage.id}`,
+      type: selectedPackage ? `${selectedPower.type}:${selectedPackage.id}` : selectedPower.type,
       baseType: selectedPower.type,
-      label: `${selectedPower.label} · ${selectedPackage.name}`,
-      subtitle: selectedPackage.features[0],
-      price: Number(selectedPower.price || 0) + selectedPackage.price,
-      packageId: selectedPackage.id,
+      label: [selectedPower.label, selectedPackage?.name].filter(Boolean).join(' · '),
+      subtitle: selectedPackage?.description || selectedPackage?.features?.[0] || '',
+      price: Number(selectedPower.price || 0) + Number(selectedPackage?.price || 0),
+      packageId: selectedPackage?.id,
     };
     const prescriptionData = needsPrescription
       ? prescriptionMethod === 'manual'
@@ -154,17 +163,18 @@ export function LensSelectionDrawer({ open, onClose, options = [], selectedOptio
               <span className="shrink-0 rounded-full border border-navy-200 px-3 py-2 text-navy-600">High power</span>
             </div>
             <div className="mt-4 space-y-3">
-              {LENS_PACKAGES.map((item) => {
-                const Icon = item.icon;
+              {compatiblePackages.map((item) => {
+                const Icon = item.icon || FiEye;
                 const active = item.id === packageId;
                 return (
                   <button key={item.id} type="button" onClick={() => setPackageId(item.id)} className={cn('flex w-full items-start gap-4 rounded-2xl border p-4 text-left transition', active ? 'border-brand-500 bg-brand-50 shadow-soft' : 'border-navy-200 hover:border-brand-300')}>
                     <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-surface-muted text-brand-700"><Icon className="h-6 w-6" /></span>
-                    <span className="min-w-0 flex-1"><span className="flex flex-wrap items-center gap-2"><span className="font-semibold text-navy-900">{item.name}</span><span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-700">{item.badge}</span></span><span className="mt-1 block text-sm text-navy-500">{item.features.join(' · ')}</span><span className="mt-2 block text-sm font-semibold text-navy-800">{item.price ? `Add ₹${item.price}` : 'Included'}</span></span>
+                    <span className="min-w-0 flex-1"><span className="flex flex-wrap items-center gap-2"><span className="font-semibold text-navy-900">{item.name}</span>{item.badge && <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-700">{item.badge}</span>}</span><span className="mt-1 block text-sm text-navy-500">{item.description || item.features?.join(' · ')}</span><span className="mt-2 block text-sm font-semibold text-navy-800">{item.price ? `Add ₹${item.price}` : 'Included'}</span></span>
                     {active && <FiCheck className="mt-1 shrink-0 text-brand-600" />}
                   </button>
                 );
               })}
+              {!compatiblePackages.length && <p className="rounded-xl bg-surface-muted p-4 text-sm text-navy-600">No lens packages are configured for this power type.</p>}
             </div>
           </div>
         )}

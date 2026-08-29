@@ -36,6 +36,7 @@ export const ROUTES = Object.freeze({
   admin: '/admin',
   adminProducts: '/admin/products',
   adminContactLenses: '/admin/contact-lenses',
+  adminFrameLenses: '/admin/frame-lenses',
   adminOrders: '/admin/orders',
   adminCategories: '/admin/categories',
   adminBrands: '/admin/brands',

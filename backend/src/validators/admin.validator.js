@@ -174,5 +174,34 @@ export const updateSettingsSchema = {
         }
       })
       .optional(),
+    frameLensConfiguration: z.object({
+      powerTypes: z.array(z.object({
+        id: z.string().trim().min(1).max(60),
+        label: z.string().trim().min(1).max(60),
+        subtitle: z.string().trim().max(140).optional(),
+        price: z.number().min(0).optional(),
+        requiresPrescription: z.boolean().optional(),
+        isActive: z.boolean().optional(),
+      })).min(1).max(12),
+      packages: z.array(z.object({
+        id: z.string().trim().min(1).max(60),
+        name: z.string().trim().min(1).max(80),
+        description: z.string().trim().max(180).optional(),
+        price: z.number().min(0).optional(),
+        powerTypes: z.array(z.string().trim().min(1).max(60)).max(12).optional(),
+        isActive: z.boolean().optional(),
+      })).max(24),
+      prescriptionFields: z.array(z.object({
+        key: z.string().trim().min(1).max(60),
+        label: z.string().trim().min(1).max(60),
+        min: z.number().min(-200).max(200),
+        max: z.number().min(-200).max(200),
+        step: z.number().positive().max(200),
+        scope: z.enum(['per-eye', 'shared']),
+        required: z.boolean().optional(),
+        powerTypes: z.array(z.string().trim().min(1).max(60)).max(12).optional(),
+        isActive: z.boolean().optional(),
+      }).refine((field) => field.min <= field.max, 'Minimum must be less than or equal to maximum')).max(24),
+    }).optional(),
   }),
 };

@@ -1,5 +1,5 @@
 import { NavLink, Outlet, Link } from 'react-router-dom';
-import { FiBarChart2, FiBox, FiCircle, FiGrid, FiImage, FiMenu, FiPackage, FiPercent, FiRefreshCw, FiSettings, FiStar, FiTruck, FiUsers } from 'react-icons/fi';
+import { FiBarChart2, FiBox, FiCircle, FiEye, FiGrid, FiImage, FiMenu, FiPackage, FiPercent, FiRefreshCw, FiSettings, FiStar, FiTruck, FiUsers } from 'react-icons/fi';
 import { Helmet } from 'react-helmet-async';
 import { Logo } from '@/components/common/Logo';
 import { ROUTES } from '@/constants/routes';
@@ -7,6 +7,7 @@ import { cn } from '@/utils/cn';
 
 const navigation = [
   [ROUTES.admin, 'Dashboard', FiBarChart2, true], [ROUTES.adminOrders, 'Orders', FiPackage], [ROUTES.adminProducts, 'Products', FiBox], [ROUTES.adminContactLenses, 'Contact Lenses', FiCircle],
+  [ROUTES.adminFrameLenses, 'Lens for frames', FiEye],
   [ROUTES.adminCategories, 'Categories', FiGrid], [ROUTES.adminBrands, 'Brands', FiGrid], [ROUTES.adminInventory, 'Inventory', FiTruck],
   [ROUTES.adminCoupons, 'Coupons', FiPercent], [ROUTES.adminBanners, 'Banners', FiImage], [ROUTES.adminReviews, 'Reviews', FiStar],
   [ROUTES.adminReturns, 'Returns', FiRefreshCw], [ROUTES.adminUsers, 'Users', FiUsers], [ROUTES.adminReports, 'Reports', FiBarChart2],

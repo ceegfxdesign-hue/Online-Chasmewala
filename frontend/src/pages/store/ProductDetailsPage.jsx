@@ -34,6 +34,7 @@ import { toggleWishlist } from '@/features/wishlist/wishlistSlice';
 import { pushRecentlyViewed, selectRecentlyViewed } from '@/features/recentlyViewed/recentlyViewedSlice';
 import { openCartDrawer } from '@/features/ui/uiSlice';
 import { useGetOffersQuery } from '@/features/cart/cartApi';
+import { useGetFrameLensConfigurationQuery } from '@/features/settings/settingsApi';
 import { useToast } from '@/contexts/ToastContext';
 import { formatPrice, titleCase } from '@/lib/format';
 import { absoluteUrl } from '@/lib/seo';
@@ -41,8 +42,11 @@ import { ROUTES } from '@/constants/routes';
 import { cn } from '@/utils/cn';
 
 /** Build lens options for eyeglass frames only. */
-function lensOptionsFor(product, isEyeglasses) {
+function lensOptionsFor(product, isEyeglasses, frameLensConfiguration) {
   if (!isEyeglasses) return [];
+  if (frameLensConfiguration?.powerTypes?.length) return frameLensConfiguration.powerTypes
+    .filter((option) => option.isActive !== false)
+    .map((option) => ({ type: option.id, label: option.label, subtitle: option.subtitle, price: Number(option.price || 0), requiresPrescription: option.requiresPrescription }));
   if (product.lensOptions?.length) return product.lensOptions;
   return [
     { type: 'single-vision', label: 'With Power', subtitle: 'Positive, negative or cylindrical', price: 0 },
@@ -71,6 +75,7 @@ export default function ProductDetailsPage() {
   const { data: product, isLoading, isError } = useGetProductBySlugQuery(slug);
   const { data: related } = useGetRelatedProductsQuery(slug, { skip: !slug });
   const { data: offers = [] } = useGetOffersQuery();
+  const { data: frameLensConfiguration } = useGetFrameLensConfigurationQuery();
   const recentlyViewed = useSelector(selectRecentlyViewed);
   const wishlisted = useSelector((s) => product && s.wishlist.items.some((i) => i.productId === product._id));
 
@@ -86,7 +91,7 @@ export default function ProductDetailsPage() {
 
   const isEyeglasses = product?.category?.slug?.toLowerCase() === 'eyeglasses';
   const isContactLens = product?.category?.slug?.toLowerCase() === 'contact-lenses';
-  const lensOptions = useMemo(() => (product ? lensOptionsFor(product, isEyeglasses) : []), [product, isEyeglasses]);
+  const lensOptions = useMemo(() => (product ? lensOptionsFor(product, isEyeglasses, frameLensConfiguration) : []), [frameLensConfiguration, product, isEyeglasses]);
   const needsLensSelection = isEyeglasses && !lens?.packageId;
   const featuredOffer = useMemo(() => {
     if (!product) return null;
@@ -539,6 +544,7 @@ export default function ProductDetailsPage() {
         open={lensDrawerOpen}
         onClose={() => setLensDrawerOpen(false)}
         options={lensOptions}
+        packages={frameLensConfiguration?.packages}
         selectedOption={lens}
         onComplete={({ lensOption, prescription: selectedPrescription }) => {
           setLens(lensOption);

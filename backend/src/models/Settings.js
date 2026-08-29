@@ -106,6 +106,64 @@ const navigationMenuSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const frameLensPowerTypeSchema = new mongoose.Schema(
+  {
+    id: { type: String, required: true, trim: true, maxlength: 60 },
+    label: { type: String, required: true, trim: true, maxlength: 60 },
+    subtitle: { type: String, trim: true, maxlength: 140 },
+    price: { type: Number, min: 0, default: 0 },
+    requiresPrescription: { type: Boolean, default: false },
+    isActive: { type: Boolean, default: true },
+  },
+  { _id: false }
+);
+
+const frameLensPackageSchema = new mongoose.Schema(
+  {
+    id: { type: String, required: true, trim: true, maxlength: 60 },
+    name: { type: String, required: true, trim: true, maxlength: 80 },
+    description: { type: String, trim: true, maxlength: 180 },
+    price: { type: Number, min: 0, default: 0 },
+    powerTypes: [{ type: String, trim: true }],
+    isActive: { type: Boolean, default: true },
+  },
+  { _id: false }
+);
+
+const frameLensPrescriptionFieldSchema = new mongoose.Schema(
+  {
+    key: { type: String, required: true, trim: true, maxlength: 60 },
+    label: { type: String, required: true, trim: true, maxlength: 60 },
+    min: { type: Number, default: -3 },
+    max: { type: Number, default: 3 },
+    step: { type: Number, min: 0.01, default: 0.25 },
+    scope: { type: String, enum: ['per-eye', 'shared'], default: 'per-eye' },
+    required: { type: Boolean, default: false },
+    powerTypes: [{ type: String, trim: true }],
+    isActive: { type: Boolean, default: true },
+  },
+  { _id: false }
+);
+
+export const DEFAULT_FRAME_LENS_CONFIGURATION = {
+  powerTypes: [
+    { id: 'single-vision', label: 'Single Vision', subtitle: 'Distance or reading power', price: 0, requiresPrescription: true, isActive: true },
+    { id: 'zero-power', label: 'Zero Power', subtitle: 'Screen glasses', price: 0, requiresPrescription: false, isActive: true },
+    { id: 'progressive', label: 'Progressive / Bifocals', subtitle: 'Two powers in one lens', price: 1200, requiresPrescription: true, isActive: true },
+    { id: 'frame-only', label: 'Frame Only', subtitle: 'With no lenses', price: 0, requiresPrescription: false, isActive: true },
+  ],
+  packages: [
+    { id: 'anti-glare', name: 'Anti-Glare Premium', description: 'Clear everyday lenses with anti-glare protection.', price: 0, powerTypes: ['single-vision', 'zero-power', 'progressive'], isActive: true },
+    { id: 'blu-screen', name: 'BLU Screen Protection', description: 'Blue-light filtering for screens.', price: 250, powerTypes: ['single-vision', 'zero-power', 'progressive'], isActive: true },
+  ],
+  prescriptionFields: [
+    { key: 'sph', label: 'SPH', min: -20, max: 20, step: 0.25, scope: 'per-eye', required: true, powerTypes: ['single-vision', 'progressive'], isActive: true },
+    { key: 'cyl', label: 'CYL', min: -6, max: 0, step: 0.25, scope: 'per-eye', required: false, powerTypes: ['single-vision', 'progressive'], isActive: true },
+    { key: 'axis', label: 'Axis', min: 0, max: 180, step: 1, scope: 'per-eye', required: false, powerTypes: ['single-vision', 'progressive'], isActive: true },
+    { key: 'pd', label: 'PD', min: 40, max: 80, step: 1, scope: 'shared', required: true, powerTypes: ['single-vision', 'progressive'], isActive: true },
+  ],
+};
+
 /**
  * Singleton store settings, editable from the admin panel. Access via
  * `Settings.getSingleton()`.
@@ -171,6 +229,11 @@ const settingsSchema = new mongoose.Schema(
         validator: (menus) => menus.length === 3,
         message: 'Exactly three navigation menus are required',
       },
+    },
+    frameLensConfiguration: {
+      powerTypes: { type: [frameLensPowerTypeSchema], default: () => DEFAULT_FRAME_LENS_CONFIGURATION.powerTypes.map((item) => ({ ...item })) },
+      packages: { type: [frameLensPackageSchema], default: () => DEFAULT_FRAME_LENS_CONFIGURATION.packages.map((item) => ({ ...item, powerTypes: [...item.powerTypes] })) },
+      prescriptionFields: { type: [frameLensPrescriptionFieldSchema], default: () => DEFAULT_FRAME_LENS_CONFIGURATION.prescriptionFields.map((item) => ({ ...item, powerTypes: [...item.powerTypes] })) },
     },
   },
   { timestamps: true }

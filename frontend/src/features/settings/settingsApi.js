@@ -35,6 +35,12 @@ export const settingsApi = baseApi.injectEndpoints({
       providesTags: ['Admin'],
       keepUnusedDataFor: 300,
     }),
+    getFrameLensConfiguration: builder.query({
+      query: () => ({ url: '/settings/frame-lenses' }),
+      transformResponse: data,
+      providesTags: ['Admin'],
+      keepUnusedDataFor: 300,
+    }),
   }),
 });
 
@@ -44,4 +50,5 @@ export const {
   useGetFooterSettingsQuery,
   useGetTrustBenefitsQuery,
   useGetNavigationMenusQuery,
+  useGetFrameLensConfigurationQuery,
 } = settingsApi;

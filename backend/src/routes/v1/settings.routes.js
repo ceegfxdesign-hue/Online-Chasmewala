@@ -50,6 +50,15 @@ router.get(
 );
 
 router.get(
+  '/frame-lenses',
+  asyncHandler(async (_req, res) => {
+    const settings = await settingsService.get();
+    res.set('Cache-Control', 'public, max-age=300, s-maxage=600, stale-while-revalidate=900');
+    return sendSuccess(res, { data: settings.frameLensConfiguration });
+  })
+);
+
+router.get(
   '/footer',
   asyncHandler(async (_req, res) => {
     const settings = await settingsService.get();
