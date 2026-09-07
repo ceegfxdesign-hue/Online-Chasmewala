@@ -54,6 +54,9 @@ export const frameLensSchema = z
             .max(20)
             .optional(),
           videoUrl: url.optional(),
+          detailImageUrl: url.optional(),
+          comparisonImageUrl: url.optional(),
+          detailFeatures: z.array(z.object({ title: text.min(1), description: z.string().max(1000).optional(), imageUrl: url.optional() })).max(12).optional(),
           badge: text.optional(),
           categories: z.array(id).max(24).optional(),
           powerTypes: z.array(id).max(12),

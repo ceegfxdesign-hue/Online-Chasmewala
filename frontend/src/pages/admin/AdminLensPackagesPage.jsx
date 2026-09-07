@@ -5,6 +5,7 @@ import { useGetSettingsQuery, useUpdateSettingsMutation } from '@/features/admin
 import { normalizeFrameLenses } from '@/lib/frameLenses';
 import { useToast } from '@/contexts/ToastContext';
 import { formatPrice } from '@/lib/format';
+import { LensMediaInput } from '@/components/admin/LensMediaInput';
 
 const emptyPackage = {
   id: '',
@@ -22,6 +23,9 @@ const emptyPackage = {
   powerTypes: [],
   imageUrl: '',
   videoUrl: '',
+  detailImageUrl: '',
+  comparisonImageUrl: '',
+  detailFeatures: [],
   isActive: true,
   isRecommended: false,
   order: 0,
@@ -33,6 +37,8 @@ export default function AdminLensPackagesPage() {
   const [updateSettings, { isLoading: saving }] = useUpdateSettingsMutation();
   const [draft, setDraft] = useState(null);
   const [editingId, setEditingId] = useState(null);
+  const [uploads, setUploads] = useState(0);
+  const mediaBusy = (busy) => setUploads((count) => Math.max(0, count + (busy ? 1 : -1)));
   const toast = useToast();
   const configuration = normalizeFrameLenses(data?.frameLensConfiguration);
   const update = (key, value) => setDraft((current) => ({ ...current, [key]: value }));
@@ -52,6 +58,7 @@ export default function AdminLensPackagesPage() {
   };
   const save = async (event) => {
     event.preventDefault();
+    if (uploads) return;
     const clean = { ...draft, id: draft.id.trim(), name: draft.name.trim() };
     if (configuration.packages.some((pack) => pack.id === clean.id && pack.id !== editingId)) {
       toast.error('Choose a unique package ID.');
@@ -200,7 +207,7 @@ export default function AdminLensPackagesPage() {
       <Modal
         open={Boolean(draft)}
         onClose={() => {
-          if (!saving) setDraft(null);
+          if (!saving && !uploads) setDraft(null);
         }}
         title={editingId ? 'Edit Lens Package' : 'Add Lens Package'}
         size="lg"
@@ -222,10 +229,40 @@ export default function AdminLensPackagesPage() {
                 {field('price', 'Selling price (lens extra)', 'number')}
                 {field('mrp', 'Original MRP (lens extra)', 'number')}
                 {field('couponText', 'Coupon tag text')}
-                {field('imageUrl', 'Lens image URL')}
-                {field('videoUrl', 'Video URL (optional)')}
                 {field('order', 'Display order', 'number')}
               </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <LensMediaInput
+                  label="Lens image"
+                  value={draft.imageUrl}
+                  onChange={(value) => update('imageUrl', value)}
+                  onBusyChange={mediaBusy}
+                />
+                <LensMediaInput
+                  label="Video"
+                  kind="video"
+                  value={draft.videoUrl}
+                  onChange={(value) => update('videoUrl', value)}
+                  onBusyChange={mediaBusy}
+                />
+                <LensMediaInput
+                  label="Details hero image"
+                  value={draft.detailImageUrl}
+                  onChange={(value) => update('detailImageUrl', value)}
+                  onBusyChange={mediaBusy}
+                />
+                <LensMediaInput
+                  label="Comparison image (optional)"
+                  value={draft.comparisonImageUrl}
+                  onChange={(value) => update('comparisonImageUrl', value)}
+                  onBusyChange={mediaBusy}
+                />
+              </div>
+              <p className="text-xs text-navy-500">
+                The details panel uses the hero image (or lens image). Add a second comparison image
+                to enable the before/after slider. Video playback is available when a video is
+                uploaded. Uploaded media is public; do not upload customer prescriptions here.
+              </p>
               <Textarea
                 label="Description / view details"
                 value={draft.description}
@@ -292,6 +329,77 @@ export default function AdminLensPackagesPage() {
                 </Button>
               </fieldset>
               {choices('categories', 'Categories', configuration.packageCategories)}
+              <fieldset className="space-y-3">
+                <legend className="font-semibold">Illustrated details features</legend>
+                {draft.detailFeatures.map((feature, index) => (
+                  <div key={index} className="space-y-3 rounded-xl border border-navy-200 p-3">
+                    <Input
+                      label={'Detail feature ' + (index + 1)}
+                      required
+                      value={feature.title}
+                      onChange={(event) =>
+                        update(
+                          'detailFeatures',
+                          draft.detailFeatures.map((item, i) =>
+                            i === index ? { ...item, title: event.target.value } : item
+                          )
+                        )
+                      }
+                    />
+                    <Textarea
+                      label={'Feature description ' + (index + 1)}
+                      value={feature.description || ''}
+                      onChange={(event) =>
+                        update(
+                          'detailFeatures',
+                          draft.detailFeatures.map((item, i) =>
+                            i === index ? { ...item, description: event.target.value } : item
+                          )
+                        )
+                      }
+                    />
+                    <LensMediaInput
+                      label={'Feature image ' + (index + 1)}
+                      value={feature.imageUrl}
+                      onBusyChange={mediaBusy}
+                      onChange={(value) =>
+                        setDraft((current) => ({
+                          ...current,
+                          detailFeatures: current.detailFeatures.map((item, i) =>
+                            i === index ? { ...item, imageUrl: value } : item
+                          ),
+                        }))
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      disabled={Boolean(uploads)}
+                      onClick={() =>
+                        update(
+                          'detailFeatures',
+                          draft.detailFeatures.filter((_, i) => i !== index)
+                        )
+                      }
+                    >
+                      Remove detail feature
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={draft.detailFeatures.length >= 12 || Boolean(uploads)}
+                  onClick={() =>
+                    update('detailFeatures', [
+                      ...draft.detailFeatures,
+                      { title: '', description: '', imageUrl: '' },
+                    ])
+                  }
+                >
+                  Add illustrated feature
+                </Button>
+              </fieldset>
               {choices(
                 'powerTypes',
                 'Power types',
@@ -307,7 +415,7 @@ export default function AdminLensPackagesPage() {
                 checked={draft.isRecommended}
                 onChange={(event) => update('isRecommended', event.target.checked)}
               />
-              <Button type="submit" loading={saving}>
+              <Button type="submit" loading={saving} disabled={Boolean(uploads)}>
                 Save package
               </Button>
             </fieldset>

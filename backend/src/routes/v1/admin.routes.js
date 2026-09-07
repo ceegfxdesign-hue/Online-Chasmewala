@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { receiveLensMedia, saveLensMedia } from '../../controllers/lensMedia.controller.js';
 import { adminController } from '../../controllers/admin.controller.js';
 import { validate } from '../../middlewares/validate.middleware.js';
 import { protect, authorize } from '../../middlewares/auth.middleware.js';
@@ -19,6 +20,7 @@ import {
 
 const router = Router();
 router.use(protect, authorize(ROLES.ADMIN));
+router.post('/lens-media', receiveLensMedia, saveLensMedia);
 
 // Analytics
 router.get('/analytics/dashboard', adminController.dashboard);

@@ -135,4 +135,14 @@ describe('frame lens wizard', () => {
     expect(powerChoices(DEFAULT_FRAME_LENSES.prescriptionFields[0])).toHaveLength(161);
     expect(normalizeFrameLenses({ packages: [] }).packages).toEqual([]);
   });
+  it('opens package details and selects that lens into the prescription step', async () => {
+    setup();
+    await click(/With Power/);
+    const buttons = await screen.findAllByRole('button', { name: 'View Details >' });
+    fireEvent.click(buttons[0]);
+    expect(await screen.findByText('Top Benefits')).toBeInTheDocument();
+    await click('Select This Lens');
+    expect(await screen.findByRole('button', { name: /Enter power manually/ })).toBeInTheDocument();
+    expect(screen.queryByText('Top Benefits')).not.toBeInTheDocument();
+  });
 });

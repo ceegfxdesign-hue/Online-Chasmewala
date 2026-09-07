@@ -129,6 +129,8 @@ const frameLensPackageSchema = new mongoose.Schema(
     features: { type: [String], default: undefined }, badge: String, categories: { type: [String], default: undefined }, imageUrl: String, isRecommended: Boolean, order: Number,
     ribbonText: String, ribbonColor: { type: String, enum: ['blue', 'red', 'green', 'none'] },
     warranty: String, mrp: { type: Number, min: 0 }, couponText: String,
+    detailImageUrl: String, comparisonImageUrl: String,
+    detailFeatures: { type: [new mongoose.Schema({ title: String, description: String, imageUrl: String }, { _id: false })], default: undefined },
     featureIcons: { type: [String], default: undefined }, videoUrl: String,
     price: { type: Number, min: 0, default: 0 },
     powerTypes: [{ type: String, trim: true }],

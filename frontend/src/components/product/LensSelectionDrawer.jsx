@@ -20,6 +20,7 @@ import { formatPrice } from '@/lib/format';
 import { cn } from '@/utils/cn';
 import { useToast } from '@/contexts/ToastContext';
 import { LensPackageCard, PowerLensIllustration } from './LensPackageCard';
+import { LensPackageDetails } from './LensPackageDetails';
 const icons = {
   Eye: FiEye,
   Monitor: FiMonitor,
@@ -556,7 +557,7 @@ export function LensSelectionDrawer({
         </div>
       </Drawer>
       <Modal
-        open={Boolean(details)}
+        open={Boolean(details?.learn)}
         onClose={() => setDetails(null)}
         title={details?.learn ? 'About power types' : details?.pack?.name}
       >
@@ -569,30 +570,23 @@ export function LensSelectionDrawer({
               </section>
             ))}
           </div>
-        ) : (
-          <div className="space-y-4">
-            <p className="text-sm text-navy-600">{details?.pack?.description}</p>
-            {details?.play && details?.pack?.videoUrl ? (
-              <video controls className="w-full rounded-xl" src={details.pack.videoUrl}>
-                <track kind="captions" />
-              </video>
-            ) : details?.pack?.imageUrl ? (
-              <img
-                src={details.pack.imageUrl}
-                alt={details.pack.name}
-                className="max-h-72 w-full object-contain"
-              />
-            ) : null}
-            <ul className="space-y-2 text-sm">
-              {details?.pack?.features?.map((feature, i) => (
-                <li key={i}>
-                  {details.pack.featureIcons?.[i] || '⚡'} {feature}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        ) : null}
       </Modal>
+      {details?.pack && (
+        <LensPackageDetails
+          key={details.pack.id}
+          pack={details.pack}
+          framePrice={framePrice}
+          frameMrp={frameMrp}
+          powerPrice={mode?.price || 0}
+          onClose={() => setDetails(null)}
+          onSelect={() => {
+            setPackageId(details.pack.id);
+            setDetails(null);
+            go(2);
+          }}
+        />
+      )}
     </>
   );
 }
