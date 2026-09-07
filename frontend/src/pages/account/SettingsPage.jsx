@@ -7,12 +7,12 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useChangePasswordMutation } from '@/features/account/accountApi';
 import { useToast } from '@/contexts/ToastContext';
-import { zodResolver } from '@/lib/validators';
+import { zodResolver, passwordSchema as newPasswordSchema } from '@/lib/validators';
 
 const passwordSchema = z
   .object({
     currentPassword: z.string().min(1, 'Enter your current password'),
-    newPassword: z.string().min(6, 'At least 6 characters').max(72),
+    newPassword: newPasswordSchema,
     confirmPassword: z.string(),
   })
   .refine((d) => d.newPassword === d.confirmPassword, {

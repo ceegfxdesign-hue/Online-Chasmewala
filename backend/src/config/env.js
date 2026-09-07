@@ -25,7 +25,11 @@ const schema = z
     JWT_REFRESH_EXPIRES: z.string().default('7d'),
     BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(4).max(15).default(10),
 
-    RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(15 * 60 * 1000),
+    RATE_LIMIT_WINDOW_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(15 * 60 * 1000),
     RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
 
     LOG_LEVEL: z.enum(['error', 'warn', 'info', 'http', 'debug']).default('info'),
@@ -42,6 +46,37 @@ const schema = z
     SEED_ADMIN_PASSWORD: z.string().min(6).default('Admin@123'),
   })
   .superRefine((val, ctx) => {
+    if (val.NODE_ENV === 'production') {
+      for (const key of ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET']) {
+        if (
+          val[key].length < 32 ||
+          /change[_-]?me|please_use|replace[_-]?me|your[_-].*secret|default|boilerplate|dev[_-].*secret|test[_-].*secret/i.test(
+            val[key]
+          )
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [key],
+            message:
+              'Production requires a strong, non-default JWT secret of at least 32 characters',
+          });
+        }
+      }
+      if (val.JWT_ACCESS_SECRET === val.JWT_REFRESH_SECRET) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['JWT_REFRESH_SECRET'],
+          message: 'Access and refresh secrets must be different',
+        });
+      }
+      if (val.PAYMENT_PROVIDER === 'mock') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['PAYMENT_PROVIDER'],
+          message: 'Mock payments are forbidden in production',
+        });
+      }
+    }
     if (val.UPLOAD_PROVIDER === 'cloudinary') {
       for (const key of ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET']) {
         if (!val[key]) {
@@ -56,6 +91,7 @@ const schema = z
   });
 
 const parsed = schema.safeParse(process.env);
+export { schema as envSchema };
 
 if (!parsed.success) {
   const issues = parsed.error.issues
@@ -74,7 +110,9 @@ export const env = Object.freeze({
   isProd: raw.NODE_ENV === 'production',
   isDev: raw.NODE_ENV === 'development',
   isTest: raw.NODE_ENV === 'test',
-  corsOrigins: raw.CLIENT_URL.split(',').map((o) => o.trim()).filter(Boolean),
+  corsOrigins: raw.CLIENT_URL.split(',')
+    .map((o) => o.trim())
+    .filter(Boolean),
 });
 
 export default env;

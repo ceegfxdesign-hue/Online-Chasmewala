@@ -22,6 +22,49 @@ import {
 } from '../models/index.js';
 
 class UserRepository extends BaseRepository {
+  otpFilter(id, hash) {
+    return {
+      _id: id,
+      otpHash: hash,
+      otpExpiresAt: { $gt: new Date() },
+      $or: [{ otpAttempts: { $lt: 5 } }, { otpAttempts: { $exists: false } }],
+    };
+  }
+
+  invalidateOtp(id, hash) {
+    return this.model.updateOne(
+      { _id: id, otpHash: hash },
+      { $unset: { otpHash: '', otpExpiresAt: '' }, $set: { otpAttempts: 0 } }
+    );
+  }
+
+  recordOtpFailure(id, hash) {
+    // Atomic increment and invalidation prevent parallel guesses bypassing the limit.
+    return this.model
+      .findOneAndUpdate(
+        this.otpFilter(id, hash),
+        [
+          { $set: { otpAttempts: { $add: [{ $ifNull: ['$otpAttempts', 0] }, 1] } } },
+          {
+            $set: {
+              otpHash: { $cond: [{ $gte: ['$otpAttempts', 5] }, '$$REMOVE', '$otpHash'] },
+              otpExpiresAt: { $cond: [{ $gte: ['$otpAttempts', 5] }, '$$REMOVE', '$otpExpiresAt'] },
+              otpAttempts: { $cond: [{ $gte: ['$otpAttempts', 5] }, 0, '$otpAttempts'] },
+            },
+          },
+        ],
+        { new: true }
+      )
+      .select('+otpHash +otpAttempts');
+  }
+
+  consumeOtp(id, hash) {
+    return this.model.updateOne(this.otpFilter(id, hash), {
+      $unset: { otpHash: '', otpExpiresAt: '' },
+      $set: { otpAttempts: 0 },
+    });
+  }
+
   findByEmail(email, { withPassword = false } = {}) {
     const q = this.model.findOne({ email: String(email).toLowerCase() });
     return withPassword ? q.select('+password') : q;

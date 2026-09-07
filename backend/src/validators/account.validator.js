@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { passwordSchema } from './password.js';
 
 const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
 export const idParam = { params: z.object({ id: objectId }) };
@@ -25,7 +26,7 @@ export const updateProfileSchema = {
 export const changePasswordSchema = {
   body: z.object({
     currentPassword: z.string().min(1, 'Current password is required'),
-    newPassword: z.string().min(6, 'New password must be at least 6 characters').max(72),
+    newPassword: passwordSchema,
   }),
 };
 

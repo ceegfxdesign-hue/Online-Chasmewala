@@ -79,9 +79,12 @@ describe('Cart & checkout flow', () => {
   });
 
   it('validates a coupon against the subtotal', async () => {
-    // WELCOME10 needs a min order of ₹999.
-    await request(app).post('/api/v1/cart/items').set(auth()).send({ productId: product._id, quantity: 2 });
+    // Choose a qualifying item explicitly; catalogue ordering can return a cheap accessory.
+    const eligible = await request(app).get('/api/v1/products?inStock=true&minPrice=999&limit=1');
+    expect(eligible.body.data).toHaveLength(1);
+    await request(app).post('/api/v1/cart/items').set(auth()).send({ productId: eligible.body.data[0]._id, quantity: 1 });
     const cart = (await request(app).get('/api/v1/cart').set(auth())).body.data;
+    expect(cart.summary.subtotal).toBeGreaterThanOrEqual(999);
 
     const ok = await request(app)
       .post('/api/v1/coupons/validate')

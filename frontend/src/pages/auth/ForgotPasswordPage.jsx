@@ -24,10 +24,8 @@ export default function ForgotPasswordPage() {
   const onSubmit = async ({ email }) => {
     setLoading(true);
     try {
-      const { data } = await api.post('/auth/otp/request', { email, purpose: 'reset' });
+      await api.post('/auth/otp/request', { email, purpose: 'reset' });
       toast.success('We sent a 6-digit code to your email.');
-      // In dev the mock provider returns the code so the flow is testable.
-      if (data.data?.devCode) toast.info(`Dev code: ${data.data.devCode}`, { duration: 8000 });
       navigate(ROUTES.otp, { state: { email, purpose: 'reset' } });
     } catch (err) {
       toast.error(normalizeError(err).message);

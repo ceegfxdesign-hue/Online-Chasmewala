@@ -14,3 +14,19 @@ export const authLimiter = rateLimit({
 });
 
 export default authLimiter;
+
+const couponOptions = {
+  windowMs: 10 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many coupon validation attempts. Please try again in 10 minutes.',
+  },
+};
+// Independent IP and authenticated-account limits prevent bypass by switching either.
+export const couponLimiter = [
+  rateLimit(couponOptions),
+  rateLimit({ ...couponOptions, keyGenerator: (req) => String(req.user._id) }),
+];

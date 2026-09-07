@@ -52,6 +52,7 @@ const userSchema = new mongoose.Schema(
     // OTP (mock provider stores the hash + expiry; real providers deliver it)
     otpHash: { type: String, select: false },
     otpExpiresAt: { type: Date, select: false },
+    otpAttempts: { type: Number, default: 0, select: false },
 
     // Refresh-token rotation: store hashes of currently-valid refresh tokens.
     refreshTokens: { type: [String], select: false, default: [] },
@@ -70,6 +71,7 @@ const userSchema = new mongoose.Schema(
         delete ret.password;
         delete ret.otpHash;
         delete ret.otpExpiresAt;
+        delete ret.otpAttempts;
         delete ret.refreshTokens;
         return ret;
       },

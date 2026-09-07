@@ -50,9 +50,9 @@ export const authService = {
   },
 
   async login({ email, password }) {
-    const user = await userRepository.findByEmail(email, { withPassword: true }).select(
-      '+password +refreshTokens'
-    );
+    const user = await userRepository
+      .findByEmail(email, { withPassword: true })
+      .select('+password +refreshTokens');
     if (!user || !user.isActive) throw ApiError.unauthorized(MESSAGES.INVALID_CREDENTIALS);
 
     const ok = await user.comparePassword(password);
@@ -103,39 +103,54 @@ export const authService = {
   },
 
   async getProfile(userId) {
-    const user = await userRepository.findById(userId).populate('wishlist', 'name slug price images');
+    const user = await userRepository
+      .findById(userId)
+      .populate('wishlist', 'name slug price images');
     if (!user) throw ApiError.notFound('User not found');
     return user.toJSON();
   },
 
   /** Request an OTP for the given purpose (mock delivery in dev). */
   async requestOtp(email, purpose = 'verification') {
-    const user = await userRepository.findByEmail(email).select('+otpHash +otpExpiresAt');
+    const user = await userRepository
+      .findByEmail(email)
+      .select('+otpHash +otpExpiresAt +otpAttempts');
     if (!user) throw ApiError.notFound('No account found for this email');
 
     const code = generateOtp(6);
     user.otpHash = hashToken(code);
     user.otpExpiresAt = new Date(Date.now() + OTP_TTL_MS);
+    user.otpAttempts = 0;
+    user.markModified('otpAttempts');
     await user.save();
 
-    const result = await otpProvider.send({ destination: email, code, purpose });
-    return { sent: result.delivered, devCode: result.devCode };
+    await otpProvider.send({ destination: email, code, purpose });
+    return { sent: true };
   },
 
   /** Verify an OTP; optionally reset password when a newPassword is provided. */
   async verifyOtp({ email, code, newPassword }) {
     const user = await userRepository
       .findByEmail(email)
-      .select('+otpHash +otpExpiresAt +password');
+      .select('+otpHash +otpExpiresAt +otpAttempts +password');
     if (!user) throw ApiError.notFound('No account found for this email');
 
+    if (user.otpAttempts >= 5) {
+      await userRepository.invalidateOtp(user._id, user.otpHash);
+      throw ApiError.badRequest('Too many failed attempts. Please request a new OTP.');
+    }
     if (!user.otpHash || !user.otpExpiresAt || user.otpExpiresAt < new Date()) {
       throw ApiError.badRequest('OTP expired. Please request a new one.');
     }
-    if (user.otpHash !== hashToken(code)) throw ApiError.badRequest('Incorrect OTP');
-
-    user.otpHash = undefined;
-    user.otpExpiresAt = undefined;
+    if (user.otpHash !== hashToken(code)) {
+      const failed = await userRepository.recordOtpFailure(user._id, user.otpHash);
+      if (!failed?.otpHash)
+        throw ApiError.badRequest('Too many failed attempts. Please request a new OTP.');
+      throw ApiError.badRequest('Incorrect OTP');
+    }
+    const consumed = await userRepository.consumeOtp(user._id, user.otpHash);
+    if (!consumed.modifiedCount)
+      throw ApiError.badRequest('OTP expired. Please request a new one.');
     user.isEmailVerified = true;
     if (newPassword) {
       user.password = newPassword;

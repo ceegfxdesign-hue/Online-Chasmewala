@@ -1,10 +1,7 @@
 import { z } from 'zod';
+import { passwordSchema as password } from './password.js';
 
 const email = z.string().trim().toLowerCase().email('A valid email is required');
-const password = z
-  .string()
-  .min(6, 'Password must be at least 6 characters')
-  .max(72, 'Password is too long');
 
 export const registerSchema = {
   body: z.object({

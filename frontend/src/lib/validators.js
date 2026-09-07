@@ -7,8 +7,9 @@ import { z } from 'zod';
 export const emailSchema = z.string().trim().min(1, 'Email is required').email('Enter a valid email');
 export const passwordSchema = z
   .string()
-  .min(6, 'Password must be at least 6 characters')
-  .max(72, 'Password is too long');
+  .min(8, 'Password must be at least 8 characters')
+  .max(72, 'Password is too long')
+  .regex(/^(?=.*[A-Za-z])(?=.*\d)/, 'Password must contain at least one letter and one number');
 
 export const loginSchema = z.object({
   email: emailSchema,

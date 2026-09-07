@@ -62,9 +62,8 @@ export default function OTPVerificationPage() {
   const resend = async () => {
     setResending(true);
     try {
-      const { data } = await api.post('/auth/otp/request', { email, purpose: 'reset' });
+      await api.post('/auth/otp/request', { email, purpose: 'reset' });
       toast.success('A new code has been sent.');
-      if (data.data?.devCode) toast.info(`Dev code: ${data.data.devCode}`, { duration: 8000 });
     } catch (err) {
       toast.error(normalizeError(err).message);
     } finally {

@@ -7,6 +7,7 @@
  * are selected via PAYMENT_PROVIDER.
  */
 import { env } from '../../config/env.js';
+import { ApiError } from '../../utils/ApiError.js';
 
 class MockPaymentProvider {
   /** Create an intent the client would normally confirm. */
@@ -45,5 +46,13 @@ const providers = {
   mock: new MockPaymentProvider(),
 };
 
-export const paymentProvider = providers[env.PAYMENT_PROVIDER] || providers.mock;
+export function resolvePaymentProvider(name) {
+  if (providers[name]) return providers[name];
+  const unavailable = async () => {
+    throw new ApiError(503, 'Online payments are not configured. Please use cash on delivery.');
+  };
+  // Keep catalogue/COD available without ever marking an unprocessed payment paid.
+  return { createIntent: unavailable, capture: unavailable, refund: unavailable };
+}
+export const paymentProvider = resolvePaymentProvider(env.PAYMENT_PROVIDER);
 export default paymentProvider;
