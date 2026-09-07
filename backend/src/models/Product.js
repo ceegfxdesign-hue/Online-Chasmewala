@@ -107,6 +107,7 @@ const productSchema = new mongoose.Schema(
     lensType: { type: String, enum: LENS_TYPES, index: true },
     lensThickness: { type: String },
     lensOptions: [lensOptionSchema],
+    availableLensPackages: [{ type: String }],
     // Contact-lens-specific configuration. This is only used for products in
     // the contact-lenses category and keeps clear, colour, solution and case
     // products in the same catalogue/order pipeline.

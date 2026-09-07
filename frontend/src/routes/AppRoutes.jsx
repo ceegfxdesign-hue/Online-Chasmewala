@@ -61,6 +61,7 @@ const AdminOrdersPage = adminPage('OrdersPage');
 const AdminProductsPage = lazy(() => import('@/pages/admin/AdminProductsPage'));
 const AdminContactLensesPage = lazy(() => import('@/pages/admin/AdminContactLensesPage'));
 const AdminFrameLensesPage = lazy(() => import('@/pages/admin/AdminFrameLensesPage'));
+const AdminLensPackagesPage = lazy(() => import('@/pages/admin/AdminLensPackagesPage'));
 const AdminNavigationPage = lazy(() => import('@/pages/admin/AdminNavigationPage'));
 const CategoriesPage = adminPage('CategoriesPage');
 const BrandsPage = adminPage('BrandsPage');
@@ -169,6 +170,7 @@ export function AppRoutes() {
             <Route path="products" element={<AdminProductsPage />} />
             <Route path="contact-lenses" element={<AdminContactLensesPage />} />
             <Route path="frame-lenses" element={<AdminFrameLensesPage />} />
+            <Route path="lens-packages" element={<AdminLensPackagesPage />} />
             <Route path="navigation" element={<AdminNavigationPage />} />
             <Route path="categories" element={<CategoriesPage />} />
             <Route path="brands" element={<BrandsPage />} />

@@ -11,10 +11,13 @@ import {
   useUpdateProductMutation,
 } from '@/features/products/productApi';
 import { useToast } from '@/contexts/ToastContext';
+import { useGetFrameLensConfigurationQuery } from '@/features/settings/settingsApi';
+import { normalizeFrameLenses } from '@/lib/frameLenses';
 import { formatPrice } from '@/lib/format';
 
 /** Complete product administration page, including the PDP configuration editor. */
 export function AdminProductsPage() {
+  const { data: lensConfiguration, isError: lensError, isLoading: lensesLoading } = useGetFrameLensConfigurationQuery();
   const { data, isLoading } = useGetAdminProductsQuery({ page: 1, limit: 50 });
   const { data: categories = [] } = useGetCategoriesQuery();
   const { data: brands = [] } = useGetBrandsQuery();
@@ -96,6 +99,8 @@ export function AdminProductsPage() {
 
       <ProductEditorModal
         product={editing}
+        lensPackages={normalizeFrameLenses(lensConfiguration).packages}
+        lensPackagesUnavailable={lensError || lensesLoading}
         categories={categories}
         brands={brands}
         saving={saving}

@@ -128,6 +128,7 @@ export const createProductSchema = {
     lensType: z.enum(LENS_TYPES).optional(),
     lensThickness: z.string().trim().optional(),
     lensOptions: z.array(lensOptionSchema).optional(),
+    availableLensPackages: z.array(z.string().regex(/^[a-z0-9-]+$/).max(60)).max(24).optional(),
     contactLens: contactLensSchema.optional(),
     suitableFaceShapes: z.array(z.enum(FACE_SHAPES)).optional(),
     tryOnImage: z.string().trim().optional(),

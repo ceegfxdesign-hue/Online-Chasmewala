@@ -160,6 +160,7 @@ describe('Catalog admin CRUD', () => {
         powered: true,
         genders: ['men', 'women'],
         lensOptions: [{ type: 'zero-power', label: 'Zero Power', subtitle: 'Screen glasses', price: 0 }],
+        availableLensPackages: ['anti-glare', 'blu-screen'],
         contactLens: {
           kind: 'clear',
           powerModes: ['with-power'],
@@ -174,6 +175,7 @@ describe('Catalog admin CRUD', () => {
     expect(created.body.data.genders).toEqual(['men', 'women']);
     expect(created.body.data.gender).toBe('men');
     expect(created.body.data.lensOptions).toHaveLength(1);
+    expect(created.body.data.availableLensPackages).toEqual(['anti-glare', 'blu-screen']);
     expect(created.body.data.contactLens.sphericalPowerMin).toBe(-8);
     expect(created.body.data.contactLens.sphericalPowerMax).toBe(10);
     const id = created.body.data._id;
@@ -185,11 +187,12 @@ describe('Catalog admin CRUD', () => {
     const updated = await request(app)
       .patch(`/api/v1/products/${id}`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ price: 1500, frameSize: 'medium', powered: false });
+      .send({ price: 1500, frameSize: 'medium', powered: false, availableLensPackages: [] });
     expect(updated.status).toBe(200);
     expect(updated.body.data.discountPercent).toBe(25);
     expect(updated.body.data.frameSize).toBe('medium');
     expect(updated.body.data.powered).toBe(false);
+    expect(updated.body.data.availableLensPackages).toEqual([]);
 
     const removed = await request(app)
       .delete(`/api/v1/products/${id}`)

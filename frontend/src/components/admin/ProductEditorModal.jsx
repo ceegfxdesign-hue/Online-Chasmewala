@@ -113,7 +113,7 @@ function Toggle({ name, label, defaultChecked = false }) {
  * Complete product editor for the admin area. Array fields use one item per
  * line (or comma-separated chips) so the request matches the product API.
  */
-export function ProductEditorModal({ product, categories, brands, onClose, onSave, saving = false, contactLensMode = false, fixedCategoryId }) {
+export function ProductEditorModal({ product, categories, brands, onClose, onSave, saving = false, contactLensMode = false, fixedCategoryId, lensPackages = [], lensPackagesUnavailable = false }) {
   const toast = useToast();
   const editing = Boolean(product?._id);
   const [validationErrors, setValidationErrors] = useState({});
@@ -121,6 +121,7 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
   const [uploadedImages, setUploadedImages] = useState([]);
   const [preparingImages, setPreparingImages] = useState(false);
   const [variants, setVariants] = useState([]);
+  const [availableLensPackages, setAvailableLensPackages] = useState([]);
   const [contactLens, setContactLens] = useState(EMPTY_CONTACT_LENS);
   const mainImageInputRef = useRef(null);
   const mainImageUploadModeRef = useRef('add');
@@ -135,6 +136,7 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
     setPreparingImages(false);
     setVariants(product?.variants?.map((variant) => ({ ...createEmptyVariant(), ...variant, images: variant.images || [] })) || []);
     setContactLens(normalizeContactLens(product?.contactLens));
+    setAvailableLensPackages(product?.availableLensPackages || []);
     // Reset only when opening a different product; edits must not reset the form.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?._id]);
@@ -290,6 +292,7 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
       return;
     }
     body.lensOptions = lensOptions;
+    if (!contactLensMode) body.availableLensPackages = availableLensPackages;
 
     if (contactLensMode) {
       body.category = fixedCategoryId || body.category;
@@ -388,7 +391,13 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
           </div>
         </section>
 
-        {contactLensMode && (
+        {!contactLensMode && <section className="rounded-2xl border border-navy-200 p-4">
+ <h3 className="font-semibold text-navy-900">Available Lens Packages for this frame</h3>
+ <p className="my-2 text-sm text-navy-500">Choose the packages customers can select. Leave all unchecked to allow every active, compatible package.</p>
+ {lensPackagesUnavailable ? <p role="status">Package list unavailable. Existing selections will be preserved.</p> : <div className="grid gap-3 sm:grid-cols-2">{lensPackages.map(pack => <label key={pack.id} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={availableLensPackages.includes(pack.id)} onChange={event => setAvailableLensPackages(current => event.target.checked ? [...current, pack.id] : current.filter(id => id !== pack.id))}/>{pack.name}{pack.isActive === false ? ' (inactive)' : ''}</label>)}</div>}
+ {availableLensPackages.filter(id => !lensPackages.some(p => p.id === id)).map(id => <label key={id} className="mt-2 flex gap-2 text-sm"><input type="checkbox" checked onChange={() => setAvailableLensPackages(current => current.filter(value => value !== id))}/>{id} (unavailable package)</label>)}
+ </section>}
+ {contactLensMode && (
           <section className="rounded-2xl border border-brand-200 bg-brand-50/40 p-4 sm:p-5">
             <div className="mb-4">
               <h3 className="font-semibold text-navy-900">Contact lens configuration</h3>

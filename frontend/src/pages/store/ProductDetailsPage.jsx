@@ -544,7 +544,9 @@ export default function ProductDetailsPage() {
         open={lensDrawerOpen}
         onClose={() => setLensDrawerOpen(false)}
         configuration={frameLensConfiguration}
+        availableLensPackages={product.availableLensPackages}
         framePrice={product.price}
+        frameMrp={product.mrp}
         selectedPrescription={prescription}
         selectedOption={lens}
         onComplete={({ lensOption, prescription: selectedPrescription }) => {

@@ -4,6 +4,7 @@ import { Button, Card, CardBody, Checkbox, Input, Select, Textarea } from '@/com
 import { useToast } from '@/contexts/ToastContext';
 import { useGetSettingsQuery, useUpdateSettingsMutation } from '@/features/admin/adminApi';
 import { normalizeFrameLenses } from '@/lib/frameLenses';
+import { ROUTES } from '@/constants/routes';
 
 const groups = ['powerTypes', 'packageCategories', 'packages', 'prescriptionFields'];
 const clone = (value) => {
@@ -201,219 +202,247 @@ export default function AdminFrameLensesPage() {
         compatibility selections apply to all power types.
       </p>
       <form onSubmit={save} className="space-y-6">
-        {groups.map((group, g) => (
-          <Card key={group}>
-            <CardBody className="space-y-4">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold">
-                  {g + 1}. {titles[g]}
-                </h2>
-                <Button type="button" variant="outline" onClick={() => add(group)}>
-                  Add{' '}
-                  {group === 'powerTypes'
-                    ? 'power type'
-                    : group === 'packageCategories'
-                      ? 'category'
-                      : group === 'packages'
-                        ? 'lens package'
-                        : 'field'}
-                </Button>
-              </div>
-              {configuration[group].map((item, index) => (
-                <div
-                  key={item.draftKey}
-                  className="space-y-4 rounded-xl border border-navy-200 p-4"
+        {groups.map((group, g) =>
+          group === 'packages' ? (
+            <Card key={group}>
+              <CardBody>
+                <h2 className="text-lg font-semibold">3. Lens packages</h2>
+                <p className="my-3 text-sm text-navy-500">
+                  Manage package cards, prices, warranty, features and coupons on the dedicated
+                  page.
+                </p>
+                <a
+                  className="font-semibold text-brand-600 underline"
+                  href={ROUTES.adminLensPackages}
                 >
-                  <div className="flex justify-between">
-                    <h3 className="font-semibold">{item.label || item.name || 'New item'}</h3>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => remove(group, index)}
-                      aria-label={'Remove ' + (item.label || item.name || 'item')}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    {field(
-                      group,
-                      item,
-                      index,
-                      group === 'prescriptionFields' ? 'key' : 'id',
-                      group === 'prescriptionFields' ? 'Key' : 'ID'
-                    )}
-                    {field(
-                      group,
-                      item,
-                      index,
-                      group === 'packages' ? 'name' : 'label',
-                      'Customer label'
-                    )}
-                    {group !== 'prescriptionFields' &&
-                      field(group, item, index, 'order', 'Display order', 'number')}
-                    {group === 'powerTypes' && (
-                      <>
-                        {field(group, item, index, 'subtitle', 'Subtitle')}
-                        {field(group, item, index, 'badge', 'Badge text')}
-                        {field(group, item, index, 'badgeColor', 'Badge color', 'text', [
-                          'brand',
-                          'navy',
-                          'success',
-                          'error',
-                          'warning',
-                          'accent',
-                        ])}
-                        {field(group, item, index, 'icon', 'Icon', 'text', [
-                          'Eye',
-                          'Monitor',
-                          'Layers',
-                          'Square',
-                          'Sun',
-                          'Shield',
-                        ])}
-                        {field(group, item, index, 'iconBgColor', 'Icon background', 'text', [
-                          'brand',
-                          'purple',
-                          'blue',
-                          'grey',
-                          'navy',
-                        ])}
-                        {field(group, item, index, 'price', 'Additional price (₹)', 'number')}
-                      </>
-                    )}
-                    {group === 'packages' && (
-                      <>
-                        {field(group, item, index, 'price', 'Price (₹)', 'number')}
-                        {field(group, item, index, 'badge', 'Badge text')}
-                        {field(group, item, index, 'imageUrl', 'Image URL')}
-                      </>
-                    )}
-                    {group === 'prescriptionFields' && (
-                      <>
-                        {field(group, item, index, 'fieldType', 'Field type', 'text', [
-                          'dropdown',
-                          'number',
-                          'text',
-                        ])}
-                        {field(group, item, index, 'scope', 'Scope', 'text', ['per-eye', 'shared'])}
-                        {field(group, item, index, 'min', 'Minimum', 'number')}
-                        {field(group, item, index, 'max', 'Maximum', 'number')}
-                        {field(group, item, index, 'step', 'Increment', 'number')}
-                        {field(group, item, index, 'placeholder', 'Placeholder')}
-                        {field(group, item, index, 'helpText', 'Help text')}
-                      </>
-                    )}
-                  </div>
-                  {group === 'packages' && (
-                    <>
-                      <Textarea
-                        label="Description"
-                        value={item.description || ''}
-                        onChange={(e) => update(group, index, 'description', e.target.value)}
-                      />
-                      <fieldset className="space-y-2">
-                        <legend className="text-sm font-semibold">Features</legend>
-                        {(item.features || []).map((feature, i) => (
-                          <div key={i} className="flex gap-2">
-                            <Input
-                              aria-label={'Feature ' + (i + 1)}
-                              value={feature}
-                              required
-                              onChange={(e) =>
-                                update(
-                                  group,
-                                  index,
-                                  'features',
-                                  item.features.map((f, j) => (j === i ? e.target.value : f))
-                                )
-                              }
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              aria-label={'Remove feature ' + (i + 1)}
-                              onClick={() =>
-                                update(
-                                  group,
-                                  index,
-                                  'features',
-                                  item.features.filter((_, j) => i !== j)
-                                )
-                              }
-                            >
-                              Remove
-                            </Button>
-                          </div>
-                        ))}
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() =>
-                            update(group, index, 'features', [...(item.features || []), ''])
-                          }
-                        >
-                          Add feature
-                        </Button>
-                      </fieldset>
-                      {choices(
+                  Manage Lens Packages →
+                </a>
+              </CardBody>
+            </Card>
+          ) : (
+            <Card key={group}>
+              <CardBody className="space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-lg font-semibold">
+                    {g + 1}. {titles[g]}
+                  </h2>
+                  <Button type="button" variant="outline" onClick={() => add(group)}>
+                    Add{' '}
+                    {group === 'powerTypes'
+                      ? 'power type'
+                      : group === 'packageCategories'
+                        ? 'category'
+                        : group === 'packages'
+                          ? 'lens package'
+                          : 'field'}
+                  </Button>
+                </div>
+                {configuration[group].map((item, index) => (
+                  <div
+                    key={item.draftKey}
+                    className="space-y-4 rounded-xl border border-navy-200 p-4"
+                  >
+                    <div className="flex justify-between">
+                      <h3 className="font-semibold">{item.label || item.name || 'New item'}</h3>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => remove(group, index)}
+                        aria-label={'Remove ' + (item.label || item.name || 'item')}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                      {field(
                         group,
                         item,
                         index,
-                        'categories',
-                        configuration.packageCategories,
-                        'Categories'
+                        group === 'prescriptionFields' ? 'key' : 'id',
+                        group === 'prescriptionFields' ? 'Key' : 'ID'
                       )}
-                    </>
-                  )}
-                  {(group === 'packages' || group === 'prescriptionFields') &&
-                    choices(
-                      group,
-                      item,
-                      index,
-                      'powerTypes',
-                      configuration.powerTypes,
-                      'Compatible power types'
-                    )}
-                  <div className="flex flex-wrap gap-4">
-                    {check(group, item, index, 'isActive', 'Active')}
-                    {group === 'powerTypes' && (
+                      {field(
+                        group,
+                        item,
+                        index,
+                        group === 'packages' ? 'name' : 'label',
+                        'Customer label'
+                      )}
+                      {group !== 'prescriptionFields' &&
+                        field(group, item, index, 'order', 'Display order', 'number')}
+                      {group === 'powerTypes' && (
+                        <>
+                          {field(group, item, index, 'subtitle', 'Subtitle')}
+                          {field(group, item, index, 'badge', 'Badge text')}
+                          {field(group, item, index, 'badgeColor', 'Badge color', 'text', [
+                            'brand',
+                            'navy',
+                            'success',
+                            'error',
+                            'warning',
+                            'accent',
+                          ])}
+                          {field(group, item, index, 'icon', 'Icon', 'text', [
+                            'Eye',
+                            'Monitor',
+                            'Layers',
+                            'Square',
+                            'Sun',
+                            'Shield',
+                          ])}
+                          {field(group, item, index, 'iconBgColor', 'Icon background', 'text', [
+                            'brand',
+                            'purple',
+                            'blue',
+                            'grey',
+                            'navy',
+                          ])}
+                          {field(group, item, index, 'price', 'Additional price (₹)', 'number')}
+                        </>
+                      )}
+                      {group === 'packages' && (
+                        <>
+                          {field(group, item, index, 'price', 'Price (₹)', 'number')}
+                          {field(group, item, index, 'badge', 'Badge text')}
+                          {field(group, item, index, 'imageUrl', 'Image URL')}
+                        </>
+                      )}
+                      {group === 'prescriptionFields' && (
+                        <>
+                          {field(group, item, index, 'fieldType', 'Field type', 'text', [
+                            'dropdown',
+                            'number',
+                            'text',
+                          ])}
+                          {field(group, item, index, 'scope', 'Scope', 'text', [
+                            'per-eye',
+                            'shared',
+                          ])}
+                          {field(group, item, index, 'min', 'Minimum', 'number')}
+                          {field(group, item, index, 'max', 'Maximum', 'number')}
+                          {field(group, item, index, 'step', 'Increment', 'number')}
+                          {field(group, item, index, 'placeholder', 'Placeholder')}
+                          {field(group, item, index, 'helpText', 'Help text')}
+                        </>
+                      )}
+                    </div>
+                    {group === 'packages' && (
                       <>
-                        {check(group, item, index, 'requiresPrescription', 'Requires prescription')}
-                        {check(group, item, index, 'autoAdvance', 'Auto-advance')}
+                        <Textarea
+                          label="Description"
+                          value={item.description || ''}
+                          onChange={(e) => update(group, index, 'description', e.target.value)}
+                        />
+                        <fieldset className="space-y-2">
+                          <legend className="text-sm font-semibold">Features</legend>
+                          {(item.features || []).map((feature, i) => (
+                            <div key={i} className="flex gap-2">
+                              <Input
+                                aria-label={'Feature ' + (i + 1)}
+                                value={feature}
+                                required
+                                onChange={(e) =>
+                                  update(
+                                    group,
+                                    index,
+                                    'features',
+                                    item.features.map((f, j) => (j === i ? e.target.value : f))
+                                  )
+                                }
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                aria-label={'Remove feature ' + (i + 1)}
+                                onClick={() =>
+                                  update(
+                                    group,
+                                    index,
+                                    'features',
+                                    item.features.filter((_, j) => i !== j)
+                                  )
+                                }
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() =>
+                              update(group, index, 'features', [...(item.features || []), ''])
+                            }
+                          >
+                            Add feature
+                          </Button>
+                        </fieldset>
+                        {choices(
+                          group,
+                          item,
+                          index,
+                          'categories',
+                          configuration.packageCategories,
+                          'Categories'
+                        )}
                       </>
                     )}
-                    {group === 'packages' &&
-                      check(group, item, index, 'isRecommended', 'Recommended')}
-                    {group === 'prescriptionFields' &&
-                      check(group, item, index, 'required', 'Required')}
+                    {(group === 'packages' || group === 'prescriptionFields') &&
+                      choices(
+                        group,
+                        item,
+                        index,
+                        'powerTypes',
+                        configuration.powerTypes,
+                        'Compatible power types'
+                      )}
+                    <div className="flex flex-wrap gap-4">
+                      {check(group, item, index, 'isActive', 'Active')}
+                      {group === 'powerTypes' && (
+                        <>
+                          {check(
+                            group,
+                            item,
+                            index,
+                            'requiresPrescription',
+                            'Requires prescription'
+                          )}
+                        </>
+                      )}
+                      {group === 'packages' &&
+                        check(group, item, index, 'isRecommended', 'Recommended')}
+                      {group === 'prescriptionFields' &&
+                        check(group, item, index, 'required', 'Required')}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </CardBody>
-          </Card>
-        ))}
+                ))}
+              </CardBody>
+            </Card>
+          )
+        )}
         <Card>
           <CardBody className="space-y-4">
             <h2 className="text-lg font-semibold">5. General lens flow settings</h2>
             <details className="rounded-xl border border-navy-200 p-4">
               <summary className="cursor-pointer font-semibold">Drawer interface text</summary>
               <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {Object.entries(configuration.generalSettings.uiText).map(([name, value]) => (
-                  <Input
-                    key={name}
-                    label={name.replace(/([A-Z])/g, ' $1')}
-                    value={value}
-                    required
-                    maxLength={180}
-                    onChange={(e) =>
-                      general('uiText', {
-                        ...configuration.generalSettings.uiText,
-                        [name]: e.target.value,
-                      })
-                    }
-                  />
-                ))}
+                {Object.entries(configuration.generalSettings.uiText)
+                  .filter(([name]) => !name.startsWith('later'))
+                  .map(([name, value]) => (
+                    <Input
+                      key={name}
+                      label={name.replace(/([A-Z])/g, ' $1')}
+                      value={value}
+                      required
+                      maxLength={180}
+                      onChange={(e) =>
+                        general('uiText', {
+                          ...configuration.generalSettings.uiText,
+                          [name]: e.target.value,
+                        })
+                      }
+                    />
+                  ))}
               </div>
             </details>
             <div className="grid gap-3 md:grid-cols-2">
@@ -453,11 +482,9 @@ export default function AdminFrameLensesPage() {
               checked={configuration.generalSettings.showRunningTotal}
               onChange={(e) => general('showRunningTotal', e.target.checked)}
             />
-            <Checkbox
-              label="Auto-advance on power type selection"
-              checked={configuration.generalSettings.autoAdvance}
-              onChange={(e) => general('autoAdvance', e.target.checked)}
-            />
+            <p className="text-sm text-navy-500">
+              Power types and package selections advance automatically.
+            </p>
           </CardBody>
         </Card>
         <Button type="submit" loading={isSaving}>

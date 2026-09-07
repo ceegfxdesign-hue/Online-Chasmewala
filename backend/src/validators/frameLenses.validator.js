@@ -44,6 +44,16 @@ export const frameLensSchema = z
           description: text.optional(),
           price: z.number().min(0),
           features: z.array(text.min(1)).max(20).optional(),
+          ribbonText: text.optional(),
+          ribbonColor: z.enum(['blue', 'red', 'green', 'none']).optional(),
+          warranty: text.optional(),
+          mrp: z.number().min(0).optional(),
+          couponText: text.optional(),
+          featureIcons: z
+            .array(z.enum(['⚡', '🛡️', '👨‍💻', '😇', '☀️']))
+            .max(20)
+            .optional(),
+          videoUrl: url.optional(),
           badge: text.optional(),
           categories: z.array(id).max(24).optional(),
           powerTypes: z.array(id).max(12),

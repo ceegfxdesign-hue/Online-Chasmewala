@@ -52,14 +52,16 @@ describe('Admin APIs', () => {
     const configuration = structuredClone(DEFAULT_FRAME_LENS_CONFIGURATION);
     configuration.powerTypes[0].label = 'Custom prescription lenses';
     configuration.packages[0].features = ['Custom coating'];
+    Object.assign(configuration.packages[0], { ribbonText: 'Free Lenses', ribbonColor: 'blue', warranty: '1 Year Warranty', mrp: 900, couponText: 'Coupon : SINGLE', featureIcons: ['🛡️'] });
     configuration.generalSettings.ctaText = 'Confirm lenses';
     const saved = await request(app).patch('/api/v1/admin/settings').set(asAdmin()).send({ frameLensConfiguration: configuration });
     expect(saved.status).toBe(200);
     const storefront = await request(app).get('/api/v1/settings/frame-lenses');
     expect(storefront.body.data.powerTypes[0].label).toBe('Custom prescription lenses');
     expect(storefront.body.data.packages[0].features).toEqual(['Custom coating']);
+    expect(storefront.body.data.packages[0]).toMatchObject({ ribbonText: 'Free Lenses', ribbonColor: 'blue', warranty: '1 Year Warranty', mrp: 900, couponText: 'Coupon : SINGLE', featureIcons: ['🛡️'] });
     expect(storefront.body.data.generalSettings.ctaText).toBe('Confirm lenses');
-    expect(storefront.body.data.packageCategories).toHaveLength(4);
+    expect(storefront.body.data.packageCategories).toHaveLength(5);
     expect(storefront.body.data.prescriptionFields[0].fieldType).toBe('dropdown');
     expect(storefront.headers['cache-control']).toBe('no-store');
     configuration.prescriptionFields[0].step = 0;

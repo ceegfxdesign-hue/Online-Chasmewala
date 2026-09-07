@@ -18,7 +18,7 @@ describe('frame lens admin', () => {
   fireEvent.click(screen.getByRole('button', { name: 'Save lens configuration' }));
   await waitFor(() => expect(mocks.save).toHaveBeenCalledOnce());
   const saved = mocks.save.mock.calls[0][0].frameLensConfiguration;
-  expect(saved.packageCategories).toHaveLength(4);
+  expect(saved.packageCategories).toHaveLength(5);
   expect(saved.powerTypes[0].draftKey).toBeUndefined();
   expect(saved.prescriptionFields[0].fieldType).toBe('dropdown');
   view.unmount();
