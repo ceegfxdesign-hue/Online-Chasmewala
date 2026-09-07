@@ -38,6 +38,18 @@ describe('Cart & checkout flow', () => {
 
   const auth = () => ({ Authorization: `Bearer ${token}` });
 
+  it('retains lens package metadata and uploaded prescriptions through cart and order', async () => {
+    const lensOption = { type: 'single-vision:anti-glare', baseType: 'single-vision', packageId: 'anti-glare', label: 'With Power · Anti-Glare', subtitle: 'Custom coating', price: 0 };
+    const prescription = { method: 'upload', fileName: 'eye.pdf', mimeType: 'application/pdf', fileData: 'data:application/pdf;base64,c2FtcGxl' };
+    const cart = await request(app).post('/api/v1/cart/items').set(auth()).send({ productId: product._id, quantity: 1, lensOption, prescription });
+    expect(cart.status).toBe(200);
+    expect(cart.body.data.items[0].lensOption.packageId).toBe('anti-glare');
+    const order = await request(app).post('/api/v1/orders').set(auth()).send({ shippingAddress: address, paymentMethod: 'cod' });
+    expect(order.status).toBe(201);
+    expect(order.body.data.items[0].prescription.fileData).toBe(prescription.fileData);
+    expect(order.body.data.items[0].lensOption.baseType).toBe('single-vision');
+  });
+
   it('requires auth for the cart', async () => {
     const res = await request(app).get('/api/v1/cart');
     expect(res.status).toBe(401);

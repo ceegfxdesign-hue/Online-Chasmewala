@@ -1,207 +1,592 @@
 import { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   FiArrowLeft,
-  FiArrowRight,
   FiCheck,
+  FiChevronRight,
+  FiClock,
   FiEye,
-  FiFileText,
   FiMonitor,
+  FiLayers,
+  FiSquare,
+  FiSun,
+  FiShield,
   FiSliders,
   FiUpload,
 } from 'react-icons/fi';
-import { Button, Drawer, Input } from '@/components/ui';
+import { Button, Drawer, Input, Select } from '@/components/ui';
+import { normalizeFrameLenses, activeSorted, appliesTo, powerChoices } from '@/lib/frameLenses';
+import { easePremium } from '@/lib/motion';
+import { formatPrice } from '@/lib/format';
 import { cn } from '@/utils/cn';
-
-const LENS_PACKAGES = [
-  {
-    id: 'anti-glare',
-    name: 'Anti-Glare Premium',
-    price: 0,
-    badge: 'Included',
-    features: ['Double-sided anti-glare', 'Scratch resistant'],
-    icon: FiEye,
-  },
-  {
-    id: 'blu-screen',
-    name: 'BLU Screen Protection',
-    price: 250,
-    badge: 'Screen favourite',
-    features: ['Blue-light filtering', 'Reduces eye strain'],
-    icon: FiMonitor,
-  },
-  {
-    id: 'photochromic',
-    name: 'Photochromic Comfort',
-    price: 1000,
-    badge: 'Outdoor ready',
-    features: ['Darkens in sunlight', 'UV protection'],
-    icon: FiSliders,
-  },
-];
-
-const POWER_COPY = {
-  'single-vision': 'Positive, negative or cylindrical',
-  'zero-power': 'Screen glasses with no prescription',
-  progressive: 'Two powers in one lens',
-  bifocal: 'Near and distance correction',
-  'frame-only': 'Frame with no lenses',
+import { useToast } from '@/contexts/ToastContext';
+const icons = {
+  Eye: FiEye,
+  Monitor: FiMonitor,
+  Layers: FiLayers,
+  Square: FiSquare,
+  Sun: FiSun,
+  Shield: FiShield,
 };
-
-const STEPS = ['Power type', 'Lenses', 'Add power'];
-
-/** Guided lens/prescription configuration for the product details page. */
-export function LensSelectionDrawer({ open, onClose, options = [], packages, selectedOption, onComplete }) {
-  const availablePackages = useMemo(() => {
-    const configured = Array.isArray(packages) && packages.length ? packages : LENS_PACKAGES;
-    return configured.filter((item) => item?.isActive !== false && item?.id);
-  }, [packages]);
-  const [step, setStep] = useState(0);
-  const [powerType, setPowerType] = useState('');
-  const [packageId, setPackageId] = useState('');
-  const [prescriptionMethod, setPrescriptionMethod] = useState('later');
-  const [fileName, setFileName] = useState('');
-  const [prescription, setPrescription] = useState({ leftEye: { sph: '', cyl: '', axis: '' }, rightEye: { sph: '', cyl: '', axis: '' }, pd: '' });
-
-  const selectedPower = useMemo(
-    () => options.find((option) => option.type === powerType) || options[0],
-    [options, powerType]
+const backgrounds = {
+  brand: 'bg-brand-100 text-brand-700',
+  purple: 'bg-purple-100 text-purple-700',
+  blue: 'bg-blue-100 text-blue-700',
+  grey: 'bg-navy-100 text-navy-500',
+  navy: 'bg-navy-800 text-white',
+};
+const badges = {
+  brand: 'bg-brand-100 text-brand-700',
+  navy: 'bg-navy-100 text-navy-800',
+  success: 'bg-green-100 text-green-700',
+  error: 'bg-red-100 text-red-700',
+  warning: 'bg-orange-100 text-orange-700',
+  accent: 'bg-purple-100 text-purple-700',
+};
+const card = (selected) =>
+  cn(
+    'w-full rounded-2xl border p-4 text-left shadow-soft transition-all duration-200',
+    selected ? 'border-brand-500 bg-brand-50' : 'border-navy-200 bg-surface hover:border-brand-300'
   );
-  const compatiblePackages = useMemo(() => availablePackages.filter((item) => {
-    const appliesTo = item.powerTypes || [];
-    return appliesTo.length === 0 || appliesTo.includes(selectedPower?.type);
-  }), [availablePackages, selectedPower?.type]);
-  const selectedPackage = compatiblePackages.find((item) => item.id === packageId) || compatiblePackages[0];
-  const needsPrescription = !['zero-power', 'frame-only'].includes(selectedPower?.type);
-
+/** Configurable frame lens wizard, preserving the existing completion contract. */
+export function LensSelectionDrawer({
+  open,
+  onClose,
+  configuration,
+  framePrice = 0,
+  selectedOption,
+  selectedPrescription,
+  onComplete,
+}) {
+  const config = useMemo(() => normalizeFrameLenses(configuration), [configuration]);
+  const copy = config.generalSettings.uiText;
+  const general = config.generalSettings,
+    modes = activeSorted(config.powerTypes),
+    categories = activeSorted(config.packageCategories);
+  const [step, setStep] = useState(0),
+    [direction, setDirection] = useState(1),
+    [modeId, setModeId] = useState(''),
+    [packageId, setPackageId] = useState(''),
+    [category, setCategory] = useState('');
+  const [method, setMethod] = useState('later'),
+    [values, setValues] = useState({}),
+    [file, setFile] = useState(null),
+    [details, setDetails] = useState('');
+  const reduced = useReducedMotion(),
+    toast = useToast();
+  const mode = modes.find((x) => x.id === modeId),
+    frameOnly = mode?.id === 'frame-only';
+  const packages = activeSorted(config.packages).filter((x) => appliesTo(x, modeId));
+  const pack = frameOnly ? undefined : packages.find((x) => x.id === packageId);
+  const visible = packages.filter(
+    (p) => !categories.length || !p.categories?.length || p.categories.includes(category)
+  );
+  const fields = config.prescriptionFields.filter(
+    (x) => x.isActive !== false && appliesTo(x, modeId)
+  );
+  const needsPrescription = Boolean(mode?.requiresPrescription) && !frameOnly;
+  const lensPrice = Number(mode?.price || 0) + Number(pack?.price || 0);
+  const go = (next) => {
+    setDirection(next > step ? 1 : -1);
+    setStep(next);
+  };
   useEffect(() => {
     if (!open) return;
     setStep(0);
-    const initialPower = selectedOption?.baseType || selectedOption?.type || options[0]?.type || '';
-    setPowerType(initialPower);
-    setPackageId(availablePackages.find((item) => !item.powerTypes?.length || item.powerTypes.includes(initialPower))?.id || '');
-    setPrescriptionMethod('later');
-    setFileName('');
-    setPrescription({ leftEye: { sph: '', cyl: '', axis: '' }, rightEye: { sph: '', cyl: '', axis: '' }, pd: '' });
-  }, [availablePackages, open, options, selectedOption]);
-
-  const updateEye = (eye, field, value) => {
-    setPrescription((current) => ({ ...current, [eye]: { ...current[eye], [field]: value } }));
+    setModeId(selectedOption?.baseType || '');
+    setPackageId(selectedOption?.packageId || '');
+    setCategory(activeSorted(config.packageCategories)[0]?.id || '');
+    setMethod(selectedPrescription?.method || 'later');
+    setValues(selectedPrescription?.values || {});
+    setFile(selectedPrescription?.fileName ? selectedPrescription : null);
+    setDetails('');
+  }, [open, config, selectedOption, selectedPrescription]);
+  const chooseMode = (item) => {
+    setModeId(item.id);
+    if (item.id !== modeId) setPackageId('');
+    setDetails('');
+    if (general.autoAdvance !== false && item.autoAdvance !== false)
+      go(item.id === 'frame-only' ? 2 : 1);
   };
-
+  const upload = (f) => {
+    if (!f) return;
+    if (
+      !['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'].includes(f.type) ||
+      f.size > 2 * 1024 * 1024
+    ) {
+      toast.error('Choose a JPG, PNG, WebP, GIF or PDF up to 2 MB.');
+      return;
+    }
+    setFile(null);
+    const reader = new FileReader();
+    reader.onerror = () => toast.error('Could not read that prescription.');
+    reader.onload = () =>
+      setFile({ fileName: f.name, fileData: String(reader.result), mimeType: f.type });
+    reader.readAsDataURL(f);
+  };
+  const fieldKey = (f, eye) => (eye ? eye + ':' + f.key : f.key);
+  const validField = (f, value) => {
+    if (value == null || value === '') return !f.required;
+    if (f.fieldType === 'text') return String(value).length <= 180;
+    const n = Number(value);
+    return (
+      Number.isFinite(n) &&
+      n >= f.min &&
+      n <= f.max &&
+      Math.abs((n - f.min) / f.step - Math.round((n - f.min) / f.step)) < 1e-6
+    );
+  };
+  const manualValid = fields.every((f) =>
+    (f.scope === 'shared' ? [''] : ['rightEye', 'leftEye']).every((eye) =>
+      validField(f, values[fieldKey(f, eye)])
+    )
+  );
+  const ready =
+    Boolean(mode) &&
+    (frameOnly || Boolean(pack)) &&
+    (!needsPrescription ||
+      method === 'later' ||
+      (method === 'manual' ? manualValid : Boolean(file?.fileData)));
   const finish = () => {
-    const lensOption = {
-      ...selectedPower,
-      type: selectedPackage ? `${selectedPower.type}:${selectedPackage.id}` : selectedPower.type,
-      baseType: selectedPower.type,
-      label: [selectedPower.label, selectedPackage?.name].filter(Boolean).join(' · '),
-      subtitle: selectedPackage?.description || selectedPackage?.features?.[0] || '',
-      price: Number(selectedPower.price || 0) + Number(selectedPackage?.price || 0),
-      packageId: selectedPackage?.id,
-    };
-    const prescriptionData = needsPrescription
-      ? prescriptionMethod === 'manual'
-        ? { ...prescription, method: 'manual' }
-        : { method: prescriptionMethod, fileName: prescriptionMethod === 'upload' ? fileName : undefined }
-      : undefined;
-
-    onComplete({ lensOption, prescription: prescriptionData });
+    if (!ready) return;
+    const clean = {};
+    fields.forEach((f) =>
+      (f.scope === 'shared' ? [''] : ['rightEye', 'leftEye']).forEach((eye) => {
+        const key = fieldKey(f, eye);
+        if (values[key] != null && values[key] !== '') clean[key] = String(values[key]);
+      })
+    );
+    const prescription = !needsPrescription
+      ? undefined
+      : method === 'upload'
+        ? { method, ...file }
+        : method === 'later'
+          ? { method }
+          : {
+              method,
+              values: clean,
+              rightEye: Object.fromEntries(
+                fields
+                  .filter((f) => f.scope !== 'shared')
+                  .map((f) => [f.key, clean['rightEye:' + f.key] || ''])
+              ),
+              leftEye: Object.fromEntries(
+                fields
+                  .filter((f) => f.scope !== 'shared')
+                  .map((f) => [f.key, clean['leftEye:' + f.key] || ''])
+              ),
+              pd: clean.pd || '',
+            };
+    onComplete({
+      lensOption: {
+        type: pack ? mode.id + ':' + pack.id : mode.id,
+        baseType: mode.id,
+        label: [mode.label, pack?.name].filter(Boolean).join(' · '),
+        subtitle: pack?.description || mode.subtitle || '',
+        price: lensPrice,
+        packageId: pack?.id,
+      },
+      prescription,
+    });
     onClose();
   };
-
+  const renderField = (f, eye) => {
+    const key = fieldKey(f, eye),
+      props = {
+        label: f.label,
+        value: values[key] ?? '',
+        required: f.required,
+        helper: f.helpText,
+        onChange: (e) => setValues((v) => ({ ...v, [key]: e.target.value })),
+      };
+    return (
+      <div key={key}>
+        {f.fieldType === 'text' || f.fieldType === 'number' ? (
+          <Input
+            {...props}
+            type={f.fieldType}
+            min={f.min}
+            max={f.max}
+            step={f.step}
+            maxLength={180}
+            placeholder={f.placeholder}
+          />
+        ) : (
+          <Select
+            {...props}
+            options={[
+              { value: '', label: f.placeholder || 'Select ' + f.label },
+              ...powerChoices(f),
+            ]}
+          />
+        )}
+      </div>
+    );
+  };
   const footer = (
-    <div className="flex items-center justify-between gap-3">
-      {step > 0 ? <Button variant="ghost" onClick={() => setStep((value) => value - 1)} leftIcon={<FiArrowLeft />}>Back</Button> : <span />}
-      {step < 2 ? (
-        <Button onClick={() => setStep((value) => value + 1)} rightIcon={<FiArrowRight />}>Continue</Button>
-      ) : (
-        <Button onClick={finish} leftIcon={<FiCheck />}>Use these lenses</Button>
+    <div className="space-y-3">
+      {general.showRunningTotal && (
+        <div aria-live="polite" className="text-sm text-navy-500">
+          {step === 2 && (
+            <p>
+              {copy.frame} {formatPrice(framePrice)} + {copy.lens} {formatPrice(lensPrice)}
+            </p>
+          )}
+          <p className="text-lg font-bold text-navy-900">
+            {copy.total}: {formatPrice(Number(framePrice) + lensPrice)}
+          </p>
+        </div>
       )}
+      <div className="flex items-center justify-between gap-3">
+        {step > 0 ? (
+          <Button
+            variant="ghost"
+            onClick={() => go(frameOnly ? 0 : step - 1)}
+            leftIcon={<FiArrowLeft />}
+          >
+            {copy.back}
+          </Button>
+        ) : (
+          <span />
+        )}
+        {step === 2 ? (
+          <Button size="lg" disabled={!ready} onClick={finish}>
+            {general.ctaText}
+          </Button>
+        ) : (
+          <Button
+            disabled={step === 0 ? !mode : !pack}
+            onClick={() => go(frameOnly ? 2 : step + 1)}
+          >
+            {copy.continue}
+          </Button>
+        )}
+      </div>
     </div>
   );
-
   return (
-    <Drawer open={open} onClose={onClose} title={step === 0 ? 'Select Lens Type' : step === 1 ? 'Choose Lens Package' : 'Add Eye Power'} width="max-w-xl" footer={footer}>
-      <div className="p-5 sm:p-6">
-        <ol className="mb-7 grid grid-cols-3 border-b border-navy-100">
-          {STEPS.map((label, index) => (
-            <li key={label} className={cn('relative pb-3 text-center text-xs font-semibold sm:text-sm', index === step ? 'text-brand-700' : index < step ? 'text-success-dark' : 'text-navy-400')}>
-              <span className={cn('mx-auto mb-1 flex h-6 w-6 items-center justify-center rounded-full text-xs', index < step ? 'bg-success text-white' : index === step ? 'bg-brand-500 text-white' : 'bg-navy-100 text-navy-500')}>
-                {index < step ? <FiCheck /> : index + 1}
+    <Drawer
+      open={open}
+      onClose={onClose}
+      title={step === 0 ? general.drawerTitle : general.stepLabels[step]}
+      width="max-w-2xl"
+      className="[&>div:first-child]:justify-center [&>div:first-child>button]:absolute [&>div:first-child>button]:right-5"
+      footer={footer}
+    >
+      <div className="overflow-hidden p-5 sm:p-6">
+        {step > 0 && (
+          <button
+            aria-label="Back to previous step"
+            onClick={() => go(frameOnly ? 0 : step - 1)}
+            className="absolute left-4 top-4 z-10 rounded-full p-2 text-navy-700 hover:bg-navy-50"
+          >
+            <FiArrowLeft />
+          </button>
+        )}
+        <ol className="mb-6 grid grid-cols-3 border-b border-navy-100">
+          {general.stepLabels.map((label, i) => (
+            <li
+              key={i}
+              aria-current={step === i ? 'step' : undefined}
+              className={cn(
+                'relative pb-4 text-center text-xs font-semibold',
+                i === step ? 'text-brand-700' : 'text-navy-400'
+              )}
+            >
+              <span
+                className={cn(
+                  'mx-auto mb-2 flex h-7 w-7 items-center justify-center rounded-full',
+                  i < step
+                    ? 'bg-success text-white'
+                    : i === step
+                      ? 'bg-brand-500 text-white'
+                      : 'bg-navy-100 text-navy-400'
+                )}
+              >
+                {i < step ? <FiCheck /> : i + 1}
               </span>
               {label}
-              {index === step && <span className="absolute inset-x-0 -bottom-px h-0.5 bg-brand-500" />}
+              {i === step && <span className="absolute inset-x-0 bottom-0 h-0.5 bg-brand-500" />}
             </li>
           ))}
         </ol>
-
-        {step === 0 && (
-          <div>
-            <h3 className="text-h4 text-navy-900">Select your power type</h3>
-            <p className="mt-1 text-sm text-navy-500">Choose how you would like this frame prepared.</p>
-            <div className="mt-5 space-y-3">
-              {options.map((option) => {
-                const active = option.type === powerType;
-                return (
-                  <button key={option.type} type="button" onClick={() => setPowerType(option.type)} className={cn('flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition', active ? 'border-brand-500 bg-brand-50 shadow-soft' : 'border-navy-200 hover:border-brand-300')}>
-                    <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', active ? 'bg-brand-500 text-white' : 'bg-surface-muted text-brand-700')}><FiEye className="h-5 w-5" /></span>
-                    <span className="min-w-0 flex-1"><span className="block font-semibold text-navy-900">{option.label}</span><span className="mt-0.5 block text-sm text-navy-500">{option.subtitle || POWER_COPY[option.type] || 'Custom lens option'}</span></span>
-                    <FiArrowRight className="shrink-0 text-navy-400" />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {step === 1 && (
-          <div>
-            <h3 className="text-h4 text-navy-900">Choose your lens package</h3>
-            <p className="mt-1 text-sm text-navy-500">Your frame is paired with {selectedPower?.label || 'your chosen'} lenses.</p>
-            <div className="mt-5 flex gap-2 overflow-x-auto pb-1 text-xs font-semibold">
-              <span className="shrink-0 rounded-full bg-navy-900 px-3 py-2 text-white">Bestsellers</span>
-              <span className="shrink-0 rounded-full border border-navy-200 px-3 py-2 text-navy-600">Work friendly</span>
-              <span className="shrink-0 rounded-full border border-navy-200 px-3 py-2 text-navy-600">High power</span>
-            </div>
-            <div className="mt-4 space-y-3">
-              {compatiblePackages.map((item) => {
-                const Icon = item.icon || FiEye;
-                const active = item.id === packageId;
-                return (
-                  <button key={item.id} type="button" onClick={() => setPackageId(item.id)} className={cn('flex w-full items-start gap-4 rounded-2xl border p-4 text-left transition', active ? 'border-brand-500 bg-brand-50 shadow-soft' : 'border-navy-200 hover:border-brand-300')}>
-                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-surface-muted text-brand-700"><Icon className="h-6 w-6" /></span>
-                    <span className="min-w-0 flex-1"><span className="flex flex-wrap items-center gap-2"><span className="font-semibold text-navy-900">{item.name}</span>{item.badge && <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-700">{item.badge}</span>}</span><span className="mt-1 block text-sm text-navy-500">{item.description || item.features?.join(' · ')}</span><span className="mt-2 block text-sm font-semibold text-navy-800">{item.price ? `Add ₹${item.price}` : 'Included'}</span></span>
-                    {active && <FiCheck className="mt-1 shrink-0 text-brand-600" />}
-                  </button>
-                );
-              })}
-              {!compatiblePackages.length && <p className="rounded-xl bg-surface-muted p-4 text-sm text-navy-600">No lens packages are configured for this power type.</p>}
-            </div>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div>
-            <h3 className="text-h4 text-navy-900">{needsPrescription ? 'How would you like to provide your power?' : 'Your lens selection is ready'}</h3>
-            {needsPrescription ? (
+        <AnimatePresence mode="wait" initial={false} custom={direction}>
+          <motion.section
+            key={step}
+            custom={direction}
+            variants={{
+              initial: (d) => ({ opacity: 0, x: reduced ? 0 : d * 24 }),
+              enter: { opacity: 1, x: 0 },
+              exit: (d) => ({ opacity: 0, x: reduced ? 0 : -d * 24 }),
+            }}
+            initial="initial"
+            animate="enter"
+            exit="exit"
+            transition={{ duration: reduced ? 0 : 0.2, ease: easePremium }}
+          >
+            {step === 0 && (
               <>
-                <p className="mt-1 text-sm text-navy-500">Choose a convenient prescription method. You can change this before checkout.</p>
-                <div className="mt-5 space-y-3">
-                  <button type="button" onClick={() => setPrescriptionMethod('later')} className={cn('flex w-full items-center gap-4 rounded-2xl border p-4 text-left', prescriptionMethod === 'later' ? 'border-brand-500 bg-brand-50' : 'border-navy-200')}><FiFileText className="h-6 w-6 text-brand-600" /><span><span className="block font-semibold text-navy-900">Submit power later</span><span className="text-sm text-navy-500">Provide your prescription after placing the order.</span></span></button>
-                  <button type="button" onClick={() => setPrescriptionMethod('manual')} className={cn('flex w-full items-center gap-4 rounded-2xl border p-4 text-left', prescriptionMethod === 'manual' ? 'border-brand-500 bg-brand-50' : 'border-navy-200')}><FiSliders className="h-6 w-6 text-brand-600" /><span><span className="block font-semibold text-navy-900">Enter power manually</span><span className="text-sm text-navy-500">Use values from your latest eye prescription.</span></span></button>
-                  <label className={cn('flex cursor-pointer items-center gap-4 rounded-2xl border p-4 text-left', prescriptionMethod === 'upload' ? 'border-brand-500 bg-brand-50' : 'border-navy-200')}><FiUpload className="h-6 w-6 text-brand-600" /><span className="min-w-0 flex-1"><span className="block font-semibold text-navy-900">Upload prescription</span><span className="block truncate text-sm text-navy-500">{fileName || 'Choose an image or PDF to attach at checkout.'}</span></span><input type="file" accept="image/*,.pdf" className="sr-only" onChange={(event) => { setPrescriptionMethod('upload'); setFileName(event.target.files?.[0]?.name || ''); }} /></label>
+                <div className="mb-5 flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-bold text-navy-900">{copy.powerTitle}</h3>
+                  {general.learnMoreUrl && (
+                    <a href={general.learnMoreUrl} className="text-sm font-semibold text-brand-600">
+                      {copy.learnMore}
+                    </a>
+                  )}
                 </div>
-                {prescriptionMethod === 'manual' && (
-                  <div className="mt-5 rounded-2xl bg-surface-muted p-4"><p className="mb-3 text-sm font-semibold text-navy-800">Prescription details</p><div className="grid gap-3 sm:grid-cols-3"><Input label="Left SPH" value={prescription.leftEye.sph} onChange={(event) => updateEye('leftEye', 'sph', event.target.value)} /><Input label="Left CYL" value={prescription.leftEye.cyl} onChange={(event) => updateEye('leftEye', 'cyl', event.target.value)} /><Input label="Left Axis" value={prescription.leftEye.axis} onChange={(event) => updateEye('leftEye', 'axis', event.target.value)} /><Input label="Right SPH" value={prescription.rightEye.sph} onChange={(event) => updateEye('rightEye', 'sph', event.target.value)} /><Input label="Right CYL" value={prescription.rightEye.cyl} onChange={(event) => updateEye('rightEye', 'cyl', event.target.value)} /><Input label="Right Axis" value={prescription.rightEye.axis} onChange={(event) => updateEye('rightEye', 'axis', event.target.value)} /><div className="sm:col-span-3"><Input label="PD (mm)" value={prescription.pd} onChange={(event) => setPrescription((current) => ({ ...current, pd: event.target.value }))} /></div></div></div>
+                <div className="space-y-3">
+                  {modes.map((item) => {
+                    const Icon = icons[item.icon] || FiEye;
+                    return (
+                      <button
+                        key={item.id}
+                        aria-pressed={modeId === item.id}
+                        onClick={() => chooseMode(item)}
+                        className={cn(card(modeId === item.id), 'flex items-center gap-4')}
+                      >
+                        <span
+                          className={cn(
+                            'flex h-12 w-12 shrink-0 items-center justify-center rounded-full',
+                            backgrounds[item.iconBgColor] || backgrounds.brand
+                          )}
+                        >
+                          <Icon className="h-6 w-6" />
+                        </span>
+                        <span className="flex-1">
+                          <span className="flex flex-wrap items-center gap-2">
+                            <span className="font-semibold text-navy-900">{item.label}</span>
+                            {item.badge && (
+                              <span
+                                className={cn(
+                                  'rounded-full px-2 py-0.5 text-xs font-medium',
+                                  badges[item.badgeColor] || badges.brand
+                                )}
+                              >
+                                {item.badge}
+                              </span>
+                            )}
+                          </span>
+                          <span className="mt-1 block text-sm text-navy-500">{item.subtitle}</span>
+                        </span>
+                        <FiChevronRight className="text-navy-300" />
+                      </button>
+                    );
+                  })}
+                  {!modes.length && <p>{copy.emptyPower}</p>}
+                </div>
+              </>
+            )}
+            {step === 1 && (
+              <>
+                <h3 className="mb-4 text-lg font-bold text-navy-900">{copy.lensesTitle}</h3>
+                <div
+                  role="group"
+                  aria-label="Lens categories"
+                  className="mb-5 flex gap-2 overflow-x-auto pb-2"
+                >
+                  {categories.map((c) => (
+                    <button
+                      key={c.id}
+                      aria-pressed={category === c.id}
+                      onClick={() => setCategory(c.id)}
+                      className={cn(
+                        'shrink-0 rounded-full border px-3 py-2 text-xs font-semibold',
+                        category === c.id
+                          ? 'border-navy-900 bg-navy-900 text-white'
+                          : 'border-navy-200 text-navy-700'
+                      )}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="space-y-3">
+                  {visible.map((p) => (
+                    <div key={p.id} className={card(packageId === p.id)}>
+                      <button
+                        aria-pressed={packageId === p.id}
+                        onClick={() => setPackageId(p.id)}
+                        className="flex w-full items-start gap-3 text-left"
+                      >
+                        {p.imageUrl ? (
+                          <img
+                            src={p.imageUrl}
+                            alt=""
+                            className="h-14 w-14 shrink-0 rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+                            <FiEye className="h-7 w-7" />
+                          </span>
+                        )}
+                        <span className="min-w-0 flex-1">
+                          <span className="block font-semibold text-navy-900">{p.name}</span>
+                          {p.badge && (
+                            <span className="mt-1 inline-block rounded-full bg-brand-100 px-2 py-0.5 text-xs text-brand-700">
+                              {p.badge}
+                            </span>
+                          )}
+                          {p.isRecommended && (
+                            <span className="ml-1 text-xs text-brand-700">{copy.recommended}</span>
+                          )}
+                          <span className="mt-2 flex flex-wrap gap-1">
+                            {p.features?.map((f, i) => (
+                              <span
+                                key={i}
+                                className="rounded-full bg-navy-50 px-2 py-1 text-xs text-navy-600"
+                              >
+                                {f}
+                              </span>
+                            ))}
+                          </span>
+                          <span
+                            className={cn(
+                              'mt-3 block text-sm font-semibold',
+                              p.price ? 'text-navy-800' : 'text-success'
+                            )}
+                          >
+                            {p.price ? formatPrice(p.price) : copy.included}
+                          </span>
+                        </span>
+                        <span
+                          className={cn(
+                            'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border',
+                            packageId === p.id
+                              ? 'border-brand-500 bg-brand-500 text-white'
+                              : 'border-navy-300'
+                          )}
+                        >
+                          {packageId === p.id && <FiCheck />}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => setDetails(details === p.id ? '' : p.id)}
+                        aria-expanded={details === p.id}
+                        className="ml-[68px] mt-2 text-xs font-semibold text-brand-600"
+                      >
+                        {copy.knowMore}
+                      </button>
+                      {details === p.id && (
+                        <p className="mt-3 text-sm text-navy-500">{p.description}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {!visible.length && (
+                  <p className="py-8 text-center text-sm text-navy-500">{copy.emptyPackages}</p>
                 )}
               </>
-            ) : (
-              <div className="mt-5 rounded-2xl bg-brand-50 p-5 text-sm text-brand-800"><FiCheck className="mb-2 h-6 w-6" />No prescription is needed for this choice. Add the configured frame and lens package to your cart.</div>
             )}
-          </div>
-        )}
+            {step === 2 &&
+              (!needsPrescription ? (
+                <div className="rounded-2xl bg-brand-50 p-6 text-center">
+                  <FiCheck className="mx-auto mb-4 h-10 w-10 text-success" />
+                  <h3 className="text-lg font-bold text-navy-900">{copy.ready}</h3>
+                  <p className="mt-2 text-sm text-navy-500">{general.noPrescriptionMessage}</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {[
+                    {
+                      id: 'later',
+                      title: copy.laterTitle,
+                      subtitle: copy.laterSubtitle,
+                      Icon: FiClock,
+                    },
+                    {
+                      id: 'manual',
+                      title: copy.manualTitle,
+                      subtitle: copy.manualSubtitle,
+                      Icon: FiSliders,
+                    },
+                    {
+                      id: 'upload',
+                      title: copy.uploadTitle,
+                      subtitle: copy.uploadSubtitle,
+                      Icon: FiUpload,
+                    },
+                  ].map(({ id, title, subtitle, Icon }) => (
+                    <div key={id} className={card(method === id)}>
+                      <button
+                        aria-pressed={method === id}
+                        onClick={() => setMethod(id)}
+                        className="flex w-full items-center gap-3 text-left"
+                      >
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-600">
+                          <Icon className="h-6 w-6" />
+                        </span>
+                        <span>
+                          <span className="block font-semibold text-navy-900">{title}</span>
+                          <span className="block text-sm text-navy-500">{subtitle}</span>
+                        </span>
+                      </button>
+                      <AnimatePresence initial={false}>
+                        {method === id && id !== 'later' && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                          >
+                            {id === 'manual' ? (
+                              <div className="mt-5 space-y-4">
+                                {['rightEye', 'leftEye'].map((eye, i) => (
+                                  <fieldset key={eye}>
+                                    <legend className="mb-3 w-full rounded-lg bg-navy-50 p-2 text-sm font-semibold text-navy-800">
+                                      {i === 0 ? copy.rightEye : copy.leftEye}
+                                    </legend>
+                                    <div className="grid gap-3 sm:grid-cols-3">
+                                      {fields
+                                        .filter((f) => f.scope !== 'shared')
+                                        .map((f) => renderField(f, eye))}
+                                    </div>
+                                  </fieldset>
+                                ))}
+                                <div className="grid gap-3 sm:grid-cols-3">
+                                  {fields
+                                    .filter((f) => f.scope === 'shared')
+                                    .map((f) => renderField(f, ''))}
+                                </div>
+                                {!manualValid && (
+                                  <p role="status" className="text-sm text-navy-500">
+                                    {copy.requiredMessage}
+                                  </p>
+                                )}
+                              </div>
+                            ) : (
+                              <div
+                                onDragOver={(e) => e.preventDefault()}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  upload(e.dataTransfer.files[0]);
+                                }}
+                                className="mt-5 rounded-xl border-2 border-dashed border-brand-200 p-5"
+                              >
+                                <label className="block text-sm text-brand-700">
+                                  {copy.chooseFile}
+                                  <input
+                                    aria-label="Upload prescription file"
+                                    type="file"
+                                    accept="image/*,.pdf"
+                                    onChange={(e) => upload(e.target.files[0])}
+                                    className="mt-3 block w-full text-xs"
+                                  />
+                                </label>
+                                <p className="mt-2 text-xs text-navy-500">
+                                  {file?.fileName || copy.dropFile}
+                                </p>
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  ))}
+                </div>
+              ))}
+          </motion.section>
+        </AnimatePresence>
       </div>
     </Drawer>
   );
 }
-
-export default LensSelectionDrawer;

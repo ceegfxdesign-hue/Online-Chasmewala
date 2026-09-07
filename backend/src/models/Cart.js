@@ -10,6 +10,9 @@ const cartItemSchema = new mongoose.Schema(
     price: { type: Number, required: true },
     // Optional lens/prescription selection captured during add-to-cart.
     lensOption: {
+      baseType: String,
+      subtitle: String,
+      packageId: String,
       type: { type: String }, // e.g. 'single-vision', 'zero-power'
       label: { type: String },
       price: { type: Number, default: 0 },
@@ -17,6 +20,8 @@ const cartItemSchema = new mongoose.Schema(
     prescription: {
       method: { type: String, enum: ['manual', 'later', 'upload'] },
       fileName: { type: String },
+      fileData: String,
+      mimeType: String,
       // Custom contact-lens fields such as Spherical/SPH are configured by
       // admins per product and stored by field + eye (e.g. `SPH:Right eye`).
       values: { type: Map, of: String },

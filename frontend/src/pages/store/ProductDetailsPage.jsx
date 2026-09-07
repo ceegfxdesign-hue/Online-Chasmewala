@@ -92,7 +92,7 @@ export default function ProductDetailsPage() {
   const isEyeglasses = product?.category?.slug?.toLowerCase() === 'eyeglasses';
   const isContactLens = product?.category?.slug?.toLowerCase() === 'contact-lenses';
   const lensOptions = useMemo(() => (product ? lensOptionsFor(product, isEyeglasses, frameLensConfiguration) : []), [frameLensConfiguration, product, isEyeglasses]);
-  const needsLensSelection = isEyeglasses && !lens?.packageId;
+  const needsLensSelection = isEyeglasses && !lens?.packageId && lens?.baseType !== 'frame-only';
   const featuredOffer = useMemo(() => {
     if (!product) return null;
     const productId = String(product._id);
@@ -447,13 +447,13 @@ export default function ProductDetailsPage() {
 
             {isEyeglasses && lensOptions.length > 0 && (
               <div className="mt-6 border-t border-navy-100 pt-5">
-                {lens?.packageId && (
+                {!needsLensSelection && lens && (
                   <p className="mb-3 text-sm text-navy-600">
                     Selected: <span className="font-semibold text-navy-900">{lens.label}</span>
                   </p>
                 )}
-                <Button fullWidth size="lg" onClick={() => setLensDrawerOpen(true)}>
-                  {lens?.packageId ? 'Edit lenses' : 'Select lenses'}
+                <Button fullWidth size="lg" className="rounded-xl bg-navy-900 text-white hover:bg-navy-800" onClick={() => setLensDrawerOpen(true)}>
+                  {!needsLensSelection ? 'Edit Lenses' : 'Select Lenses'}
                 </Button>
                 {needsLensSelection && <p className="mt-2 text-center text-xs text-navy-500">Select a lens option to enable Add to Cart and Buy Now.</p>}
               </div>
@@ -543,8 +543,9 @@ export default function ProductDetailsPage() {
       <LensSelectionDrawer
         open={lensDrawerOpen}
         onClose={() => setLensDrawerOpen(false)}
-        options={lensOptions}
-        packages={frameLensConfiguration?.packages}
+        configuration={frameLensConfiguration}
+        framePrice={product.price}
+        selectedPrescription={prescription}
         selectedOption={lens}
         onComplete={({ lensOption, prescription: selectedPrescription }) => {
           setLens(lensOption);

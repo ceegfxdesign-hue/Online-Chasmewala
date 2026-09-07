@@ -118,6 +118,7 @@ function OrderItems({ order }) {
                     Lens: {item.lensOption.label}
                   </p>
                 )}
+                <PrescriptionSummary prescription={item.prescription} />
               </div>
               <p className="shrink-0 font-semibold text-navy-900">
                 {formatPrice(
@@ -582,3 +583,4 @@ export default function AdminOrdersPage() {
     </>
   );
 }
+import { PrescriptionSummary } from '@/components/product/PrescriptionSummary';

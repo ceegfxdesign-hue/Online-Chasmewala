@@ -91,6 +91,9 @@ export const cartService = {
     const lensOption = payload.lensOption
       ? {
           type: payload.lensOption.type,
+          baseType: payload.lensOption.baseType,
+          subtitle: payload.lensOption.subtitle,
+          packageId: payload.lensOption.packageId,
           label: payload.lensOption.label || LENS_LABELS[payload.lensOption.type] || 'Lens',
           price: payload.lensOption.price || 0,
         }
@@ -172,6 +175,7 @@ export const cartService = {
           quantity: Math.min(gi.quantity || 1, product.stock),
           price: product.price,
           lensOption: gi.lensOption,
+          prescription: gi.prescription,
         });
     }
     await cart.save();

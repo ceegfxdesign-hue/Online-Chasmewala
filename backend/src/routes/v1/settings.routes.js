@@ -53,7 +53,7 @@ router.get(
   '/frame-lenses',
   asyncHandler(async (_req, res) => {
     const settings = await settingsService.get();
-    res.set('Cache-Control', 'public, max-age=300, s-maxage=600, stale-while-revalidate=900');
+    res.set('Cache-Control', 'no-store');
     return sendSuccess(res, { data: settings.frameLensConfiguration });
   })
 );

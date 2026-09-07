@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { seedAll } from '../src/utils/seedData.js';
+import { DEFAULT_FRAME_LENS_CONFIGURATION } from '../src/constants/frameLenses.js';
 
 const app = createApp();
 
@@ -46,6 +47,25 @@ describe('Admin APIs', () => {
 
   const asAdmin = () => ({ Authorization: `Bearer ${adminToken}` });
   const asUser = () => ({ Authorization: `Bearer ${userToken}` });
+
+  it('saves every frame-lens setting and exposes the updated storefront configuration', async () => {
+    const configuration = structuredClone(DEFAULT_FRAME_LENS_CONFIGURATION);
+    configuration.powerTypes[0].label = 'Custom prescription lenses';
+    configuration.packages[0].features = ['Custom coating'];
+    configuration.generalSettings.ctaText = 'Confirm lenses';
+    const saved = await request(app).patch('/api/v1/admin/settings').set(asAdmin()).send({ frameLensConfiguration: configuration });
+    expect(saved.status).toBe(200);
+    const storefront = await request(app).get('/api/v1/settings/frame-lenses');
+    expect(storefront.body.data.powerTypes[0].label).toBe('Custom prescription lenses');
+    expect(storefront.body.data.packages[0].features).toEqual(['Custom coating']);
+    expect(storefront.body.data.generalSettings.ctaText).toBe('Confirm lenses');
+    expect(storefront.body.data.packageCategories).toHaveLength(4);
+    expect(storefront.body.data.prescriptionFields[0].fieldType).toBe('dropdown');
+    expect(storefront.headers['cache-control']).toBe('no-store');
+    configuration.prescriptionFields[0].step = 0;
+    const invalid = await request(app).patch('/api/v1/admin/settings').set(asAdmin()).send({ frameLensConfiguration: configuration });
+    expect(invalid.status).toBe(422);
+  });
 
   it('blocks non-admin users from admin routes', async () => {
     const res = await request(app).get('/api/v1/admin/analytics/dashboard').set(asUser());

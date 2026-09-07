@@ -180,6 +180,7 @@ export default function OrderDetailsPage() {
                       {item.color && ` · ${item.color}`}
                       {item.lensOption?.label && ` · ${item.lensOption.label}`}
                     </p>
+                    <PrescriptionSummary prescription={item.prescription} />
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-navy-900">{formatPrice(item.price * item.quantity)}</p>
@@ -326,3 +327,4 @@ export default function OrderDetailsPage() {
     </>
   );
 }
+import { PrescriptionSummary } from '@/components/product/PrescriptionSummary';

@@ -6,6 +6,9 @@ const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
 const lensOption = z
   .object({
     type: z.string(),
+    baseType: z.string().optional(),
+    subtitle: z.string().optional(),
+    packageId: z.string().optional(),
     label: z.string().optional(),
     price: z.number().min(0).optional(),
   })
@@ -39,6 +42,7 @@ export const mergeCartSchema = {
           color: z.string().optional(),
           quantity: z.number().int().min(1).optional(),
           lensOption,
+          prescription: z.any().optional(),
         })
       )
       .default([]),

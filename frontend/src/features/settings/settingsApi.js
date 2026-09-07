@@ -36,6 +36,7 @@ export const settingsApi = baseApi.injectEndpoints({
       keepUnusedDataFor: 300,
     }),
     getFrameLensConfiguration: builder.query({
+      // Admin invalidation refetches this configuration; the API disables HTTP caching.
       query: () => ({ url: '/settings/frame-lenses' }),
       transformResponse: data,
       providesTags: ['Admin'],

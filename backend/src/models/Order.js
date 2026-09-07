@@ -12,6 +12,9 @@ const orderItemSchema = new mongoose.Schema(
     quantity: { type: Number, required: true, min: 1 },
     price: { type: Number, required: true }, // unit price snapshot
     lensOption: {
+      baseType: String,
+      subtitle: String,
+      packageId: String,
       type: { type: String },
       label: { type: String },
       price: { type: Number, default: 0 },
@@ -19,6 +22,8 @@ const orderItemSchema = new mongoose.Schema(
     prescription: {
       method: { type: String },
       fileName: { type: String },
+      fileData: String,
+      mimeType: String,
       values: { type: Map, of: String },
     },
   },
