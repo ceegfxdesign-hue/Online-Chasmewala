@@ -27,7 +27,14 @@ export function AdminLayout() {
         <nav aria-label="Admin" className="admin-sidebar-scrollbar min-h-0 max-h-[32rem] flex-1 space-y-1 overflow-y-scroll overscroll-contain pr-3">
           {navigation.map(([to, label, Icon, end]) => <NavLink key={to} to={to} end={end} className={({ isActive }) => cn('flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium', isActive ? 'bg-brand-500 text-white' : 'text-navy-600 hover:bg-navy-100')}><Icon className="h-4 w-4" />{label}</NavLink>)}
         </nav>
-        <Link to={ROUTES.home} className="mt-auto px-3 text-sm font-medium text-brand-600 hover:text-brand-700">View storefront →</Link>
+        <div className="mt-auto space-y-1.5 border-t border-navy-100 pt-3">
+          <Link to={ROUTES.settings} className="block px-3 text-sm font-medium text-navy-600 hover:text-navy-900">
+            Account & Password →
+          </Link>
+          <Link to={ROUTES.home} className="block px-3 text-sm font-medium text-brand-600 hover:text-brand-700">
+            View storefront →
+          </Link>
+        </div>
       </aside>
       <main className="min-w-0 lg:pl-64"><div className="container-page py-6 lg:py-8"><nav aria-label="Admin sections" className="mb-5 flex gap-2 overflow-x-auto pb-1 lg:hidden">{navigation.map(([to, label]) => <NavLink key={to} to={to} end={to === ROUTES.admin} className={({ isActive }) => cn('shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold', isActive ? 'bg-brand-500 text-white' : 'bg-surface text-navy-600')}>{label}</NavLink>)}</nav><Outlet /></div></main>
     </div>

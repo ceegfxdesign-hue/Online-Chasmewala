@@ -185,6 +185,9 @@ function AccountMenu({ isAuthenticated, isAdmin, onClose, onLogout }) {
           <Link to={ROUTES.profile} className={link} onClick={onClose}>
             My Profile
           </Link>
+          <Link to={ROUTES.settings} className={link} onClick={onClose}>
+            Account Settings
+          </Link>
           <Link to={ROUTES.orders} className={link} onClick={onClose}>
             My Orders
           </Link>
