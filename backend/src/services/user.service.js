@@ -2,6 +2,7 @@
  * User account business logic: profile, addresses and saved cards. Auth/session
  * concerns live in auth.service; this handles the logged-in user's own data.
  */
+import crypto from 'node:crypto';
 import { userRepository } from '../repositories/index.js';
 import { ApiError } from '../utils/ApiError.js';
 
@@ -105,6 +106,27 @@ export const userService = {
     card.deleteOne();
     await user.save();
     return user.savedCards;
+  },
+
+  async deleteAccount(userId, { password }) {
+    const user = await userRepository.findById(userId).select('+password');
+    if (!user) throw ApiError.notFound('User not found');
+    if (user.role === 'admin') throw ApiError.badRequest('Admin accounts cannot be deleted here.');
+    const ok = await user.comparePassword(password);
+    if (!ok) throw ApiError.badRequest('Current password is incorrect');
+
+    // Anonymize personal info and deactivate user record
+    user.name = 'Deleted Customer';
+    user.email = `deleted_${user._id}_${Date.now()}@deleted.local`;
+    user.phone = undefined;
+    user.addresses = [];
+    user.savedCards = [];
+    user.wishlist = [];
+    user.refreshTokens = [];
+    user.isActive = false;
+    user.password = crypto.randomBytes(32).toString('hex');
+    await user.save();
+    return { deleted: true };
   },
 };
 

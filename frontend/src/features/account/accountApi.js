@@ -14,6 +14,10 @@ export const accountApi = baseApi.injectEndpoints({
       query: (body) => ({ url: '/account/change-password', method: 'post', data: body }),
       transformResponse: (res) => res.data,
     }),
+    deleteAccount: builder.mutation({
+      query: (body) => ({ url: '/account/delete', method: 'delete', data: body }),
+      invalidatesTags: ['User'],
+    }),
 
     // Addresses
     getAddresses: builder.query({
@@ -106,6 +110,7 @@ export const accountApi = baseApi.injectEndpoints({
 export const {
   useUpdateProfileMutation,
   useChangePasswordMutation,
+  useDeleteAccountMutation,
   useGetAddressesQuery,
   useAddAddressMutation,
   useUpdateAddressMutation,

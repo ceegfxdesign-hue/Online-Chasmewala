@@ -5,6 +5,7 @@ import { protect } from '../../middlewares/auth.middleware.js';
 import {
   updateProfileSchema,
   changePasswordSchema,
+  deleteAccountSchema,
   addAddressSchema,
   updateAddressSchema,
   addCardSchema,
@@ -19,6 +20,7 @@ router.use(protect);
 // Profile
 router.patch('/profile', validate(updateProfileSchema), accountController.updateProfile);
 router.post('/change-password', validate(changePasswordSchema), accountController.changePassword);
+router.delete('/delete', validate(deleteAccountSchema), accountController.deleteAccount);
 
 // Addresses
 router.get('/addresses', accountController.listAddresses);

@@ -15,6 +15,11 @@ export const accountController = {
     const data = await userService.changePassword(req.user._id, req.body);
     return sendSuccess(res, { message: 'Password changed', data });
   }),
+  deleteAccount: asyncHandler(async (req, res) => {
+    await userService.deleteAccount(req.user._id, req.body);
+    res.clearCookie('oc_refresh');
+    return sendSuccess(res, { message: 'Account deleted successfully' });
+  }),
 
   // Addresses
   listAddresses: asyncHandler(async (req, res) => {

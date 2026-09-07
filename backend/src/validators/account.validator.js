@@ -30,6 +30,12 @@ export const changePasswordSchema = {
   }),
 };
 
+export const deleteAccountSchema = {
+  body: z.object({
+    password: z.string().min(1, 'Password is required to confirm account deletion'),
+  }),
+};
+
 const addressBody = z.object({
   label: z.string().optional(),
   fullName: z.string().min(2),
