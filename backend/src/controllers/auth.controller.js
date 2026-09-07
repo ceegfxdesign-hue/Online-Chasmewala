@@ -49,6 +49,11 @@ export const authController = {
     return sendSuccess(res, { message: 'OTP sent', data: result });
   }),
 
+  checkOtp: asyncHandler(async (req, res) => {
+    const result = await authService.verifyOtp(req.body, { checkOnly: true });
+    return sendSuccess(res, { message: 'OTP verified', data: result });
+  }),
+
   verifyOtp: asyncHandler(async (req, res) => {
     const result = await authService.verifyOtp(req.body);
     return sendSuccess(res, { message: 'OTP verified', data: result });

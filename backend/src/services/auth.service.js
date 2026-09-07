@@ -129,7 +129,7 @@ export const authService = {
   },
 
   /** Verify an OTP; optionally reset password when a newPassword is provided. */
-  async verifyOtp({ email, code, newPassword }) {
+  async verifyOtp({ email, code, newPassword }, { checkOnly = false } = {}) {
     const user = await userRepository
       .findByEmail(email)
       .select('+otpHash +otpExpiresAt +otpAttempts +password');
@@ -148,6 +148,9 @@ export const authService = {
         throw ApiError.badRequest('Too many failed attempts. Please request a new OTP.');
       throw ApiError.badRequest('Incorrect OTP');
     }
+    // The intermediate screen checks validity without consuming the code.
+    // Password reset must still verify and atomically consume it below.
+    if (checkOnly) return { verified: true };
     const consumed = await userRepository.consumeOtp(user._id, user.otpHash);
     if (!consumed.modifiedCount)
       throw ApiError.badRequest('OTP expired. Please request a new one.');

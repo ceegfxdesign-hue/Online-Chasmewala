@@ -30,6 +30,41 @@ async function register(overrides = {}) {
 }
 
 describe('Auth flow', () => {
+  it('checks OTP before reset, rejects wrong codes, and consumes only on password change', async () => {
+    await register();
+    const code = await requestCode();
+    const wrong = code === '000000' ? '111111' : '000000';
+    const check = (value) => request(app).post('/api/v1/auth/otp/check')
+      .send({ email: validUser.email, code: value });
+    expect((await check(wrong)).status).toBe(400);
+    expect((await check('123')).status).toBe(422);
+    expect((await check(code)).body.data).toEqual({ verified: true });
+    const reset = (value) => request(app).post('/api/v1/auth/otp/verify')
+      .send({ email: validUser.email, code: value, newPassword: 'NewSecret@1' });
+    expect((await reset(wrong)).status).toBe(400);
+    expect((await reset(code)).status).toBe(200);
+    expect((await check(code)).status).toBe(400);
+    expect((await reset(code)).status).toBe(400);
+  });
+
+  it('shares the guess limit between OTP checks and resets and rejects expired codes', async () => {
+    await register();
+    const code = await requestCode();
+    const wrong = code === '000000' ? '111111' : '000000';
+    for (let i = 0; i < 5; i++) {
+      const response = await request(app)
+        .post(i % 2 ? '/api/v1/auth/otp/verify' : '/api/v1/auth/otp/check')
+        .send({ email: validUser.email, code: wrong });
+      expect(response.status).toBe(400);
+    }
+    expect((await request(app).post('/api/v1/auth/otp/check')
+      .send({ email: validUser.email, code })).status).toBe(400);
+    const fresh = await requestCode();
+    await User.updateOne({ email: validUser.email }, { otpExpiresAt: new Date(0) });
+    expect((await request(app).post('/api/v1/auth/otp/check')
+      .send({ email: validUser.email, code: fresh })).status).toBe(400);
+  });
+
   it('registers a new user and returns an access token + refresh cookie', async () => {
     const res = await register();
     expect(res.status).toBe(201);

@@ -8,6 +8,7 @@ import {
   loginSchema,
   requestOtpSchema,
   verifyOtpSchema,
+  checkOtpSchema,
 } from '../../validators/auth.validator.js';
 
 const router = Router();
@@ -19,5 +20,6 @@ router.post('/logout', authController.logout);
 router.get('/me', protect, authController.me);
 router.post('/otp/request', authLimiter, validate(requestOtpSchema), authController.requestOtp);
 router.post('/otp/verify', authLimiter, validate(verifyOtpSchema), authController.verifyOtp);
+router.post('/otp/check', authLimiter, validate(checkOtpSchema), authController.checkOtp);
 
 export default router;

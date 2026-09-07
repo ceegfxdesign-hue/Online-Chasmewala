@@ -37,3 +37,7 @@ export const verifyOtpSchema = {
     newPassword: password.optional(),
   }),
 };
+
+export const checkOtpSchema = {
+  body: verifyOtpSchema.body.pick({ email: true, code: true }),
+};

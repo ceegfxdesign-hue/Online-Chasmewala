@@ -11,9 +11,8 @@ import { cn } from '@/utils/cn';
 const LENGTH = 6;
 
 /**
- * OTP entry with 6 single-digit inputs. Collects the code and forwards it (with
- * the email) to the reset step; the code is verified there in one call so it is
- * never consumed twice.
+ * Verify the code on the server before opening the password form. The final
+ * reset rechecks and consumes it, so navigation alone never authorizes a reset.
  */
 export default function OTPVerificationPage() {
   const navigate = useNavigate();
@@ -22,6 +21,8 @@ export default function OTPVerificationPage() {
   const email = location.state?.email;
   const [digits, setDigits] = useState(Array(LENGTH).fill(''));
   const [resending, setResending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const busyRef = useRef(false);
   const inputsRef = useRef([]);
 
   if (!email) return <Navigate to={ROUTES.forgotPassword} replace />;
@@ -44,30 +45,45 @@ export default function OTPVerificationPage() {
     const text = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, LENGTH);
     if (text) {
       e.preventDefault();
-      setDigits(text.padEnd(LENGTH, '').split('').slice(0, LENGTH));
+      setDigits(Array.from({ length: LENGTH }, (_, i) => text[i] || ''));
       inputsRef.current[Math.min(text.length, LENGTH - 1)]?.focus();
     }
   };
 
   const code = digits.join('');
 
-  const onContinue = () => {
+  const onContinue = async () => {
+    if (busyRef.current) return;
     if (code.length !== LENGTH) {
       toast.error('Please enter the 6-digit code');
       return;
     }
-    navigate(ROUTES.resetPassword, { state: { email, code } });
+    busyRef.current = true;
+    setVerifying(true);
+    try {
+      await api.post('/auth/otp/check', { email, code });
+      navigate(ROUTES.resetPassword, { state: { email, code } });
+    } catch (err) {
+      toast.error(normalizeError(err).message);
+    } finally {
+      busyRef.current = false;
+      setVerifying(false);
+    }
   };
 
   const resend = async () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
     setResending(true);
     try {
       await api.post('/auth/otp/request', { email, purpose: 'reset' });
+      setDigits(Array(LENGTH).fill(''));
       toast.success('A new code has been sent.');
     } catch (err) {
       toast.error(normalizeError(err).message);
     } finally {
       setResending(false);
+      busyRef.current = false;
     }
   };
 
@@ -92,6 +108,7 @@ export default function OTPVerificationPage() {
               key={i}
               ref={(el) => (inputsRef.current[i] = el)}
               value={d}
+              disabled={verifying || resending}
               onChange={(e) => setDigit(i, e.target.value)}
               onKeyDown={(e) => onKeyDown(i, e)}
               inputMode="numeric"
@@ -105,7 +122,7 @@ export default function OTPVerificationPage() {
           ))}
         </div>
 
-        <Button onClick={onContinue} size="lg" fullWidth className="mt-6">
+        <Button onClick={onContinue} loading={verifying} disabled={resending} size="lg" fullWidth className="mt-6">
           Continue
         </Button>
 
@@ -114,7 +131,7 @@ export default function OTPVerificationPage() {
           <button
             type="button"
             onClick={resend}
-            disabled={resending}
+            disabled={resending || verifying}
             className="font-semibold text-brand-600 hover:text-brand-700 disabled:opacity-60"
           >
             Resend
