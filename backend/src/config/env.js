@@ -38,6 +38,16 @@ const schema = z
     PAYMENT_PROVIDER: z.enum(['mock', 'razorpay', 'stripe']).default('mock'),
     OTP_PROVIDER: z.enum(['mock', 'email', 'sms']).default('mock'),
 
+    SMTP_HOST: z.string().trim().default(''),
+    SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+    SMTP_SECURE: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
+    SMTP_USER: z.string().default(''),
+    SMTP_PASS: z.string().default(''),
+    EMAIL_FROM: z.string().regex(/^[^\r\n]+$/, 'Invalid sender')
+      .refine((value) => z.string().email().safeParse(value.match(/<([^<>]+)>$/)?.[1] || value).success, 'A valid sender email is required')
+      .default('Online Chasmewala <support@onlinechasmewala.com>'),
+    ADMIN_NOTIFICATION_EMAIL: z.string().email().default('support@onlinechasmewala.com'),
+
     CLOUDINARY_CLOUD_NAME: z.string().optional(),
     CLOUDINARY_API_KEY: z.string().optional(),
     CLOUDINARY_API_SECRET: z.string().optional(),

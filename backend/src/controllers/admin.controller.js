@@ -57,7 +57,7 @@ export const adminController = {
     return sendSuccess(res, { data, meta });
   }),
   updateOrderStatus: asyncHandler(async (req, res) => {
-    const data = await orderService.updateStatus(req.params.id, req.body.status, req.body.note);
+    const data = await orderService.updateStatus(req.params.id, req.body.status, req.body.note, req.body.tracking);
     return sendSuccess(res, { message: 'Order updated', data });
   }),
 

@@ -5,6 +5,7 @@
 import crypto from 'node:crypto';
 import { userRepository } from '../repositories/index.js';
 import { ApiError } from '../utils/ApiError.js';
+import { eventBus, EVENTS } from '../events/eventBus.js';
 
 async function loadUser(userId) {
   const user = await userRepository.findById(userId);
@@ -33,6 +34,7 @@ export const userService = {
     user.password = newPassword;
     user.refreshTokens = []; // sign out other sessions
     await user.save();
+    eventBus.emitEvent(EVENTS.PASSWORD_CHANGED, { userId });
     return { changed: true };
   },
 

@@ -77,6 +77,7 @@ const orderSchema = new mongoose.Schema(
     timeline: [timelineSchema],
 
     deliveryMethod: { type: String, enum: ['standard', 'express'], default: 'standard' },
+    tracking: { courier: String, url: String },
     estimatedDeliveryAt: { type: Date },
     deliveredAt: { type: Date },
     cancelledAt: { type: Date },

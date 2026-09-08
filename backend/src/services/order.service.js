@@ -230,13 +230,14 @@ export const orderService = {
     return { data, meta: buildMeta({ page, limit, total }) };
   },
 
-  async updateStatus(orderId, status, note) {
+  async updateStatus(orderId, status, note, tracking) {
     if (!ORDER_STATUS_FLOW.includes(status) && status !== ORDER_STATUS.CANCELLED) {
       throw ApiError.badRequest('Invalid order status');
     }
     const order = await orderRepository.findById(orderId);
     if (!order) throw ApiError.notFound('Order not found');
     order.status = status;
+    if (tracking) order.tracking = tracking;
     order.timeline.push({ status, note });
     if (status === ORDER_STATUS.DELIVERED) {
       order.deliveredAt = new Date();

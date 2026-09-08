@@ -23,6 +23,7 @@ export const EVENTS = Object.freeze({
   RETURN_STATUS_CHANGED: 'return.status_changed',
   REVIEW_CREATED: 'review.created',
   USER_REGISTERED: 'user.registered',
+  PASSWORD_CHANGED: 'user.password_changed',
   LOW_STOCK: 'inventory.low_stock',
 });
 

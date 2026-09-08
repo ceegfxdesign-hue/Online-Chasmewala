@@ -113,12 +113,14 @@ describe('Admin APIs', () => {
     const target = orders.body.data.find((o) => o.orderNumber === order.orderNumber);
 
     for (const status of ['packed', 'shipped', 'delivered']) {
+      const tracking = { courier: 'Test Courier', url: 'https://example.com/track/OC-TEST' };
       const res = await request(app)
         .patch(`/api/v1/admin/orders/${target._id}/status`)
         .set(asAdmin())
-        .send({ status });
+        .send({ status, ...(status === 'shipped' ? { tracking } : {}) });
       expect(res.status).toBe(200);
       expect(res.body.data.status).toBe(status);
+      if (status === 'shipped') expect(res.body.data.tracking).toMatchObject(tracking);
     }
 
     const mine = await request(app).get(`/api/v1/orders/${order.orderNumber}`).set(asUser());

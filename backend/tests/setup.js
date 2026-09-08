@@ -9,6 +9,10 @@ import { beforeAll, afterAll, afterEach } from '@jest/globals';
 
 let mongo;
 
+// Integration tests must never send real emails, even with a configured local .env.
+process.env.SMTP_HOST = '';
+process.env.SMTP_USER = '';
+
 beforeAll(async () => {
   mongo = await MongoMemoryServer.create();
   await mongoose.connect(mongo.getUri());

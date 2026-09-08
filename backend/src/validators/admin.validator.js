@@ -16,6 +16,10 @@ export const updateOrderStatusSchema = {
   body: z.object({
     status: z.enum(Object.values(ORDER_STATUS)),
     note: z.string().optional(),
+    tracking: z.object({
+      courier: z.string().trim().max(100),
+      url: z.string().url().max(2000).refine((v) => /^https?:\/\//i.test(v), 'Use an HTTP or HTTPS tracking URL'),
+    }).optional(),
   }),
 };
 

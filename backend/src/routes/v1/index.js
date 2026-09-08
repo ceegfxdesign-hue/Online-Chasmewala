@@ -3,6 +3,7 @@
  * lands (auth, products, cart, orders, admin, …).
  */
 import { Router } from 'express';
+import contactRoutes from './contact.routes.js';
 import { getLensMedia } from '../../controllers/lensMedia.controller.js';
 import healthRoutes from './health.routes.js';
 import authRoutes from './auth.routes.js';
@@ -23,6 +24,7 @@ const router = Router();
 router.get('/lens-media/:id', getLensMedia);
 
 router.use('/health', healthRoutes);
+router.use('/contact', contactRoutes);
 router.use('/auth', authRoutes);
 router.use('/products', productRoutes);
 router.use('/categories', categoryRoutes);

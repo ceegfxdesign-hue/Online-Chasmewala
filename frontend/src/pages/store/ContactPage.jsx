@@ -7,10 +7,12 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Button } from '@/components/ui/Button';
 import { zodResolver } from '@/lib/validators';
 import { useToast } from '@/contexts/ToastContext';
+import { api, normalizeError } from '@/services/api';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Please enter your name'),
   email: z.string().email('Enter a valid email'),
+  phone: z.string().max(20).regex(/^[0-9+()\s-]*$/, 'Enter a valid phone number').optional(),
   subject: z.string().min(3, 'Please add a subject'),
   message: z.string().min(10, 'Message should be at least 10 characters'),
 });
@@ -30,12 +32,16 @@ export default function ContactPage() {
     formState: { errors, isSubmitting },
   } = useForm({ resolver: zodResolver(contactSchema) });
 
-  const onSubmit = async () => {
-    // Front-end delivery is stubbed until a messaging backend is connected.
-    await new Promise((r) => setTimeout(r, 500));
-    toast.success('Thanks for reaching out! We’ll get back to you within 24 hours.');
-    reset();
+  const onSubmit = async (data) => {
+    try {
+      const response = await api.post('/contact', data);
+      toast.success(response.data.message);
+      reset();
+    } catch (err) {
+      toast.error(normalizeError(err).message);
+    }
   };
+
 
   return (
     <ContentPage
@@ -75,6 +81,7 @@ export default function ContactPage() {
             error={errors.subject?.message}
             {...field('subject')}
           />
+          <Input containerClassName="mt-4" label="Phone (optional)" type="tel" error={errors.phone?.message} {...field('phone')} />
           <Textarea
             containerClassName="mt-4"
             label="Message"

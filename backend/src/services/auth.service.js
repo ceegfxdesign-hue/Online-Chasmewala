@@ -160,6 +160,7 @@ export const authService = {
       user.refreshTokens = []; // invalidate sessions after password reset
     }
     await user.save();
+    if (newPassword) eventBus.emitEvent(EVENTS.PASSWORD_CHANGED, { userId: user._id });
     return { verified: true };
   },
 };

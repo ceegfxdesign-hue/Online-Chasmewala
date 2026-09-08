@@ -101,7 +101,9 @@ describe('Cart & checkout flow', () => {
   });
 
   it('quotes an order with shipping and discount', async () => {
-    await request(app).post('/api/v1/cart/items').set(auth()).send({ productId: product._id, quantity: 2 });
+    const eligible = await request(app).get('/api/v1/products?inStock=true&minPrice=999&limit=1');
+    expect(eligible.body.data).toHaveLength(1);
+    await request(app).post('/api/v1/cart/items').set(auth()).send({ productId: eligible.body.data[0]._id, quantity: 2 });
     const quote = await request(app)
       .post('/api/v1/orders/quote')
       .set(auth())

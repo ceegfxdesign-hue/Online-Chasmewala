@@ -6,7 +6,8 @@
 import { eventBus, EVENTS } from './eventBus.js';
 import { logger } from '../config/logger.js';
 import { notificationService } from '../services/notification.service.js';
-import { orderRepository } from '../repositories/index.js';
+import { orderRepository, userRepository, productRepository, returnRepository } from '../repositories/index.js';
+import { emailService } from '../services/email.service.js';
 
 let registered = false;
 
@@ -21,6 +22,43 @@ const safe = (fn) => async (payload) => {
 export function registerEventHandlers() {
   if (registered) return;
   registered = true;
+
+  // Separate listeners ensure a notification failure never suppresses email delivery.
+  eventBus.on(EVENTS.USER_REGISTERED, safe(async ({ userId }) => {
+    const user = await userRepository.findById(userId);
+    if (user) await emailService.sendWelcome(user);
+  }));
+  eventBus.on(EVENTS.PASSWORD_CHANGED, safe(async ({ userId }) => {
+    const user = await userRepository.findById(userId);
+    if (user) await emailService.sendPasswordChanged(user);
+  }));
+  eventBus.on(EVENTS.ORDER_PLACED, safe(async ({ orderId }) => {
+    const order = await orderRepository.findById(orderId).populate('user', 'name email phone');
+    if (order?.user) await Promise.all([
+      emailService.sendOrderConfirmation(order, order.user),
+      emailService.sendAdminNewOrder(order, order.user),
+    ]);
+  }));
+  eventBus.on(EVENTS.ORDER_STATUS_CHANGED, safe(async ({ orderId, status }) => {
+    const order = await orderRepository.findById(orderId).populate('user', 'name email');
+    if (!order?.user) return;
+    if (status === 'cancelled') await emailService.sendCancellation(order, order.user);
+    else await emailService.sendOrderStatus(order, order.user, status);
+  }));
+  eventBus.on(EVENTS.ORDER_CANCELLED, safe(async ({ orderId }) => {
+    const order = await orderRepository.findById(orderId).populate('user', 'name email');
+    if (order?.user) await emailService.sendCancellation(order, order.user);
+  }));
+  eventBus.on(EVENTS.RETURN_STATUS_CHANGED, safe(async ({ returnNumber, status }) => {
+    if (!['approved', 'refunded'].includes(status)) return;
+    const doc = await returnRepository.findOne({ returnNumber }).populate('order').populate('user', 'name email');
+    if (doc?.order && doc.user) await emailService.sendCancellation(doc.order, doc.user, doc.refund,
+      doc.items.map((item) => item.reason).filter(Boolean).join('; ') || doc.timeline?.at(-1)?.note);
+  }));
+  eventBus.on(EVENTS.LOW_STOCK, safe(async ({ productId, stock }) => {
+    const product = await productRepository.findById(productId);
+    if (product) await emailService.sendLowStock(product, stock);
+  }));
 
   eventBus.on(
     EVENTS.USER_REGISTERED,

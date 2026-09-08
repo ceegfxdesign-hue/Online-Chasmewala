@@ -187,6 +187,8 @@ function PricingSummary({ order }) {
 }
 
 function OrderDetailsModal({ order, open, onClose, onStatusChange, updating }) {
+  const [courier, setCourier] = useState(order?.tracking?.courier || '');
+  const [trackingUrl, setTrackingUrl] = useState(order?.tracking?.url || '');
   if (!order) return null;
 
   const address = order.shippingAddress || {};
@@ -217,10 +219,15 @@ function OrderDetailsModal({ order, open, onClose, onStatusChange, updating }) {
           value={order.status}
           disabled={updating}
           options={ORDER_STATUSES.slice(1)}
-          onChange={(event) => onStatusChange(order._id, event.target.value)}
+          onChange={(event) => onStatusChange(order._id, event.target.value, courier && trackingUrl ? { courier, url: trackingUrl } : undefined)}
         />
       </div>
 
+      <div className="mb-5 grid gap-3 sm:grid-cols-2">
+        <Input label="Courier name" value={courier} onChange={(e) => setCourier(e.target.value)} />
+        <Input label="Tracking URL" type="url" value={trackingUrl} onChange={(e) => setTrackingUrl(e.target.value)} />
+        <p className="text-xs text-navy-500 sm:col-span-2">Fill both fields before changing the status to Shipped to include tracking in the email.</p>
+      </div>
       <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="space-y-5">
           <Card elevation="flat">
@@ -344,9 +351,9 @@ export default function AdminOrdersPage() {
     setSearch(searchDraft.trim());
   };
 
-  const updateStatus = async (id, nextStatus) => {
+  const updateStatus = async (id, nextStatus, tracking) => {
     try {
-      const updated = await updateOrder({ id, status: nextStatus }).unwrap();
+      const updated = await updateOrder({ id, status: nextStatus, ...(tracking ? { tracking } : {}) }).unwrap();
       setSelectedOrder((current) => (current?._id === id ? { ...current, ...updated } : current));
       toast.success('Order status updated');
     } catch (error) {
@@ -574,6 +581,7 @@ export default function AdminOrdersPage() {
       )}
 
       <OrderDetailsModal
+        key={selectedOrder?._id || 'closed'}
         order={selectedOrder}
         open={Boolean(selectedOrder)}
         onClose={() => setSelectedOrder(null)}
