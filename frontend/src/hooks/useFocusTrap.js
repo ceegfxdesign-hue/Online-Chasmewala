@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
@@ -11,6 +11,12 @@ const FOCUSABLE =
  * @param {() => void} [onEscape]
  */
 export function useFocusTrap(ref, active, onEscape) {
+  const onEscapeRef = useRef(onEscape);
+  // Keep Escape current without restarting focus management on every form edit.
+  useEffect(() => {
+    onEscapeRef.current = onEscape;
+  }, [onEscape]);
+
   useEffect(() => {
     if (!active || !ref.current) return undefined;
     const node = ref.current;
@@ -23,7 +29,7 @@ export function useFocusTrap(ref, active, onEscape) {
 
     const onKeyDown = (e) => {
       if (e.key === 'Escape') {
-        onEscape?.();
+        onEscapeRef.current?.();
         return;
       }
       if (e.key !== 'Tab') return;
@@ -48,7 +54,7 @@ export function useFocusTrap(ref, active, onEscape) {
       node.removeEventListener('keydown', onKeyDown);
       previouslyFocused?.focus?.();
     };
-  }, [ref, active, onEscape]);
+  }, [ref, active]);
 }
 
 export default useFocusTrap;

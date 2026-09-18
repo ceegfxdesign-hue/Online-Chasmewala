@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { describe, it, expect, vi } from 'vitest';
 import AdminLensPackagesPage from './AdminLensPackagesPage';
 import { DEFAULT_FRAME_LENSES } from '@/lib/frameLenses';
+import userEvent from '@testing-library/user-event';
 const mocks = vi.hoisted(() => ({ save: vi.fn(), data: null }));
 vi.mock('@/features/admin/adminApi', () => ({
  useGetSettingsQuery: () => ({ data: mocks.data }),
@@ -9,6 +10,25 @@ vi.mock('@/features/admin/adminApi', () => ({
 }));
 vi.mock('@/contexts/ToastContext', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn() }) }));
 describe('dedicated lens package editor', () => {
+ it('keeps focus while typing complete package fields and saves the typed values', async () => {
+  const user = userEvent.setup();
+  mocks.save.mockClear();
+  mocks.data = { frameLensConfiguration: structuredClone(DEFAULT_FRAME_LENSES) };
+  mocks.save.mockImplementation(payload => ({ unwrap: async () => { mocks.data = payload; } }));
+  render(<AdminLensPackagesPage />);
+  await user.click(screen.getByRole('button', { name: 'Add Lens Package' }));
+  const modal = within(screen.getByRole('dialog'));
+  for (const [label, value] of [[/Package ID/, 'focus-test'], [/Package name/, 'Premium Lens Package'], ['Warranty', '1 Year Warranty']]) {
+   const input = modal.getByLabelText(label);
+   await user.type(input, value);
+   expect(input).toHaveValue(value);
+   expect(input).toHaveFocus();
+  }
+  await user.click(modal.getByRole('button', { name: 'Save package' }));
+  await waitFor(() => expect(mocks.save).toHaveBeenCalledOnce());
+  expect(mocks.data.frameLensConfiguration.packages.at(-1)).toMatchObject({ id: 'focus-test', name: 'Premium Lens Package', warranty: '1 Year Warranty' });
+  mocks.save.mockClear();
+ });
  it('creates a full package, edits details and deletes without changing other settings', async () => {
   mocks.data = { frameLensConfiguration: structuredClone(DEFAULT_FRAME_LENSES) };
   mocks.save.mockImplementation(payload => ({ unwrap: async () => { mocks.data = payload; } }));
