@@ -59,7 +59,7 @@ export const updateCouponSchema = {
 
 export const createBannerSchema = {
   body: z.object({
-    title: z.string().trim().min(1),
+    title: z.string().trim().max(120).optional(),
     subtitle: z.string().optional(),
     image: z.string().min(1),
     mobileImage: z.string().optional(),

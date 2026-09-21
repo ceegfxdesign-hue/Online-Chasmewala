@@ -14,14 +14,14 @@ vi.mock('@/services/api', () => ({
 import App from './App';
 
 describe('App', () => {
-  it('renders the routed home page with brand and catalog hero', async () => {
+  it('renders the routed home page with brand and image-only catalog banner', async () => {
     render(
       <HelmetProvider>
         <App />
       </HelmetProvider>
     );
     // Home is lazy-loaded; allow extra time for the chunk to resolve in CI.
-    expect(await screen.findByText(/Trending style catalog/i, {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Featured banners' }, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.getAllByText(/Online Chasmewala/i).length).toBeGreaterThan(0);
   });
 });

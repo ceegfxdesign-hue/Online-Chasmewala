@@ -221,6 +221,24 @@ describe('Admin APIs', () => {
     expect(second.body.data).not.toHaveProperty('ctaLabel');
     expect(second.body.data).not.toHaveProperty('ctaLink');
 
+    const imageOnly = await request(app)
+      .post('/api/v1/admin/banners')
+      .set(asAdmin())
+      .send({ image: 'https://picsum.photos/seed/image-only/1200/500', placement: 'hero', order: 2 });
+    expect(imageOnly.status).toBe(201);
+    expect(imageOnly.body.data.title).toBeUndefined();
+
+    const linked = await request(app)
+      .patch(`/api/v1/admin/banners/${imageOnly.body.data._id}`)
+      .set(asAdmin())
+      .send({ ctaLink: '/products?category=eyeglasses' });
+    expect(linked.body.data.ctaLink).toBe('/products?category=eyeglasses');
+    const unlinked = await request(app)
+      .patch(`/api/v1/admin/banners/${imageOnly.body.data._id}`)
+      .set(asAdmin())
+      .send({ ctaLink: '' });
+    expect(unlinked.body.data.ctaLink).toBe('');
+
     const clearedSchedule = await request(app)
       .patch(`/api/v1/admin/banners/${second.body.data._id}`)
       .set(asAdmin())

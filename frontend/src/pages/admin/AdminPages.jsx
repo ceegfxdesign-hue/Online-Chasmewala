@@ -87,12 +87,11 @@ export function BannersPage() {
     const body = Object.fromEntries(form);
     const isEditing = Boolean(editing?._id);
 
-    body.title = body.title.trim();
     body.image = body.image.trim();
     body.order = Number.parseInt(body.order || '0', 10);
     body.isActive = form.get('isActive') === 'on';
 
-    ['subtitle', 'mobileImage', 'ctaLabel', 'ctaLink'].forEach((key) => {
+    ['title', 'mobileImage', 'ctaLink'].forEach((key) => {
       body[key] = body[key]?.trim() || '';
       if (!isEditing && !body[key]) delete body[key];
     });
@@ -144,14 +143,14 @@ export function BannersPage() {
     >
       <div className="mb-4 rounded-2xl border border-navy-100 bg-surface px-4 py-3 text-sm text-navy-600">
         <span className="font-semibold text-navy-900">{banners.length} banner{banners.length === 1 ? '' : 's'}</span>
-        {' '}configured. Add as many banners as needed, then control their position, display order and active dates independently.
+        {' '}configured. Homepage banners are image-only; add an image destination to make the full banner clickable, or clear it to remove the click action.
       </div>
 
       {isLoading ? (
         <Loading />
       ) : (
         <Table
-          columns={['Preview', 'Content', 'Placement', 'Schedule', 'Order', 'Status', 'Actions']}
+          columns={['Preview', 'Admin label / image link', 'Placement', 'Schedule', 'Order', 'Status', 'Actions']}
           rows={banners}
           empty="No banners yet. Add your first banner to begin."
           render={(banner) => (
@@ -164,13 +163,10 @@ export function BannersPage() {
                 />
               </td>
               <td className="max-w-xs px-4 py-3">
-                <span className="block font-medium text-navy-900">{banner.title}</span>
-                {banner.subtitle && (
-                  <span className="mt-0.5 block truncate text-xs text-navy-500">{banner.subtitle}</span>
-                )}
-                {banner.ctaLabel && (
-                  <span className="mt-1 block text-xs font-medium text-brand-600">{banner.ctaLabel}</span>
-                )}
+                <span className="block font-medium text-navy-900">{banner.title || 'Untitled banner'}</span>
+                <span className="mt-1 block truncate text-xs text-navy-500">
+                  {banner.ctaLink ? `Image link: ${banner.ctaLink}` : 'Image is not clickable'}
+                </span>
               </td>
               <td className="px-4 py-3 capitalize">
                 {banner.placement || 'hero'}
@@ -199,16 +195,16 @@ export function BannersPage() {
         open={editing !== null}
         onClose={() => setEditing(null)}
         title={`${editing?._id ? 'Edit' : 'Add'} banner`}
-        description="Each saved banner is a separate slide that can be ordered and scheduled independently."
+        description="Homepage banners display only the image. Set an optional destination to make the full image clickable."
         size="xl"
       >
         <form onSubmit={submit} className="grid gap-4 md:grid-cols-2">
-          <Input name="title" label="Banner title" defaultValue={editing?.title} required />
           <Input
-            name="subtitle"
-            label="Subtitle (optional)"
-            defaultValue={editing?.subtitle}
-            placeholder="Supporting text shown below the title"
+            name="title"
+            label="Admin label / image description (optional)"
+            defaultValue={editing?.title}
+            placeholder="e.g. Eyeglasses 25% off"
+            helper="Shown only in the admin dashboard and used as the image description for screen readers. It is never displayed on the homepage."
           />
           <div className="md:col-span-2">
             <Input
@@ -229,17 +225,11 @@ export function BannersPage() {
             />
           </div>
           <Input
-            name="ctaLabel"
-            label="Button label (optional)"
-            defaultValue={editing?.ctaLabel}
-            placeholder="e.g. Shop eyeglasses"
-          />
-          <Input
             name="ctaLink"
-            label="Banner/CTA destination link (optional)"
+            label="Full-image destination link (optional)"
             defaultValue={editing?.ctaLink}
             placeholder="e.g. /products?category=eyeglasses"
-            helper="Leave empty when this banner should not link anywhere."
+            helper="The whole banner image links here. Clear this field and save to remove the click action."
           />
           <Select
             name="placement"
@@ -250,16 +240,6 @@ export function BannersPage() {
               { value: 'secondary', label: 'Secondary banner' },
               { value: 'strip', label: 'Promotional strip' },
               { value: 'category', label: 'Category banner' },
-            ]}
-          />
-          <Select
-            name="theme"
-            label="Text colour"
-            defaultValue={editing?.theme || 'dark'}
-            helper="This only changes banner text and controls. Your image stays unchanged."
-            options={[
-              { value: 'dark', label: 'White text' },
-              { value: 'light', label: 'Navy text' },
             ]}
           />
           <Input

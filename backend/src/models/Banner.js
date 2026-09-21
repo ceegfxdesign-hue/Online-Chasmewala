@@ -3,7 +3,9 @@ import mongoose from 'mongoose';
 /** Home / marketing banner managed from the admin panel. */
 const bannerSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true },
+    // This is an admin label and accessible image description. Homepage hero
+    // banners are intentionally image-only, so the field is optional.
+    title: { type: String, trim: true },
     subtitle: { type: String },
     image: { type: String, required: true },
     mobileImage: { type: String },
