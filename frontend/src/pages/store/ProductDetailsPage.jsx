@@ -547,6 +547,11 @@ export default function ProductDetailsPage() {
         availableLensPackages={product.availableLensPackages}
         framePrice={product.price}
         frameMrp={product.mrp}
+        frameName={product.name}
+        frameImage={product.images?.[0]}
+        frameColor={selectedColourLabel}
+        frameSize={product.frameSize}
+        frameShape={product.frameShape}
         selectedPrescription={prescription}
         selectedOption={lens}
         onComplete={({ lensOption, prescription: selectedPrescription }) => {

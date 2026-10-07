@@ -1,9 +1,15 @@
-/** Lenskart-style package card with optical artwork and transparent combined pricing. */
-import { FiChevronRight, FiPlay, FiShield } from 'react-icons/fi';
+import { FiCheck, FiChevronRight, FiPlay, FiShield } from 'react-icons/fi';
 import { formatPrice } from '@/lib/format';
 import { cn } from '@/utils/cn';
 
-const ribbonColors = { blue: 'bg-[#0060D5]', red: 'bg-[#D12E2E]', green: 'bg-[#0A8367]' };
+const ribbonColors = {
+  blue: 'bg-[#0060D5]',
+  red: 'bg-[#D12E2E]',
+  green: 'bg-[#0A8367]',
+  brand: 'bg-brand-600',
+  amber: 'bg-amber-600',
+  purple: 'bg-purple-600',
+};
 export function PowerLensIllustration({ kind }) {
   return (
     <svg viewBox="0 0 48 48" className="h-10 w-10" aria-hidden="true" fill="none">
@@ -107,35 +113,58 @@ export function LensPackageCard({
         </div>
         <div className="min-w-0 p-4">
           <div className="flex w-full items-start justify-between gap-3 text-left">
-            <span className="font-semibold text-navy-900">{pack.name}</span>
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#000042] text-white">
-              <FiChevronRight />
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-base font-bold text-navy-900">{pack.name}</span>
+                {pack.badge && (
+                  <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700">
+                    {pack.badge}
+                  </span>
+                )}
+              </div>
+              <p className="mt-0.5 text-xs text-navy-500">
+                {Number(pack.price) === 0 ? (
+                  <span className="font-semibold text-success">Included Free with Frame</span>
+                ) : (
+                  <span>+{formatPrice(pack.price)} lens upgrade</span>
+                )}
+              </p>
+            </div>
+            <span
+              className={cn(
+                'flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors',
+                selected ? 'bg-brand-500 text-white' : 'bg-[#000042] text-white'
+              )}
+            >
+              {selected ? <FiCheck className="h-4 w-4" /> : <FiChevronRight className="h-4 w-4" />}
             </span>
           </div>
-          <ul className="mt-3 space-y-1.5 text-sm text-navy-500">
+          <ul className="mt-3 space-y-1.5 text-sm text-navy-600">
             {pack.features?.map((feature, i) => (
-              <li key={i} className="flex gap-2">
-                <span aria-hidden="true">{pack.featureIcons?.[i] || '⚡'}</span>
-                <span>{feature}</span>
+              <li key={i} className="flex items-center gap-2">
+                <span aria-hidden="true" className="shrink-0 text-xs">{pack.featureIcons?.[i] || '⚡'}</span>
+                <span className="text-xs sm:text-sm">{feature}</span>
               </li>
             ))}
           </ul>
           <button
             type="button"
             onClick={onDetails}
-            className="pointer-events-auto relative z-10 mt-2 text-xs font-semibold text-brand-600 hover:underline"
+            className="pointer-events-auto relative z-10 mt-2.5 inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline"
           >
             View Details &gt;
           </button>
           <div className="mt-3 flex items-end justify-between gap-3 border-t border-dashed border-navy-100 pt-3">
             <span className="text-xs font-semibold text-navy-600">{pack.couponText}</span>
-            <span className="text-right">
-              <span className="block text-[10px] text-navy-400">Frame + Lens</span>
-              <span className="text-sm font-semibold text-blue-600">{formatPrice(total)}</span>
-              {original > total && (
-                <del className="ml-1 text-xs text-navy-400">{formatPrice(original)}</del>
-              )}
-            </span>
+            <div className="text-right">
+              <span className="block text-[10px] uppercase tracking-wider text-navy-400">Total (Frame + Lens)</span>
+              <div className="flex items-baseline justify-end gap-1.5">
+                <span className="text-sm sm:text-base font-bold text-blue-600">{formatPrice(total)}</span>
+                {original > total && (
+                  <del className="text-xs text-navy-400">{formatPrice(original)}</del>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
