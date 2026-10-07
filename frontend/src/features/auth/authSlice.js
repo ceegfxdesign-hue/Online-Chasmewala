@@ -9,9 +9,10 @@ import { api, setAccessToken, normalizeError } from '@/services/api';
 export const bootstrapAuth = createAsyncThunk('auth/bootstrap', async (_, { rejectWithValue }) => {
   try {
     // A valid refresh cookie yields a fresh access token + user.
-    const { data } = await api.post('/auth/refresh');
-    setAccessToken(data.data.accessToken);
-    return data.data.user;
+    const res = await api.post('/auth/refresh');
+    if (!res?.data?.data?.accessToken) return rejectWithValue(null);
+    setAccessToken(res.data.data.accessToken);
+    return res.data.data.user;
   } catch {
     return rejectWithValue(null);
   }
@@ -19,9 +20,14 @@ export const bootstrapAuth = createAsyncThunk('auth/bootstrap', async (_, { reje
 
 export const login = createAsyncThunk('auth/login', async (credentials, { rejectWithValue }) => {
   try {
-    const { data } = await api.post('/auth/login', credentials);
-    setAccessToken(data.data.accessToken);
-    return data.data.user;
+    const res = await api.post('/auth/login', credentials);
+    if (!res?.data?.data?.accessToken) {
+      return rejectWithValue({
+        message: res?.data?.message || 'Invalid server response. Please try again.',
+      });
+    }
+    setAccessToken(res.data.data.accessToken);
+    return res.data.data.user;
   } catch (err) {
     return rejectWithValue(normalizeError(err));
   }
@@ -29,9 +35,14 @@ export const login = createAsyncThunk('auth/login', async (credentials, { reject
 
 export const register = createAsyncThunk('auth/register', async (payload, { rejectWithValue }) => {
   try {
-    const { data } = await api.post('/auth/register', payload);
-    setAccessToken(data.data.accessToken);
-    return data.data.user;
+    const res = await api.post('/auth/register', payload);
+    if (!res?.data?.data?.accessToken) {
+      return rejectWithValue({
+        message: res?.data?.message || 'Invalid server response. Please try again.',
+      });
+    }
+    setAccessToken(res.data.data.accessToken);
+    return res.data.data.user;
   } catch (err) {
     return rejectWithValue(normalizeError(err));
   }

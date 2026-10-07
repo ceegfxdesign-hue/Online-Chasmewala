@@ -5,6 +5,9 @@
   RewriteEngine On
   RewriteBase /
 
+  # Do NOT rewrite API routes to index.html
+  RewriteRule ^api(/.*)?$ - [L]
+
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
