@@ -21,9 +21,9 @@ export function AdminLayout() {
   return (
     <div className="min-h-screen bg-navy-50">
       <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
-      <header className="sticky top-0 z-20 border-b border-navy-100 bg-surface px-4 py-3 lg:hidden"><Link to={ROUTES.admin}><Logo /></Link></header>
+      <header className="sticky top-0 z-20 border-b border-navy-100 bg-surface px-4 py-3 lg:hidden"><Link to={ROUTES.admin}><Logo className="h-9 w-auto" /></Link></header>
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col overflow-hidden border-r border-navy-100 bg-surface p-5 lg:flex">
-        <Link to={ROUTES.admin} className="mb-8"><Logo /></Link>
+        <Link to={ROUTES.admin} className="mb-8 block"><Logo className="h-11 w-auto" /></Link>
         <nav aria-label="Admin" className="admin-sidebar-scrollbar min-h-0 max-h-[32rem] flex-1 space-y-1 overflow-y-scroll overscroll-contain pr-3">
           {navigation.map(([to, label, Icon, end]) => <NavLink key={to} to={to} end={end} className={({ isActive }) => cn('flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium', isActive ? 'bg-brand-500 text-white' : 'text-navy-600 hover:bg-navy-100')}><Icon className="h-4 w-4" />{label}</NavLink>)}
         </nav>

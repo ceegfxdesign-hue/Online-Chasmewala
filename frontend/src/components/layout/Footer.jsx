@@ -34,7 +34,7 @@ export function Footer() {
       <div className="container-page py-12 sm:py-16">
         <div className="grid gap-10 md:grid-cols-2 xl:grid-cols-[1.35fr_1fr_1.05fr_1.25fr]">
           <div>
-            <Logo className="!h-16 !w-16 sm:!h-20 sm:!w-20" />
+            <Logo variant="light" />
             <p className="mt-5 max-w-xs text-sm leading-6 text-navy-200">
               Eyewear selected for everyday clarity, confident style and a more comfortable online shopping experience.
             </p>

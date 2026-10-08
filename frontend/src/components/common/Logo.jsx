@@ -1,16 +1,38 @@
 import { cn } from '@/utils/cn';
 
 /** Shared brand logo used by the storefront, account and admin layouts. */
-export function Logo({ className, compactOnMobile = false }) {
+export function Logo({ className, compactOnMobile = false, variant = 'default' }) {
+  if (variant === 'light') {
+    return (
+      <span
+        className={cn(
+          'inline-flex items-center rounded-2xl bg-white px-3 py-1.5 shadow-xs ring-1 ring-black/5',
+          className
+        )}
+      >
+        <img
+          src="/brand-logo.jpeg"
+          width="180"
+          height="120"
+          alt="Online Chasmewala"
+          className={cn(
+            'shrink-0 object-contain',
+            compactOnMobile ? 'h-8 w-auto sm:h-9 sm:w-auto' : 'h-10 w-auto sm:h-12 sm:w-auto'
+          )}
+        />
+      </span>
+    );
+  }
+
   return (
     <img
       src="/brand-logo.jpeg"
-      width="96"
-      height="96"
+      width="180"
+      height="120"
       alt="Online Chasmewala"
       className={cn(
-        'shrink-0 rounded-full object-cover',
-        compactOnMobile ? 'h-10 w-10 sm:h-11 sm:w-11' : 'h-16 w-16 sm:h-20 sm:w-20',
+        'shrink-0 object-contain',
+        compactOnMobile ? 'h-9 w-auto sm:h-11 sm:w-auto' : 'h-11 w-auto sm:h-14 sm:w-auto',
         className
       )}
     />
@@ -18,3 +40,4 @@ export function Logo({ className, compactOnMobile = false }) {
 }
 
 export default Logo;
+
