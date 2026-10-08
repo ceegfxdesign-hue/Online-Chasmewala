@@ -70,7 +70,7 @@ export function LensSelectionDrawer({
   frameImage,
   frameColor,
   frameSize,
-  frameShape,
+  _frameShape,
   availableLensPackages,
   selectedOption,
   selectedPrescription,
@@ -825,7 +825,7 @@ export function LensSelectionDrawer({
             </div>
           </div>
           <div className="rounded-xl bg-brand-50 p-3 text-xs text-brand-800">
-            💡 <em>Tip: If you're unsure about any number, simply choose <strong>Upload Prescription</strong> and our optometrists will read and verify it for you!</em>
+            💡 <em>Tip: If you&apos;re unsure about any number, simply choose <strong>Upload Prescription</strong> and our optometrists will read and verify it for you!</em>
           </div>
         </div>
       </Modal>
