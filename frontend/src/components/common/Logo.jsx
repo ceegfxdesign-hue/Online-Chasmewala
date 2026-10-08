@@ -1,4 +1,5 @@
 import { cn } from '@/utils/cn';
+import brandLogo from '@/assets/brand-logo.jpeg';
 
 /** Shared brand logo used by the storefront, account and admin layouts. */
 export function Logo({ className, compactOnMobile = false, variant = 'default' }) {
@@ -11,7 +12,7 @@ export function Logo({ className, compactOnMobile = false, variant = 'default' }
         )}
       >
         <img
-          src="/brand-logo.jpeg"
+          src={brandLogo}
           width="180"
           height="120"
           alt="Online Chasmewala"
@@ -26,7 +27,7 @@ export function Logo({ className, compactOnMobile = false, variant = 'default' }
 
   return (
     <img
-      src="/brand-logo.jpeg"
+      src={brandLogo}
       width="180"
       height="120"
       alt="Online Chasmewala"
