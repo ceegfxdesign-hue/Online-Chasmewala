@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   FiChevronLeft,
@@ -12,27 +12,18 @@ import { getOptimizedImageUrl, getResponsiveImageSrcSet } from '@/lib/images';
 import { cn } from '@/utils/cn';
 
 /**
- * Product image gallery: thumbnail rail, main image with hover-to-zoom (desktop)
+ * Product image gallery: thumbnail rail, main image,
  * and a fullscreen lightbox with keyboard/next-prev navigation.
  */
 export function ProductGallery({ images = [], alt, rating = 0, reviewCount = 0 }) {
   const [active, setActive] = useState(0);
-  const [zoom, setZoom] = useState({ show: false, x: 50, y: 50 });
   const [lightbox, setLightbox] = useState(false);
-  const mainRef = useRef(null);
 
   const safeImages = useMemo(
     () => (images.length ? images : ['https://picsum.photos/seed/oc-fallback/800/800']),
     [images]
   );
   const current = safeImages[active];
-
-  const onMouseMove = (e) => {
-    const rect = mainRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setZoom({ show: true, x, y });
-  };
 
   const step = useCallback(
     (dir) => setActive((i) => (i + dir + safeImages.length) % safeImages.length),
@@ -92,13 +83,7 @@ export function ProductGallery({ images = [], alt, rating = 0, reviewCount = 0 }
             {reviewCount > 0 && <span className="text-navy-400">({reviewCount})</span>}
           </div>
         )}
-        <div
-          ref={mainRef}
-          onMouseEnter={() => setZoom((z) => ({ ...z, show: true }))}
-          onMouseLeave={() => setZoom((z) => ({ ...z, show: false }))}
-          onMouseMove={onMouseMove}
-          className="group relative aspect-square overflow-hidden rounded-2xl bg-surface-subtle"
-        >
+        <div className="group relative aspect-square overflow-hidden rounded-2xl bg-surface-subtle">
           <img
             src={getOptimizedImageUrl(current, 900)}
             srcSet={getResponsiveImageSrcSet(current, [480, 720, 900])}
@@ -107,8 +92,7 @@ export function ProductGallery({ images = [], alt, rating = 0, reviewCount = 0 }
             height="900"
             alt={alt}
             decoding="async"
-            className="h-full w-full object-cover transition-transform duration-200"
-            style={zoom.show ? { transform: 'scale(1.6)', transformOrigin: `${zoom.x}% ${zoom.y}%` } : undefined}
+            className="h-full w-full object-cover"
           />
           {safeImages.length > 1 && (
             <>
