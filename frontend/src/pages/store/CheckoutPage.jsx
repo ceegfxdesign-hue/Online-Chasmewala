@@ -13,12 +13,14 @@ import { OrderSummary } from '@/components/cart/OrderSummary';
 import { zodResolver } from '@/lib/validators';
 import {
   useMergeCartMutation,
+  useCreatePaymentIntentMutation,
   usePlaceOrderMutation,
 } from '@/features/cart/cartApi';
 import { selectCartItems, selectCartSubtotal, selectCoupon, clearCart } from '@/features/cart/cartSlice';
 import { selectIsAuthenticated, selectUser } from '@/features/auth/authSlice';
 import { useToast } from '@/contexts/ToastContext';
-import { formatPrice } from '@/lib/format';
+import { formatPrice, extractErrorMessage } from '@/lib/format';
+import { loadRazorpayScript } from '@/lib/razorpay';
 import { ROUTES } from '@/constants/routes';
 import { cn } from '@/utils/cn';
 
@@ -55,9 +57,12 @@ export default function CheckoutPage() {
 
   const [deliveryMethod, setDeliveryMethod] = useState('standard');
   const [paymentMethod, setPaymentMethod] = useState('card');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const [mergeCart] = useMergeCartMutation();
+  const [createPaymentIntent, { isLoading: preparingPayment }] = useCreatePaymentIntentMutation();
   const [placeOrder, { isLoading: placing }] = usePlaceOrderMutation();
+  const isSubmitting = placing || preparingPayment || isProcessing;
 
   const defaultAddress = user?.addresses?.find((a) => a.isDefault) || user?.addresses?.[0];
   const {
@@ -88,8 +93,16 @@ export default function CheckoutPage() {
     deliveryMethod === 'express' ? SHIPPING.express : afterDiscount >= FREE_SHIPPING ? 0 : SHIPPING.standard;
   const total = afterDiscount + shippingFee;
 
+  const handleOrderCompletion = (order) => {
+    toast.success('Order placed successfully!');
+    navigate(ROUTES.orderSuccess(order.orderNumber), { state: { order } });
+    dispatch(clearCart());
+  };
+
   const onSubmit = async (address) => {
     try {
+      setIsProcessing(true);
+
       // Sync the client cart to the server (source of truth for pricing/stock).
       await mergeCart(
         items.map((i) => ({
@@ -98,25 +111,111 @@ export default function CheckoutPage() {
           color: i.color,
           quantity: i.quantity,
           lensOption: i.lensOption,
+          prescription: i.prescription,
         }))
       ).unwrap();
 
-      const order = await placeOrder({
-        shippingAddress: { ...address, country: 'India' },
+      if (paymentMethod === 'cod') {
+        const order = await placeOrder({
+          shippingAddress: { ...address, country: 'India' },
+          deliveryMethod,
+          couponCode: coupon?.code,
+          paymentMethod,
+          paymentToken: undefined,
+        }).unwrap();
+
+        handleOrderCompletion(order);
+        return;
+      }
+
+      // Online payment (Card, UPI, Netbanking): create intent
+      const intent = await createPaymentIntent({
         deliveryMethod,
         couponCode: coupon?.code,
-        paymentMethod,
-        paymentToken: paymentMethod === 'cod' ? undefined : 'tok_ok',
       }).unwrap();
 
-      toast.success('Order placed successfully!');
-      navigate(ROUTES.orderSuccess(order.orderNumber), { state: { order } });
-      dispatch(clearCart());
+      if (intent.provider === 'razorpay') {
+        const loaded = await loadRazorpayScript();
+        if (!loaded) {
+          toast.error('Could not load Razorpay checkout. Please check your connection or choose Cash on Delivery.');
+          setIsProcessing(false);
+          return;
+        }
+
+        const rzp = new window.Razorpay({
+          key: intent.keyId,
+          amount: intent.amount,
+          currency: intent.currency || 'INR',
+          name: 'Online Chasmewala',
+          description: 'Eyewear & Optical Order',
+          image: '/brand-logo.jpeg',
+          order_id: intent.orderId,
+          prefill: {
+            name: address.fullName,
+            contact: address.phone,
+            email: user?.email || '',
+          },
+          notes: {
+            deliveryMethod,
+            address: `${address.line1}, ${address.city}`,
+          },
+          theme: {
+            color: '#00A6A6',
+          },
+          handler: async (response) => {
+            try {
+              setIsProcessing(true);
+              const order = await placeOrder({
+                shippingAddress: { ...address, country: 'India' },
+                deliveryMethod,
+                couponCode: coupon?.code,
+                paymentMethod,
+                paymentToken: JSON.stringify(response),
+              }).unwrap();
+
+              handleOrderCompletion(order);
+            } catch (err) {
+              if (err?.status === 402) {
+                navigate(ROUTES.orderFailed, { state: { reason: err.message || 'Payment verification failed' } });
+              } else {
+                toast.error(extractErrorMessage(err, 'Could not complete your order'));
+              }
+            } finally {
+              setIsProcessing(false);
+            }
+          },
+          modal: {
+            ondismiss: () => {
+              toast.info('Payment cancelled.');
+              setIsProcessing(false);
+            },
+          },
+        });
+
+        rzp.on('payment.failed', (response) => {
+          toast.error(response?.error?.description || 'Payment failed. Please try again.');
+          setIsProcessing(false);
+        });
+
+        rzp.open();
+      } else {
+        // Mock payment provider fallback (for testing without live credentials)
+        const order = await placeOrder({
+          shippingAddress: { ...address, country: 'India' },
+          deliveryMethod,
+          couponCode: coupon?.code,
+          paymentMethod,
+          paymentToken: 'tok_ok',
+        }).unwrap();
+
+        handleOrderCompletion(order);
+      }
     } catch (err) {
+      setIsProcessing(false);
       if (err?.status === 402) {
         navigate(ROUTES.orderFailed, { state: { reason: err.message } });
       } else {
-        toast.error(err?.message || 'Could not place your order');
+        toast.error(extractErrorMessage(err, 'Could not place your order'));
       }
     }
   };
@@ -204,7 +303,7 @@ export default function CheckoutPage() {
               </div>
               {paymentMethod !== 'cod' && (
                 <p className="mt-3 flex items-center gap-1.5 text-xs text-navy-400">
-                  <FiLock className="h-3.5 w-3.5" /> This is a demo checkout — no real payment is processed.
+                  <FiLock className="h-3.5 w-3.5" /> Razorpay Test Mode — safe card and UPI payments.
                 </p>
               )}
             </section>
@@ -221,7 +320,7 @@ export default function CheckoutPage() {
               freeShippingThreshold={FREE_SHIPPING}
               className="sticky top-24"
             >
-              <Button type="submit" fullWidth size="lg" className="mt-5" loading={placing} leftIcon={<FiLock />}>
+              <Button type="submit" fullWidth size="lg" className="mt-5" loading={isSubmitting} leftIcon={<FiLock />}>
                 Place Order · {formatPrice(total)}
               </Button>
               <p className="mt-3 text-center text-xs text-navy-400">

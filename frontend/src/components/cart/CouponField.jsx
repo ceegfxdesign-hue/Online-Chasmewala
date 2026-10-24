@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { useValidateCouponMutation, useGetActiveCouponsQuery } from '@/features/cart/cartApi';
 import { selectIsAuthenticated } from '@/features/auth/authSlice';
 import { useToast } from '@/contexts/ToastContext';
-import { formatPrice } from '@/lib/format';
+import { formatPrice, extractErrorMessage } from '@/lib/format';
 
 /**
  * Coupon entry + available-offers list. On success it calls `onApply({ code,
@@ -30,7 +30,7 @@ export function CouponField({ subtotal, applied, onApply, onRemove }) {
       toast.success(`Coupon ${res.code} applied — you saved ${formatPrice(res.discount)}`);
       setCode('');
     } catch (err) {
-      toast.error(err?.message || 'Invalid coupon');
+      toast.error(extractErrorMessage(err, 'Invalid coupon'));
     }
   };
 

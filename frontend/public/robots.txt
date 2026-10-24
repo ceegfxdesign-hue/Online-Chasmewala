@@ -12,3 +12,5 @@ Disallow: /signup
 Disallow: /forgot-password
 Disallow: /verify-otp
 Disallow: /reset-password
+
+Sitemap: https://onlinechasmewala.com/sitemap.xml

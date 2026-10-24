@@ -1,7 +1,7 @@
 import { z } from 'zod';
 const id = z
   .string()
-  .regex(/^[a-z0-9-]+$/)
+  .regex(/^[a-z0-9-]+$/, 'Use lowercase letters, numbers, and hyphens only (e.g. blu-thin)')
   .max(60);
 const text = z.string().trim().max(180);
 const url = z
@@ -41,16 +41,16 @@ export const frameLensSchema = z
         z.object({
           id,
           name: text.min(1),
-          description: text.optional(),
+          description: z.string().trim().max(2000).optional(),
           price: z.number().min(0),
           features: z.array(text.min(1)).max(20).optional(),
           ribbonText: text.optional(),
-          ribbonColor: z.enum(['blue', 'red', 'green', 'none']).optional(),
+          ribbonColor: z.enum(['blue', 'red', 'green', 'none']).or(z.literal('')).optional(),
           warranty: text.optional(),
           mrp: z.number().min(0).optional(),
           couponText: text.optional(),
           featureIcons: z
-            .array(z.enum(['⚡', '🛡️', '👨‍💻', '😇', '☀️']))
+            .array(z.string().trim().min(1).max(12))
             .max(20)
             .optional(),
           videoUrl: url.optional(),

@@ -7,6 +7,10 @@ export const orderController = {
     const data = await orderService.quote(req.user._id, req.body);
     return sendSuccess(res, { data });
   }),
+  createPaymentIntent: asyncHandler(async (req, res) => {
+    const data = await orderService.createPaymentIntent(req.user._id, req.body);
+    return sendSuccess(res, { data });
+  }),
   create: asyncHandler(async (req, res) => {
     const data = await orderService.create(req.user._id, req.body);
     return sendCreated(res, { message: 'Order placed', data });

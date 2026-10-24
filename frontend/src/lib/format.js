@@ -50,3 +50,22 @@ export const titleCase = (str = '') =>
   str
     .replace(/[-_]/g, ' ')
     .replace(/\w\S*/g, (t) => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase());
+
+/**
+ * Extract a readable error message from API errors (RTK Query unwrapped, RTK Query raw, Axios, or Error instances).
+ * Prioritizes field-level validation errors (e.g. "tracking.url: Use an HTTP or HTTPS tracking URL").
+ */
+export const extractErrorMessage = (error, fallback = 'Operation failed') => {
+  if (!error) return fallback;
+  if (typeof error === 'string') return error;
+
+  const payload = error.response?.data || error.data || error;
+  const fieldErrors = payload?.errors || error.errors;
+  if (Array.isArray(fieldErrors) && fieldErrors.length > 0) {
+    return fieldErrors
+      .map((err) => (err.field ? `${err.field}: ${err.message}` : err.message || JSON.stringify(err)))
+      .join('; ');
+  }
+
+  return payload?.message || error.message || fallback;
+};

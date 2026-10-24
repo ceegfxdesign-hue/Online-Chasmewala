@@ -52,6 +52,10 @@ const schema = z
     CLOUDINARY_API_KEY: z.string().optional(),
     CLOUDINARY_API_SECRET: z.string().optional(),
 
+    RAZORPAY_KEY_ID: z.string().trim().optional(),
+    RAZORPAY_KEY_SECRET: z.string().trim().optional(),
+    RAZORPAY_WEBHOOK_SECRET: z.string().trim().optional(),
+
     SEED_ADMIN_EMAIL: z.string().email().default('admin@onlinechasmewala.com'),
     SEED_ADMIN_PASSWORD: z.string().min(6).default('Admin@123'),
   })
@@ -86,6 +90,42 @@ const schema = z
           message: 'Mock payments are forbidden in production',
         });
       }
+      if (val.OTP_PROVIDER === 'mock') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['OTP_PROVIDER'],
+          message: 'Mock OTP provider is forbidden in production',
+        });
+      }
+      if (val.UPLOAD_PROVIDER === 'mock') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['UPLOAD_PROVIDER'],
+          message: 'Mock upload provider is forbidden in production',
+        });
+      }
+      if (
+        !val.SEED_ADMIN_PASSWORD ||
+        val.SEED_ADMIN_PASSWORD === 'Admin@123' ||
+        val.SEED_ADMIN_PASSWORD.length < 12 ||
+        !/(?=.*[A-Za-z])(?=.*\d)/.test(val.SEED_ADMIN_PASSWORD) ||
+        /^(admin|default|password|123456)/i.test(val.SEED_ADMIN_PASSWORD)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['SEED_ADMIN_PASSWORD'],
+          message:
+            'Production rejects default or weak SEED_ADMIN_PASSWORD (must be at least 12 characters and not default)',
+        });
+      }
+      if (!val.SEED_ADMIN_EMAIL || val.SEED_ADMIN_EMAIL === 'admin@onlinechasmewala.com') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['SEED_ADMIN_EMAIL'],
+          message:
+            'Production rejects default SEED_ADMIN_EMAIL (use a dedicated production administrator address)',
+        });
+      }
     }
     if (val.UPLOAD_PROVIDER === 'cloudinary') {
       for (const key of ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET']) {
@@ -96,6 +136,22 @@ const schema = z
             message: `${key} is required when UPLOAD_PROVIDER=cloudinary`,
           });
         }
+      }
+    }
+    if (val.PAYMENT_PROVIDER === 'razorpay') {
+      if (!val.RAZORPAY_KEY_ID) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['RAZORPAY_KEY_ID'],
+          message: 'RAZORPAY_KEY_ID is required when PAYMENT_PROVIDER=razorpay',
+        });
+      }
+      if (!val.RAZORPAY_KEY_SECRET) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['RAZORPAY_KEY_SECRET'],
+          message: 'RAZORPAY_KEY_SECRET is required when PAYMENT_PROVIDER=razorpay',
+        });
       }
     }
   });

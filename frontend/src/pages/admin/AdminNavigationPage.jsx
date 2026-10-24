@@ -4,6 +4,7 @@ import { Button, Card, CardBody, Input, Skeleton } from '@/components/ui';
 import { useToast } from '@/contexts/ToastContext';
 import { MEGA_MENU } from '@/constants/navigation';
 import { useGetSettingsQuery, useUpdateSettingsMutation } from '@/features/admin/adminApi';
+import { extractErrorMessage } from '@/lib/format';
 
 const CONTACT_LENS_DEFAULT = {
   label: 'Contact Lenses',
@@ -56,7 +57,13 @@ const toRequest = (menu) => ({
   slug: menu.slug,
   columns: menu.columns.map((column) => ({
     title: column.title.trim(),
-    links: column.links.map((link) => ({ label: link.label.trim(), to: link.to.trim() })),
+    links: column.links.map((link) => {
+      const rawTo = link.to.trim();
+      return {
+        label: link.label.trim(),
+        to: rawTo.startsWith('/') ? rawTo : `/${rawTo}`,
+      };
+    }),
   })),
 });
 
@@ -81,7 +88,7 @@ export default function AdminNavigationPage() {
       await updateSettings({ navigationMenus: menus.map(toRequest) }).unwrap();
       toast.success('Dropdown menus saved');
     } catch (error) {
-      toast.error(error.message);
+      toast.error(extractErrorMessage(error, 'Unable to save dropdown menus'));
     }
   };
 

@@ -10,9 +10,15 @@
  * owns the connection lifecycle and CLI flags.
  */
 import { connectDB, disconnectDB } from './config/db.js';
+import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 
 async function run() {
+  if (env.isProd || process.env.NODE_ENV === 'production') {
+    logger.error('CRITICAL: Database seeding is forbidden in production environments.');
+    process.exit(1);
+  }
+
   const destroy = process.argv.includes('--destroy');
   await connectDB();
 

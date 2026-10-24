@@ -13,6 +13,7 @@ import { ROUTES } from '@/constants/routes';
 import { useChangePasswordMutation, useDeleteAccountMutation } from '@/features/account/accountApi';
 import { useToast } from '@/contexts/ToastContext';
 import { zodResolver, passwordSchema as newPasswordSchema } from '@/lib/validators';
+import { extractErrorMessage } from '@/lib/format';
 
 const passwordSchema = z
   .object({
@@ -47,7 +48,7 @@ export default function SettingsPage() {
       toast.success('Password changed. Other sessions were signed out.');
       reset();
     } catch (err) {
-      toast.error(err?.message || 'Could not change password');
+      toast.error(extractErrorMessage(err, 'Could not change password'));
     }
   };
 
@@ -63,7 +64,7 @@ export default function SettingsPage() {
       toast.success('Your account has been deleted.');
       navigate(ROUTES.home, { replace: true });
     } catch (err) {
-      toast.error(err?.message || 'Could not delete account. Verify your password.');
+      toast.error(extractErrorMessage(err, 'Could not delete account. Verify your password.'));
     }
   };
 

@@ -11,7 +11,7 @@ import {
   useUpdateProductMutation,
 } from '@/features/products/productApi';
 import { useToast } from '@/contexts/ToastContext';
-import { formatPrice } from '@/lib/format';
+import { formatPrice, extractErrorMessage } from '@/lib/format';
 
 const FILTERS = [
   ['all', 'All contact products'],
@@ -63,7 +63,7 @@ export default function AdminContactLensesPage() {
       await remove(product._id).unwrap();
       toast.success('Contact-lens product deleted');
     } catch (error) {
-      toast.error(error?.message || 'Unable to delete this product');
+      toast.error(extractErrorMessage(error, 'Unable to delete this product'));
     }
   };
 

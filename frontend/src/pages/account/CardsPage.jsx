@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/contexts/ToastContext';
 import { zodResolver } from '@/lib/validators';
+import { extractErrorMessage } from '@/lib/format';
 
 const cardSchema = z.object({
   number: z.string().regex(/^[\d\s]{12,19}$/, 'Enter a valid card number'),
@@ -41,7 +42,17 @@ export default function CardsPage() {
       reset();
       setOpen(false);
     } catch (err) {
-      toast.error(err?.message || 'Could not save card');
+      toast.error(extractErrorMessage(err, 'Could not save card'));
+    }
+  };
+
+  const onRemove = async (card) => {
+    if (!window.confirm(`Remove card ending in ${card.last4}?`)) return;
+    try {
+      await removeCard(card._id).unwrap();
+      toast.success('Card removed');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Could not remove card'));
     }
   };
 
@@ -98,7 +109,7 @@ export default function CardsPage() {
                 <button
                   type="button"
                   aria-label="Remove card"
-                  onClick={() => removeCard(card._id)}
+                  onClick={() => onRemove(card)}
                   className="rounded-full p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-error"
                 >
                   <FiTrash2 />

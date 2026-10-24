@@ -14,7 +14,7 @@ import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { useToast } from '@/contexts/ToastContext';
-import { formatPrice, formatDateTime, titleCase } from '@/lib/format';
+import { formatPrice, formatDateTime, titleCase, extractErrorMessage } from '@/lib/format';
 import { ROUTES } from '@/constants/routes';
 import { cn } from '@/utils/cn';
 
@@ -96,7 +96,7 @@ export default function OrderDetailsPage() {
       toast.success('Order cancelled');
       setCancelOpen(false);
     } catch (err) {
-      toast.error(err?.message || 'Could not cancel order');
+      toast.error(extractErrorMessage(err, 'Could not cancel order'));
     }
   };
 
@@ -111,7 +111,7 @@ export default function OrderDetailsPage() {
       setReturnOpen(false);
       setReason('');
     } catch (err) {
-      toast.error(err?.message || 'Could not create return request');
+      toast.error(extractErrorMessage(err, 'Could not create return request'));
     }
   };
 
@@ -128,7 +128,7 @@ export default function OrderDetailsPage() {
       setComment('');
       setRating(5);
     } catch (err) {
-      toast.error(err?.message || 'Could not submit review');
+      toast.error(extractErrorMessage(err, 'Could not submit review'));
     }
   };
 

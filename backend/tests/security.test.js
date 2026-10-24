@@ -17,10 +17,22 @@ describe('Security configuration', () => {
     JWT_ACCESS_SECRET: crypto.randomBytes(32).toString('hex'),
     JWT_REFRESH_SECRET: crypto.randomBytes(32).toString('hex'),
     PAYMENT_PROVIDER: 'stripe',
+    UPLOAD_PROVIDER: 'cloudinary',
+    CLOUDINARY_CLOUD_NAME: 'chasmewala',
+    CLOUDINARY_API_KEY: 'key123',
+    CLOUDINARY_API_SECRET: 'secret123',
+    OTP_PROVIDER: 'email',
+    SMTP_HOST: 'smtp.example.com',
+    SEED_ADMIN_EMAIL: 'ops-admin@onlinechasmewala.com',
+    SEED_ADMIN_PASSWORD: 'SuperStrongAuth2026!#',
   };
-  it('rejects default secrets and mock payments in production', () => {
+  it('rejects default secrets, mock providers and weak seed credentials in production', () => {
     expect(envSchema.safeParse(production).success).toBe(true);
     expect(envSchema.safeParse({ ...production, PAYMENT_PROVIDER: 'mock' }).success).toBe(false);
+    expect(envSchema.safeParse({ ...production, OTP_PROVIDER: 'mock' }).success).toBe(false);
+    expect(envSchema.safeParse({ ...production, UPLOAD_PROVIDER: 'mock' }).success).toBe(false);
+    expect(envSchema.safeParse({ ...production, SEED_ADMIN_PASSWORD: 'Admin@123' }).success).toBe(false);
+    expect(envSchema.safeParse({ ...production, SEED_ADMIN_EMAIL: 'admin@onlinechasmewala.com' }).success).toBe(false);
     expect(
       envSchema.safeParse({
         ...production,
@@ -83,7 +95,30 @@ describe('Coupon abuse prevention', () => {
       .post('/api/v1/coupons/validate')
       .set('Authorization', 'Bearer ' + token)
       .send({ code: 'UNKNOWN', subtotal: 1500 });
-    expect(blocked.status).toBe(429);
-    expect(blocked.headers['retry-after']).toBeDefined();
+      expect(blocked.status).toBe(429);
+      expect(blocked.headers['retry-after']).toBeDefined();
+    });
   });
-});
+
+  describe('Scoped payload limits and origin protections', () => {
+    it('rejects oversized JSON payloads on non-admin routes with 413', async () => {
+      const app = createApp();
+      const largePayload = {
+        email: 'test@example.com',
+        password: 'Password123',
+        filler: 'x'.repeat(250 * 1024), // 250 KB
+      };
+      const res = await request(app).post('/api/v1/auth/login').send(largePayload);
+      expect(res.status).toBe(413);
+    });
+
+    it('rejects cross-site refresh attempts with 403', async () => {
+      const app = createApp();
+      const res = await request(app)
+        .post('/api/v1/auth/refresh')
+        .set('Sec-Fetch-Site', 'cross-site')
+        .send({});
+      expect(res.status).toBe(403);
+    });
+  });
+

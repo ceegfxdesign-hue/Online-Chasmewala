@@ -1,0 +1,93 @@
+Implement a complete, production-ready transactional email system for Online Chasmewala using Nodemailer and standard SMTP, connecting real automated emails to the existing event bus and authentication flows.
+
+Sender Email: support@onlinechasmewala.com
+Admin / Store Notification Email: support@onlinechasmewala.com
+
+Do NOT include abandoned cart recovery, review requests, or promotional marketing emails. Focus strictly on essential transactional, security, and administrative alerts.
+
+---
+
+## 1. Features to Implement
+
+### A. Customer Order Emails
+1. Order Confirmation Receipt: Sent immediately when an order is placed (EVENTS.ORDER_PLACED).
+   - Branded header with Online Chasmewala logo and order number.
+   - Itemized list: Frame name, thumbnail image, color/variant, and selected lens package (e.g., Anti-Glare Premium, BLU Screen Protection).
+   - If prescription was entered, include a clear Optical Power Summary table (Right Eye OD / Left Eye OS: SPH, CYL, Axis, PD) so the customer can verify their power.
+   - Price breakdown: Subtotal, discount, lens package add-ons, shipping fee, tax, and final total paid.
+   - Delivery address and estimated delivery date.
+2. Order Status Updates: Sent automatically when order status changes (EVENTS.ORDER_STATUS_CHANGED):
+   - Processing / Fitting: "Your frames and lenses are being precision-cut and assembled."
+   - Shipped: "Your glasses are on the way!" with courier name and tracking link.
+   - Delivered: "Your order has been delivered. Enjoy your new look!"
+3. Cancellation & Refund Receipt: Sent when an order is cancelled or a return is approved with refund amount and reason.
+
+### B. Customer Account & Security Emails
+1. Welcome Email upon Signup: Sent when a new user registers (EVENTS.USER_REGISTERED):
+   - Welcome message introducing Online Chasmewala.
+   - Includes their first-order discount coupon: WELCOME10 (10% off).
+   - Button link to start shopping.
+2. Password Reset OTP Email: Sent when a user requests an OTP via /api/v1/auth/otp/request:
+   - Clean security email with the real 6-digit verification code in large, bold text.
+   - Clear notice that the code expires in 10 minutes.
+   - Security warning: "If you did not request this, please ignore this email."
+3. Password Changed Notification: Sent when a user successfully updates or resets their password as an account security alert.
+
+### C. Admin & Store Owner Alerts (Sent to support@onlinechasmewala.com)
+1. Admin New Order Alert: Sent to support@onlinechasmewala.com immediately whenever a customer places an order:
+   - Order number, customer name, email, phone number, total value (₹), and payment method (Prepaid vs COD).
+   - Direct link to open the order in the Admin Dashboard (/admin/orders).
+2. Low-Stock Inventory Alert: Sent to support@onlinechasmewala.com when a frame's stock drops to or below its lowStockThreshold (EVENTS.LOW_STOCK):
+   - Frame name, SKU, remaining stock count, and direct link to inventory replenishment.
+3. Contact Us Form Forwarding: When a visitor submits the contact form (POST /api/v1/contact), forward the inquiry directly to support@onlinechasmewala.com with the visitor's name, email, phone, and message.
+
+---
+
+## 2. Architecture & File Structure
+
+### Files to Create:
+1. backend/src/services/email.service.js — Core Nodemailer SMTP transporter service with error-safe fallback (logs errors without crashing customer transactions).
+2. backend/src/templates/emails/ — Clean, modern, responsive HTML email templates matching the brand's teal (#00A6A6) and dark navy (#0F172A) design:
+   - orderConfirmation.js
+   - orderStatusUpdate.js
+   - orderCancelled.js
+   - welcome.js
+   - passwordResetOtp.js
+   - passwordChangedAlert.js
+   - adminNewOrder.js
+   - adminLowStock.js
+   - contactInquiry.js
+
+### Files to Update:
+1. backend/package.json — Add nodemailer dependency (npm install nodemailer).
+2. backend/src/config/env.js — Add and validate SMTP environment variables:
+   - SMTP_HOST: string (optional, defaults to empty)
+   - SMTP_PORT: number (default: 587)
+   - SMTP_SECURE: boolean (default: false; true for 465)
+   - SMTP_USER: string (optional)
+   - SMTP_PASS: string (optional)
+   - EMAIL_FROM: string (default: "Online Chasmewala <support@onlinechasmewala.com>")
+   - ADMIN_NOTIFICATION_EMAIL: string (default: "support@onlinechasmewala.com")
+3. backend/.env & backend/.env.example — Add SMTP environment keys:
+   SMTP_HOST=
+   SMTP_PORT=587
+   SMTP_SECURE=false
+   SMTP_USER=support@onlinechasmewala.com
+   SMTP_PASS=
+   EMAIL_FROM="Online Chasmewala <support@onlinechasmewala.com>"
+   ADMIN_NOTIFICATION_EMAIL=support@onlinechasmewala.com
+4. backend/src/events/handlers.js — Wire emailService calls directly into the existing event handlers:
+   - EVENTS.USER_REGISTERED -> send welcome email.
+   - EVENTS.ORDER_PLACED -> send customer order confirmation AND admin new order alert.
+   - EVENTS.ORDER_STATUS_CHANGED -> send status update email.
+   - EVENTS.LOW_STOCK -> send admin low-stock alert.
+5. backend/src/services/providers/otpProvider.js — Update to send the actual 6-digit OTP code using emailService when SMTP is configured.
+6. backend/src/controllers/contact.controller.js (or contact route) — Trigger emailService.sendContactInquiry upon contact form submission.
+
+---
+
+## 3. Reliability & Safety Rules
+- Non-blocking / Resilient: Email dispatch must be asynchronous and wrapped in try/catch. An email sending failure (e.g. bad SMTP connection) must NEVER fail an order placement or user registration request.
+- Graceful Mock Fallback: If SMTP_HOST or SMTP_USER is not set in .env, the email service should gracefully log the email content to Winston logger.info('[EMAIL:mock] ...') instead of throwing an unhandled error. This keeps local tests passing without internet access.
+- Security: Sanitize all customer inputs rendered inside HTML templates to prevent HTML injection.
+- Verification: Run npm run lint and npm test in the backend to ensure zero regressions and 100% test pass rate.

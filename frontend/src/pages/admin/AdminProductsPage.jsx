@@ -13,7 +13,7 @@ import {
 import { useToast } from '@/contexts/ToastContext';
 import { useGetFrameLensConfigurationQuery } from '@/features/settings/settingsApi';
 import { normalizeFrameLenses } from '@/lib/frameLenses';
-import { formatPrice } from '@/lib/format';
+import { formatPrice, extractErrorMessage } from '@/lib/format';
 
 /** Complete product administration page, including the PDP configuration editor. */
 export function AdminProductsPage() {
@@ -53,7 +53,7 @@ export function AdminProductsPage() {
       await remove(product._id).unwrap();
       toast.success('Product deleted');
     } catch (error) {
-      toast.error(error?.message || 'Unable to delete product');
+      toast.error(extractErrorMessage(error, 'Unable to delete product'));
     }
   };
 

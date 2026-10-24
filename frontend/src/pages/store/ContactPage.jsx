@@ -7,7 +7,8 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Button } from '@/components/ui/Button';
 import { zodResolver } from '@/lib/validators';
 import { useToast } from '@/contexts/ToastContext';
-import { api, normalizeError } from '@/services/api';
+import { api } from '@/services/api';
+import { extractErrorMessage } from '@/lib/format';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Please enter your name'),
@@ -34,11 +35,19 @@ export default function ContactPage() {
 
   const onSubmit = async (data) => {
     try {
-      const response = await api.post('/contact', data);
-      toast.success(response.data.message);
+      const payload = {
+        ...data,
+        name: data.name?.trim(),
+        email: data.email?.trim(),
+        subject: data.subject?.trim(),
+        message: data.message?.trim(),
+        phone: data.phone?.trim() || undefined,
+      };
+      const response = await api.post('/contact', payload);
+      toast.success(response.data.message || 'Message sent successfully');
       reset();
     } catch (err) {
-      toast.error(normalizeError(err).message);
+      toast.error(extractErrorMessage(err, 'Could not send message'));
     }
   };
 

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useDispatch } from 'react-redux';
 import { Helmet } from 'react-helmet-async';
@@ -12,6 +13,7 @@ import { setUser } from '@/features/auth/authSlice';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/contexts/ToastContext';
 import { zodResolver } from '@/lib/validators';
+import { extractErrorMessage } from '@/lib/format';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Enter your name').max(60),
@@ -33,6 +35,7 @@ export default function ProfilePage() {
   const {
     register: field,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(profileSchema),
@@ -44,6 +47,17 @@ export default function ProfilePage() {
     },
   });
 
+  useEffect(() => {
+    if (user) {
+      reset({
+        name: user.name || '',
+        phone: user.phone || '',
+        newsletter: user.preferences?.newsletter ?? true,
+        orderUpdates: user.preferences?.orderUpdates ?? true,
+      });
+    }
+  }, [user, reset]);
+
   const onSubmit = async (values) => {
     try {
       const updated = await updateProfile({
@@ -54,7 +68,7 @@ export default function ProfilePage() {
       dispatch(setUser(updated));
       toast.success('Profile updated');
     } catch (err) {
-      toast.error(err?.message || 'Could not update profile');
+      toast.error(extractErrorMessage(err, 'Could not update profile'));
     }
   };
 

@@ -66,6 +66,24 @@ export const orderService = {
     };
   },
 
+  async createPaymentIntent(userId, payload) {
+    const quoted = await this.quote(userId, payload);
+    if (!quoted.items || quoted.items.length === 0) {
+      throw ApiError.badRequest('Your cart is empty');
+    }
+    const total = quoted.pricing.total;
+    const tempReceipt = `rcpt_${Date.now()}_${String(userId).slice(-6)}`;
+    const intent = await paymentProvider.createIntent({
+      amount: total,
+      currency: 'INR',
+      orderNumber: tempReceipt,
+    });
+    return {
+      ...intent,
+      pricing: quoted.pricing,
+    };
+  },
+
   async create(userId, payload) {
     const { shippingAddress, deliveryMethod = 'standard', couponCode, paymentMethod, paymentToken } = payload;
 

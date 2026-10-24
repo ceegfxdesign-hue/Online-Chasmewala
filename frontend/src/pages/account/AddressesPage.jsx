@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/contexts/ToastContext';
+import { extractErrorMessage } from '@/lib/format';
 import { zodResolver } from '@/lib/validators';
 
 const addressSchema = z.object({
@@ -69,16 +70,26 @@ export default function AddressesPage() {
       }
       setEditing(null);
     } catch (err) {
-      toast.error(err?.message || 'Could not save address');
+      toast.error(extractErrorMessage(err, 'Could not save address'));
     }
   };
 
   const onRemove = async (addr) => {
+    if (!window.confirm(`Remove address "${addr.label || addr.fullName}"?`)) return;
     try {
       await removeAddress(addr._id).unwrap();
       toast.success('Address removed');
     } catch (err) {
-      toast.error(err?.message || 'Could not remove address');
+      toast.error(extractErrorMessage(err, 'Could not remove address'));
+    }
+  };
+
+  const onSetDefault = async (addr) => {
+    try {
+      await updateAddress({ id: addr._id, isDefault: true }).unwrap();
+      toast.success('Default address updated');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Could not update default address'));
     }
   };
 
@@ -130,7 +141,7 @@ export default function AddressesPage() {
                     Edit
                   </Button>
                   {!addr.isDefault && (
-                    <Button size="sm" variant="ghost" onClick={() => updateAddress({ id: addr._id, isDefault: true })}>
+                    <Button size="sm" variant="ghost" onClick={() => onSetDefault(addr)}>
                       Set default
                     </Button>
                   )}

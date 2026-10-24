@@ -133,11 +133,22 @@ export default function AdminFrameLensesPage() {
       setDirty(false);
       toast.success('Frame lens configuration saved');
     } catch (error) {
-      toast.error(
-        error.data?.message ||
-          error.message ||
-          'Unable to save configuration. Check unique IDs and field limits.'
-      );
+      const fieldErrors = error?.data?.errors || error?.errors;
+      let msg =
+        error?.data?.message ||
+        error?.message ||
+        'Unable to save configuration. Check unique IDs and field limits.';
+      if (Array.isArray(fieldErrors) && fieldErrors.length > 0) {
+        msg = fieldErrors
+          .map((err) => {
+            const field = err.field
+              ? err.field.replace(/^frameLensConfiguration\./, '').split('.').slice(-1)[0]
+              : '';
+            return field ? `${field}: ${err.message}` : err.message;
+          })
+          .join('; ');
+      }
+      toast.error(msg);
     }
   };
   const field = (group, item, index, name, label, type = 'text', options) => {

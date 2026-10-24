@@ -30,7 +30,7 @@ import {
   useUpdateAdminOrderMutation,
 } from '@/features/admin/adminApi';
 import { useToast } from '@/contexts/ToastContext';
-import { formatDateTime, formatPrice, titleCase } from '@/lib/format';
+import { formatDateTime, formatPrice, titleCase, extractErrorMessage } from '@/lib/format';
 
 const ORDER_STATUSES = [
   { value: '', label: 'All order statuses' },
@@ -219,7 +219,7 @@ function OrderDetailsModal({ order, open, onClose, onStatusChange, updating }) {
           value={order.status}
           disabled={updating}
           options={ORDER_STATUSES.slice(1)}
-          onChange={(event) => onStatusChange(order._id, event.target.value, courier && trackingUrl ? { courier, url: trackingUrl } : undefined)}
+          onChange={(event) => onStatusChange(order._id, event.target.value, courier.trim() && trackingUrl.trim() ? { courier: courier.trim(), url: trackingUrl.trim() } : undefined)}
         />
       </div>
 
@@ -357,7 +357,7 @@ export default function AdminOrdersPage() {
       setSelectedOrder((current) => (current?._id === id ? { ...current, ...updated } : current));
       toast.success('Order status updated');
     } catch (error) {
-      toast.error(error?.message || 'Could not update the order status');
+      toast.error(extractErrorMessage(error, 'Could not update the order status'));
     }
   };
 

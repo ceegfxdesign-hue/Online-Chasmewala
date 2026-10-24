@@ -37,37 +37,130 @@ export default function AdminLensPackagesPage() {
   const [updateSettings, { isLoading: saving }] = useUpdateSettingsMutation();
   const [draft, setDraft] = useState(null);
   const [editingId, setEditingId] = useState(null);
+  const [idTouched, setIdTouched] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
   const [uploads, setUploads] = useState(0);
   const mediaBusy = (busy) => setUploads((count) => Math.max(0, count + (busy ? 1 : -1)));
   const toast = useToast();
   const configuration = normalizeFrameLenses(data?.frameLensConfiguration);
-  const update = (key, value) => setDraft((current) => ({ ...current, [key]: value }));
+  const update = (key, value) => {
+    setDraft((current) => ({ ...current, [key]: value }));
+    if (formErrors[key]) {
+      setFormErrors((prev) => ({ ...prev, [key]: undefined }));
+    }
+  };
   const open = (pack) => {
     setEditingId(pack?.id || null);
+    setIdTouched(Boolean(pack?.id));
+    setFormErrors({});
     setDraft(structuredClone({ ...emptyPackage, ...pack }));
   };
   const persist = async (packages) => {
     try {
       await updateSettings({ frameLensConfiguration: { ...configuration, packages } }).unwrap();
       toast.success('Lens packages saved');
+      setFormErrors({});
       return true;
     } catch (error) {
-      toast.error(error.data?.message || error.message || 'Unable to save lens packages');
+      const fieldErrors = error?.data?.errors || error?.errors;
+      let message = error?.data?.message || error?.message || 'Unable to save lens packages';
+      if (Array.isArray(fieldErrors) && fieldErrors.length > 0) {
+        const newErrors = {};
+        fieldErrors.forEach((err) => {
+          const fieldPath = err.field
+            ? err.field.replace(/^frameLensConfiguration\./, '').split('.').slice(-1)[0]
+            : '';
+          if (fieldPath) newErrors[fieldPath] = err.message;
+        });
+        setFormErrors(newErrors);
+        message = fieldErrors
+          .map((err) => {
+            const fieldPath = err.field
+              ? err.field.replace(/^frameLensConfiguration\./, '').split('.').slice(-1)[0]
+              : '';
+            return fieldPath ? `${fieldPath}: ${err.message}` : err.message;
+          })
+          .join('; ');
+      }
+      toast.error(message);
       return false;
     }
   };
   const save = async (event) => {
     event.preventDefault();
     if (uploads) return;
-    const clean = { ...draft, id: draft.id.trim(), name: draft.name.trim() };
-    if (configuration.packages.some((pack) => pack.id === clean.id && pack.id !== editingId)) {
-      toast.error('Choose a unique package ID.');
+
+    const errors = {};
+    const cleanId = (draft.id || '').trim().toLowerCase();
+    const cleanName = (draft.name || '').trim();
+
+    if (!cleanId) {
+      errors.id = 'Package ID is required.';
+    } else if (!/^[a-z0-9-]+$/.test(cleanId)) {
+      errors.id =
+        'Package ID can only contain lowercase letters, numbers, and hyphens (e.g. "blu-thin").';
+    } else if (
+      configuration.packages.some((pack) => pack.id === cleanId && pack.id !== editingId)
+    ) {
+      errors.id = 'Choose a unique package ID.';
+    }
+
+    if (!cleanName) {
+      errors.name = 'Package name is required.';
+    }
+
+    const cleanPrice = Math.max(0, Number(draft.price) || 0);
+    const cleanMrp = Math.max(0, Number(draft.mrp) || 0);
+    if (cleanMrp > 0 && cleanMrp < cleanPrice) {
+      errors.mrp = 'MRP cannot be less than the selling price.';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error(Object.values(errors)[0]);
       return;
     }
-    if (clean.mrp && clean.mrp < clean.price) {
-      toast.error('MRP cannot be less than the selling price.');
-      return;
-    }
+
+    // Filter out completely blank feature bullets
+    const cleanedFeatures = [];
+    const cleanedIcons = [];
+    (draft.features || []).forEach((feat, idx) => {
+      const trimmed = (feat || '').trim();
+      if (trimmed) {
+        cleanedFeatures.push(trimmed);
+        cleanedIcons.push(draft.featureIcons?.[idx] || '⚡');
+      }
+    });
+
+    // Filter out detail features missing a title
+    const cleanedDetailFeatures = (draft.detailFeatures || [])
+      .map((df) => ({
+        title: (df.title || '').trim(),
+        description: (df.description || '').trim(),
+        imageUrl: (df.imageUrl || '').trim(),
+      }))
+      .filter((df) => df.title.length > 0);
+
+    const clean = {
+      ...draft,
+      id: cleanId,
+      name: cleanName,
+      price: cleanPrice,
+      mrp: cleanMrp,
+      order: Math.floor(Number(draft.order) || 0),
+      features: cleanedFeatures,
+      featureIcons: cleanedIcons,
+      detailFeatures: cleanedDetailFeatures,
+      description: (draft.description || '').trim(),
+      ribbonText: (draft.ribbonText || '').trim(),
+      warranty: (draft.warranty || '').trim(),
+      couponText: (draft.couponText || '').trim(),
+      imageUrl: (draft.imageUrl || '').trim(),
+      videoUrl: (draft.videoUrl || '').trim(),
+      detailImageUrl: (draft.detailImageUrl || '').trim(),
+      comparisonImageUrl: (draft.comparisonImageUrl || '').trim(),
+    };
+
     const packages = editingId
       ? configuration.packages.map((pack) => (pack.id === editingId ? clean : pack))
       : [...configuration.packages, clean];
@@ -82,7 +175,7 @@ export default function AdminLensPackagesPage() {
       return;
     await persist(configuration.packages.filter((item) => item.id !== pack.id));
   };
-  const field = (key, label, type = 'text') => (
+  const field = (key, label, type = 'text', helperText) => (
     <Input
       label={label}
       type={type}
@@ -93,11 +186,37 @@ export default function AdminLensPackagesPage() {
       pattern={key === 'id' ? '[a-z0-9-]+' : undefined}
       disabled={key === 'id' && Boolean(editingId)}
       helper={
-        key === 'id' ? 'Stable ID used by frames; cannot be changed after creation.' : undefined
+        helperText ||
+        (key === 'id'
+          ? 'Lowercase letters, numbers, and hyphens only (e.g. "blu-thin").'
+          : undefined)
       }
-      onChange={(event) =>
-        update(key, type === 'number' ? Number(event.target.value) : event.target.value)
-      }
+      error={formErrors[key]}
+      onChange={(event) => {
+        let val = event.target.value;
+        if (type === 'number') {
+          val = val === '' ? 0 : Number(val);
+          if (Number.isNaN(val)) val = 0;
+          update(key, val);
+        } else if (key === 'id') {
+          setIdTouched(true);
+          update(key, val.toLowerCase().replace(/\s+/g, '-'));
+        } else if (key === 'name') {
+          if (!idTouched && !editingId) {
+            const suggestedId = val
+              .toLowerCase()
+              .trim()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-+|-+$/g, '')
+              .slice(0, 60);
+            setDraft((current) => ({ ...current, name: val, id: suggestedId }));
+          } else {
+            update(key, val);
+          }
+        } else {
+          update(key, val);
+        }
+      }}
     />
   );
   const choices = (key, label, options) => (
@@ -266,6 +385,13 @@ export default function AdminLensPackagesPage() {
               <Textarea
                 label="Description / view details"
                 value={draft.description}
+                maxLength={2000}
+                error={formErrors.description}
+                helper={
+                  draft.description?.length > 1500
+                    ? `${draft.description.length}/2000 characters`
+                    : undefined
+                }
                 onChange={(event) => update('description', event.target.value)}
               />
               <fieldset className="space-y-2">

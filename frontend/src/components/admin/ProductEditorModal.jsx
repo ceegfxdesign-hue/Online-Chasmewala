@@ -251,6 +251,7 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
     });
 
     const selectedGenders = form.getAll('genders').filter(Boolean);
+    if (contactLensMode && !selectedGenders.length) selectedGenders.push('unisex');
     if (!selectedGenders.length) {
       setValidationErrors({ genders: 'Select at least one customer group.' });
       toast.error('Select at least one customer group.');
@@ -348,14 +349,22 @@ export function ProductEditorModal({ product, categories, brands, onClose, onSav
       toast.success('Product saved');
       onClose();
     } catch (error) {
-      const errors = Array.isArray(error?.errors) ? error.errors : [];
+      const errors = Array.isArray(error?.data?.errors)
+        ? error.data.errors
+        : Array.isArray(error?.errors)
+          ? error.errors
+          : [];
       const byField = errors.reduce((result, item) => {
         if (item?.field && item?.message) result[item.field] = item.message;
         return result;
       }, {});
       setValidationErrors(byField);
       const firstError = errors[0];
-      toast.error(firstError ? `${firstError.field}: ${firstError.message}` : error?.message || 'Unable to save product');
+      const errorMessage =
+        firstError && firstError.field && firstError.message
+          ? `${firstError.field}: ${firstError.message}`
+          : error?.data?.message || error?.message || 'Unable to save product';
+      toast.error(errorMessage);
     }
   };
 

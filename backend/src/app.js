@@ -27,7 +27,30 @@ export function createApp() {
   app.set('trust proxy', 1);
 
   // ── Security ──────────────────────────────────────────────────────────────
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+          baseUri: ["'none'"],
+        },
+      },
+      hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true,
+      },
+      frameguard: { action: 'deny' },
+      noSniff: true,
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+      crossOriginEmbedderPolicy: false,
+    })
+  );
+  app.use((req, res, next) => {
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=*');
+    next();
+  });
   app.use(
     cors({
       origin(origin, callback) {
@@ -43,8 +66,21 @@ export function createApp() {
   // Admin product galleries are submitted as compressed data URLs. Keep the
   // request below MongoDB's 16 MB document ceiling while allowing a practical
   // multi-image edit payload.
-  app.use(express.json({ limit: '12mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+  // Admin product creation/updates and lens media are submitted as compressed data URLs.
+  // Scope the 12mb limit strictly to those routes. All other routes are capped at 200kb
+  // to protect against memory exhaustion attacks.
+  const largeJsonParser = express.json({ limit: '12mb' });
+  app.use(`${env.API_PREFIX}/products`, (req, res, next) => {
+    if (req.method === 'POST' || req.method === 'PATCH') {
+      return largeJsonParser(req, res, next);
+    }
+    next();
+  });
+  app.use(`${env.API_PREFIX}/admin`, largeJsonParser);
+
+  // Global low limit for all other routes
+  app.use(express.json({ limit: '200kb' }));
+  app.use(express.urlencoded({ extended: true, limit: '50kb' }));
   app.use(cookieParser());
 
   // ── Hardening ─────────────────────────────────────────────────────────────

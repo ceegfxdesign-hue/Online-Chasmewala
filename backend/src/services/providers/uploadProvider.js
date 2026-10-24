@@ -6,6 +6,7 @@
  * interface is selected when UPLOAD_PROVIDER=cloudinary (credentials required).
  */
 import { env } from '../../config/env.js';
+import { ApiError } from '../../utils/ApiError.js';
 
 class MockUploadProvider {
   /**
@@ -13,6 +14,9 @@ class MockUploadProvider {
    * @returns {Promise<{ url: string, publicId: string, provider: string }>}
    */
   async upload(file = {}) {
+    if (env.isProd) {
+      throw new ApiError(503, 'File uploads are not configured in production.');
+    }
     const name = (file.originalname || 'image').replace(/\s+/g, '-').toLowerCase();
     const id = `mock_${Date.now()}_${name}`;
     return {

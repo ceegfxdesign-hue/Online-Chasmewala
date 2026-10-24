@@ -76,6 +76,10 @@ export const cartApi = baseApi.injectEndpoints({
       query: (body) => ({ url: '/orders/quote', method: 'post', data: body }),
       transformResponse: (res) => res.data,
     }),
+    createPaymentIntent: builder.mutation({
+      query: (body) => ({ url: '/orders/create-payment-intent', method: 'post', data: body }),
+      transformResponse: (res) => res.data,
+    }),
     placeOrder: builder.mutation({
       query: (body) => ({ url: '/orders', method: 'post', data: body }),
       transformResponse: (res) => res.data,
@@ -114,6 +118,7 @@ export const {
   useValidateCouponMutation,
   useGetOffersQuery,
   useQuoteOrderMutation,
+  useCreatePaymentIntentMutation,
   usePlaceOrderMutation,
   useGetMyOrdersQuery,
   useGetOrderQuery,

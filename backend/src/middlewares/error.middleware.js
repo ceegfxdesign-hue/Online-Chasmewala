@@ -33,6 +33,10 @@ function normalize(err) {
   // JWT
   if (err.name === 'JsonWebTokenError') return ApiError.unauthorized('Invalid token');
   if (err.name === 'TokenExpiredError') return ApiError.unauthorized('Token expired');
+  // CORS
+  if (err.message && err.message.startsWith('Not allowed by CORS')) {
+    return ApiError.forbidden(err.message);
+  }
 
   return new ApiError(err.statusCode || 500, err.message || 'Internal server error');
 }

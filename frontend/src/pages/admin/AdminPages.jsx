@@ -4,7 +4,7 @@ import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, Res
 import { FiAlertTriangle, FiCheck, FiEdit2, FiPlus, FiSearch, FiTrash2 } from 'react-icons/fi';
 import { Button, Card, CardBody, EmptyState, Input, Modal, Select, Skeleton, Textarea } from '@/components/ui';
 import { useToast } from '@/contexts/ToastContext';
-import { formatDate, formatPrice } from '@/lib/format';
+import { formatDate, formatPrice, extractErrorMessage } from '@/lib/format';
 import { useCreateProductMutation, useDeleteProductMutation, useGetAdminProductsQuery, useUpdateProductMutation } from '@/features/products/productApi';
 import { useGetBrandsQuery, useGetCategoriesQuery } from '@/features/products/productApi';
 import AdminOrdersPage from '@/pages/admin/AdminOrdersPage';
@@ -49,12 +49,208 @@ export function OrdersPage() {
   return <AdminOrdersPage />;
 }
 
-function CatalogPage({ kind }) { const isCategory = kind === 'Category'; const { data: categories = [], isLoading: catsLoading } = useGetCategoriesQuery(undefined, { skip: !isCategory }); const { data: brands = [], isLoading: brandsLoading } = useGetBrandsQuery(undefined, { skip: isCategory }); const [createCategory] = useCreateCategoryMutation(); const [createBrand] = useCreateBrandMutation(); const [updateCategory] = useUpdateCategoryMutation(); const [updateBrand] = useUpdateBrandMutation(); const [deleteCategory] = useDeleteCategoryMutation(); const [deleteBrand] = useDeleteBrandMutation(); const create = isCategory ? createCategory : createBrand; const update = isCategory ? updateCategory : updateBrand; const remove = isCategory ? deleteCategory : deleteBrand; const [editing, setEditing] = useState(null); const toast = useToast(); const rows = isCategory ? categories : brands; const submit = async (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); const body = Object.fromEntries(form); body.order = Number(body.order || 0); body.isActive = form.get('isActive') === 'on'; body.isFeatured = form.get('isFeatured') === 'on'; try { if (editing?._id) await update({ id: editing._id, ...body }).unwrap(); else await create(body).unwrap(); toast.success(`${kind} saved`); setEditing(null); } catch (e) { toast.error(e.message); } }; return <Page name={`${kind}s`} action={<Button leftIcon={<FiPlus />} onClick={() => setEditing({})}>Add {kind}</Button>}>{catsLoading || brandsLoading ? <Loading /> : <><Table columns={[kind, 'Slug', 'Order', 'Status', 'Actions']} rows={rows} render={(x) => <tr key={x._id}><td className="px-4 py-3 font-medium">{x.name}</td><td className="px-4 py-3 text-navy-500">{x.slug}</td><td className="px-4 py-3">{x.order}</td><td className="px-4 py-3">{x.isActive ? 'Active' : 'Hidden'}</td><td className="flex gap-2 px-4 py-3"><Button size="icon" variant="ghost" aria-label="Edit" onClick={() => setEditing(x)}><FiEdit2 /></Button><Button size="icon" variant="ghost" aria-label="Delete" onClick={() => remove(x._id)}><FiTrash2 /></Button></td></tr>} /><Modal open={editing !== null} onClose={() => setEditing(null)} title={`${editing?._id ? 'Edit' : 'Add'} ${kind}`}><form onSubmit={submit} className="space-y-4"><Input name="name" label="Name" defaultValue={editing?.name} required /><Input name="description" label="Description" defaultValue={editing?.description} /><Input name={isCategory ? 'image' : 'logo'} label="Image URL" defaultValue={isCategory ? editing?.image : editing?.logo} /><Input name="order" type="number" label="Display order" defaultValue={editing?.order || 0} /><label className="flex gap-2 text-sm"><input name="isActive" type="checkbox" defaultChecked={editing?.isActive !== false} /> Active</label><label className="flex gap-2 text-sm"><input name="isFeatured" type="checkbox" defaultChecked={editing?.isFeatured} /> Featured</label><Button type="submit" fullWidth>Save {kind}</Button></form></Modal></>}</Page>; }
+function CatalogPage({ kind }) {
+  const isCategory = kind === 'Category';
+  const { data: categories = [], isLoading: catsLoading } = useGetCategoriesQuery(undefined, { skip: !isCategory });
+  const { data: brands = [], isLoading: brandsLoading } = useGetBrandsQuery(undefined, { skip: isCategory });
+  const [createCategory] = useCreateCategoryMutation();
+  const [createBrand] = useCreateBrandMutation();
+  const [updateCategory] = useUpdateCategoryMutation();
+  const [updateBrand] = useUpdateBrandMutation();
+  const [deleteCategory] = useDeleteCategoryMutation();
+  const [deleteBrand] = useDeleteBrandMutation();
+  const create = isCategory ? createCategory : createBrand;
+  const update = isCategory ? updateCategory : updateBrand;
+  const remove = isCategory ? deleteCategory : deleteBrand;
+  const [editing, setEditing] = useState(null);
+  const toast = useToast();
+  const rows = isCategory ? categories : brands;
+
+  const submit = async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const body = Object.fromEntries(form);
+    body.name = (body.name || '').trim();
+    if (!body.name) {
+      toast.error(`${kind} name is required`);
+      return;
+    }
+    body.order = Number(body.order || 0);
+    body.isActive = form.get('isActive') === 'on';
+    body.isFeatured = form.get('isFeatured') === 'on';
+    if (body.description) body.description = body.description.trim();
+    if (isCategory) {
+      if (body.image) body.image = body.image.trim();
+    } else {
+      if (body.logo) body.logo = body.logo.trim();
+    }
+    try {
+      if (editing?._id) await update({ id: editing._id, ...body }).unwrap();
+      else await create(body).unwrap();
+      toast.success(`${kind} saved`);
+      setEditing(null);
+    } catch (e) {
+      toast.error(extractErrorMessage(e, `Unable to save ${kind}`));
+    }
+  };
+
+  const handleRemove = async (item) => {
+    if (!window.confirm(`Delete ${kind.toLowerCase()} "${item.name}"? This cannot be undone.`)) return;
+    try {
+      await remove(item._id).unwrap();
+      toast.success(`${kind} deleted`);
+    } catch (err) {
+      toast.error(extractErrorMessage(err, `Unable to delete ${kind}`));
+    }
+  };
+
+  return (
+    <Page name={`${kind}s`} action={<Button leftIcon={<FiPlus />} onClick={() => setEditing({})}>Add {kind}</Button>}>
+      {catsLoading || brandsLoading ? (
+        <Loading />
+      ) : (
+        <>
+          <Table
+            columns={[kind, 'Slug', 'Order', 'Status', 'Actions']}
+            rows={rows}
+            render={(x) => (
+              <tr key={x._id}>
+                <td className="px-4 py-3 font-medium">{x.name}</td>
+                <td className="px-4 py-3 text-navy-500">{x.slug}</td>
+                <td className="px-4 py-3">{x.order}</td>
+                <td className="px-4 py-3">{x.isActive ? 'Active' : 'Hidden'}</td>
+                <td className="flex gap-2 px-4 py-3">
+                  <Button size="icon" variant="ghost" aria-label="Edit" onClick={() => setEditing(x)}><FiEdit2 /></Button>
+                  <Button size="icon" variant="ghost" aria-label="Delete" onClick={() => handleRemove(x)}><FiTrash2 /></Button>
+                </td>
+              </tr>
+            )}
+          />
+          <Modal open={editing !== null} onClose={() => setEditing(null)} title={`${editing?._id ? 'Edit' : 'Add'} ${kind}`}>
+            <form onSubmit={submit} className="space-y-4">
+              <Input name="name" label="Name" defaultValue={editing?.name} required />
+              <Input name="description" label="Description" defaultValue={editing?.description} />
+              <Input name={isCategory ? 'image' : 'logo'} label="Image URL" defaultValue={isCategory ? editing?.image : editing?.logo} />
+              <Input name="order" type="number" label="Display order" defaultValue={editing?.order || 0} />
+              <label className="flex gap-2 text-sm"><input name="isActive" type="checkbox" defaultChecked={editing?.isActive !== false} /> Active</label>
+              <label className="flex gap-2 text-sm"><input name="isFeatured" type="checkbox" defaultChecked={editing?.isFeatured} /> Featured</label>
+              <Button type="submit" fullWidth>Save {kind}</Button>
+            </form>
+          </Modal>
+        </>
+      )}
+    </Page>
+  );
+}
 export const CategoriesPage = () => <CatalogPage kind="Category" />; export const BrandsPage = () => <CatalogPage kind="Brand" />;
 
-export function ProductsPage() { const { data, isLoading } = useGetAdminProductsQuery({ page: 1, limit: 50 }); const { data: categories = [] } = useGetCategoriesQuery(); const { data: brands = [] } = useGetBrandsQuery(); const [create] = useCreateProductMutation(); const [update] = useUpdateProductMutation(); const [remove] = useDeleteProductMutation(); const [editing, setEditing] = useState(null); const toast = useToast(); const rows = data?.items || []; const submit = async (event) => { event.preventDefault(); const f = new FormData(event.currentTarget); const body = Object.fromEntries(f); ['price', 'mrp', 'stock', 'lowStockThreshold'].forEach((key) => { body[key] = Number(body[key] || 0); }); body.images = body.images.split('\n').map((image) => image.trim()).filter(Boolean); body.isActive = f.get('isActive') === 'on'; try { if (editing?._id) await update({ id: editing._id, ...body }).unwrap(); else await create(body).unwrap(); toast.success('Product saved'); setEditing(null); } catch (err) { toast.error(err.message); } }; return <Page name="Products" action={<Button leftIcon={<FiPlus />} onClick={() => setEditing({})}>Add product</Button>}>{isLoading ? <Loading /> : <><Table columns={['Product', 'SKU', 'Price', 'Stock', 'Published', 'Actions']} rows={rows} render={(p) => <tr key={p._id}><td className="px-4 py-3 font-medium">{p.name}</td><td className="px-4 py-3 text-navy-500">{p.sku}</td><td className="px-4 py-3">{formatPrice(p.price)}</td><td className="px-4 py-3">{p.stock}</td><td className="px-4 py-3">{p.isActive ? 'Yes' : 'No'}</td><td className="flex gap-2 px-4 py-3"><Button size="icon" variant="ghost" aria-label="Edit" onClick={() => setEditing(p)}><FiEdit2 /></Button><Button size="sm" variant="danger" onClick={() => remove(p._id)}>Delete</Button></td></tr>} empty="No products found." /><Modal open={editing !== null} onClose={() => setEditing(null)} title={`${editing?._id ? 'Edit' : 'Add'} product`} size="xl"><form onSubmit={submit} className="grid gap-4 md:grid-cols-2"><Input name="name" label="Name" defaultValue={editing?.name} required /><Input name="sku" label="SKU" defaultValue={editing?.sku} required /><Select name="category" label="Category" defaultValue={editing?.category?._id || editing?.category} options={categories.map((x) => ({ value: x._id, label: x.name }))} required /><Select name="brand" label="Brand" defaultValue={editing?.brand?._id || editing?.brand} options={brands.map((x) => ({ value: x._id, label: x.name }))} required /><Input name="price" type="number" label="Selling price" defaultValue={editing?.price} required /><Input name="mrp" type="number" label="MRP" defaultValue={editing?.mrp} required /><Input name="stock" type="number" label="Stock" defaultValue={editing?.stock || 0} /><Input name="lowStockThreshold" type="number" label="Low-stock threshold" defaultValue={editing?.lowStockThreshold || 5} /><div className="md:col-span-2"><Textarea name="description" label="Description" defaultValue={editing?.description} required /></div><div className="md:col-span-2"><Textarea name="images" label="Image URLs (one per line)" defaultValue={editing?.images?.join('\n')} required /></div><label className="flex gap-2 text-sm"><input name="isActive" type="checkbox" defaultChecked={editing?.isActive !== false} /> Published</label><div className="md:col-span-2"><Button type="submit">Save product</Button></div></form></Modal></>}</Page>; }
+export function ProductsPage() { const { data, isLoading } = useGetAdminProductsQuery({ page: 1, limit: 50 }); const { data: categories = [] } = useGetCategoriesQuery(); const { data: brands = [] } = useGetBrandsQuery(); const [create] = useCreateProductMutation(); const [update] = useUpdateProductMutation(); const [remove] = useDeleteProductMutation(); const [editing, setEditing] = useState(null); const toast = useToast(); const rows = data?.items || []; const submit = async (event) => { event.preventDefault(); const f = new FormData(event.currentTarget); const body = Object.fromEntries(f); ['price', 'mrp', 'stock', 'lowStockThreshold'].forEach((key) => { body[key] = Number(body[key] || 0); }); body.images = body.images.split('\n').map((image) => image.trim()).filter(Boolean); body.isActive = f.get('isActive') === 'on'; try { if (editing?._id) await update({ id: editing._id, ...body }).unwrap(); else await create(body).unwrap(); toast.success('Product saved'); setEditing(null); } catch (err) { toast.error(extractErrorMessage(err, 'Unable to save product')); } }; const handleRemove = async (p) => { if (!window.confirm(`Delete ${p.name}?`)) return; try { await remove(p._id).unwrap(); toast.success('Product deleted'); } catch (err) { toast.error(extractErrorMessage(err, 'Unable to delete product')); } }; return <Page name="Products" action={<Button leftIcon={<FiPlus />} onClick={() => setEditing({})}>Add product</Button>}>{isLoading ? <Loading /> : <><Table columns={['Product', 'SKU', 'Price', 'Stock', 'Published', 'Actions']} rows={rows} render={(p) => <tr key={p._id}><td className="px-4 py-3 font-medium">{p.name}</td><td className="px-4 py-3 text-navy-500">{p.sku}</td><td className="px-4 py-3">{formatPrice(p.price)}</td><td className="px-4 py-3">{p.stock}</td><td className="px-4 py-3">{p.isActive ? 'Yes' : 'No'}</td><td className="flex gap-2 px-4 py-3"><Button size="icon" variant="ghost" aria-label="Edit" onClick={() => setEditing(p)}><FiEdit2 /></Button><Button size="sm" variant="danger" onClick={() => handleRemove(p)}>Delete</Button></td></tr>} empty="No products found." /><Modal open={editing !== null} onClose={() => setEditing(null)} title={`${editing?._id ? 'Edit' : 'Add'} product`} size="xl"><form onSubmit={submit} className="grid gap-4 md:grid-cols-2"><Input name="name" label="Name" defaultValue={editing?.name} required /><Input name="sku" label="SKU" defaultValue={editing?.sku} required /><Select name="category" label="Category" defaultValue={editing?.category?._id || editing?.category} options={categories.map((x) => ({ value: x._id, label: x.name }))} required /><Select name="brand" label="Brand" defaultValue={editing?.brand?._id || editing?.brand} options={brands.map((x) => ({ value: x._id, label: x.name }))} required /><Input name="price" type="number" label="Selling price" defaultValue={editing?.price} required /><Input name="mrp" type="number" label="MRP" defaultValue={editing?.mrp} required /><Input name="stock" type="number" label="Stock" defaultValue={editing?.stock || 0} /><Input name="lowStockThreshold" type="number" label="Low-stock threshold" defaultValue={editing?.lowStockThreshold || 5} /><div className="md:col-span-2"><Textarea name="description" label="Description" defaultValue={editing?.description} required /></div><div className="md:col-span-2"><Textarea name="images" label="Image URLs (one per line)" defaultValue={editing?.images?.join('\n')} required /></div><label className="flex gap-2 text-sm"><input name="isActive" type="checkbox" defaultChecked={editing?.isActive !== false} /> Published</label><div className="md:col-span-2"><Button type="submit">Save product</Button></div></form></Modal></>}</Page>; }
 
-function SimpleResourcePage({ kind }) { const config = { Coupon: [useGetAdminCouponsQuery, useCreateAdminCouponMutation, useUpdateAdminCouponMutation, useDeleteAdminCouponMutation], Banner: [useGetAdminBannersQuery, useCreateAdminBannerMutation, useUpdateAdminBannerMutation, useDeleteAdminBannerMutation] }[kind]; const { data: items = [], isLoading } = config[0](); const [create] = config[1](); const [update] = config[2](); const [remove] = config[3](); const [editing, setEditing] = useState(null); const toast = useToast(); const submit = async (event) => { event.preventDefault(); const f = new FormData(event.currentTarget); const body = Object.fromEntries(f); if (kind === 'Coupon') { ['value', 'maxDiscount', 'minOrderValue', 'usageLimit', 'perUserLimit'].forEach((key) => { if (body[key]) body[key] = Number(body[key]); else delete body[key]; }); body.isActive = f.get('isActive') === 'on'; } else { body.order = Number(body.order || 0); body.isActive = f.get('isActive') === 'on'; } try { if (editing?._id) await update({ id: editing._id, ...body }).unwrap(); else await create(body).unwrap(); toast.success(`${kind} saved`); setEditing(null); } catch (e) { toast.error(e.message); } }; const fields = kind === 'Coupon' ? <><Input name="code" label="Code" defaultValue={editing?.code} required /><Textarea name="description" label="Description" defaultValue={editing?.description} /><Select name="type" label="Discount type" defaultValue={editing?.type || 'percentage'} options={[{ value: 'percentage', label: 'Percentage' }, { value: 'fixed', label: 'Fixed amount' }]} /><Input name="value" type="number" label="Discount value" defaultValue={editing?.value} required /><Input name="expiresAt" type="date" label="Expires on" defaultValue={editing?.expiresAt?.slice(0, 10)} required /></> : <><Input name="title" label="Title" defaultValue={editing?.title} required /><Textarea name="subtitle" label="Subtitle" defaultValue={editing?.subtitle} /><Input name="image" label="Image URL" defaultValue={editing?.image} required /><Input name="ctaLabel" label="CTA label" defaultValue={editing?.ctaLabel} /><Input name="ctaLink" label="CTA link" defaultValue={editing?.ctaLink} /><Input name="order" type="number" label="Order" defaultValue={editing?.order || 0} /></>; return <Page name={`${kind}s`} action={<Button leftIcon={<FiPlus />} onClick={() => setEditing({})}>Add {kind}</Button>}>{isLoading ? <Loading /> : <><Table columns={kind === 'Coupon' ? ['Code', 'Discount', 'Expires', 'Status', 'Actions'] : ['Title', 'Placement', 'Order', 'Status', 'Actions']} rows={items} render={(item) => <tr key={item._id}><td className="px-4 py-3 font-medium">{kind === 'Coupon' ? item.code : item.title}</td><td className="px-4 py-3">{kind === 'Coupon' ? `${item.value}${item.type === 'percentage' ? '%' : ''}` : item.placement}</td><td className="px-4 py-3">{kind === 'Coupon' ? formatDate(item.expiresAt) : item.order}</td><td className="px-4 py-3">{item.isActive ? 'Active' : 'Hidden'}</td><td className="flex gap-2 px-4 py-3"><Button size="icon" variant="ghost" aria-label="Edit" onClick={() => setEditing(item)}><FiEdit2 /></Button><Button size="icon" variant="ghost" aria-label="Delete" onClick={() => remove(item._id)}><FiTrash2 /></Button></td></tr>} /><Modal open={editing !== null} onClose={() => setEditing(null)} title={`${editing?._id ? 'Edit' : 'Add'} ${kind}`}><form onSubmit={submit} className="space-y-4">{fields}<label className="flex gap-2 text-sm"><input name="isActive" type="checkbox" defaultChecked={editing?.isActive !== false} /> Active</label><Button type="submit" fullWidth>Save {kind}</Button></form></Modal></>}</Page>; }
+function SimpleResourcePage({ kind }) {
+  const config = {
+    Coupon: [useGetAdminCouponsQuery, useCreateAdminCouponMutation, useUpdateAdminCouponMutation, useDeleteAdminCouponMutation],
+    Banner: [useGetAdminBannersQuery, useCreateAdminBannerMutation, useUpdateAdminBannerMutation, useDeleteAdminBannerMutation],
+  }[kind];
+  const { data: items = [], isLoading } = config[0]();
+  const [create] = config[1]();
+  const [update] = config[2]();
+  const [remove] = config[3]();
+  const [editing, setEditing] = useState(null);
+  const toast = useToast();
+
+  const submit = async (event) => {
+    event.preventDefault();
+    const f = new FormData(event.currentTarget);
+    const body = Object.fromEntries(f);
+    if (kind === 'Coupon') {
+      body.code = (body.code || '').trim().toUpperCase();
+      if (!body.code) {
+        toast.error('Coupon code is required');
+        return;
+      }
+      ['value', 'maxDiscount', 'minOrderValue', 'usageLimit', 'perUserLimit'].forEach((key) => {
+        if (body[key]) body[key] = Number(body[key]);
+        else delete body[key];
+      });
+      body.isActive = f.get('isActive') === 'on';
+    } else {
+      body.order = Number(body.order || 0);
+      body.isActive = f.get('isActive') === 'on';
+    }
+    try {
+      if (editing?._id) await update({ id: editing._id, ...body }).unwrap();
+      else await create(body).unwrap();
+      toast.success(`${kind} saved`);
+      setEditing(null);
+    } catch (e) {
+      toast.error(extractErrorMessage(e, `Unable to save ${kind}`));
+    }
+  };
+
+  const handleRemove = async (item) => {
+    const label = kind === 'Coupon' ? item.code : item.title;
+    if (!window.confirm(`Delete ${kind.toLowerCase()} "${label}"? This cannot be undone.`)) return;
+    try {
+      await remove(item._id).unwrap();
+      toast.success(`${kind} deleted`);
+    } catch (err) {
+      toast.error(extractErrorMessage(err, `Unable to delete ${kind}`));
+    }
+  };
+
+  const fields = kind === 'Coupon' ? (
+    <>
+      <Input name="code" label="Code" defaultValue={editing?.code} required />
+      <Textarea name="description" label="Description" defaultValue={editing?.description} />
+      <Select name="type" label="Discount type" defaultValue={editing?.type || 'percentage'} options={[{ value: 'percentage', label: 'Percentage' }, { value: 'fixed', label: 'Fixed amount' }]} />
+      <Input name="value" type="number" label="Discount value" defaultValue={editing?.value} required />
+      <Input name="expiresAt" type="date" label="Expires on" defaultValue={editing?.expiresAt?.slice(0, 10)} required />
+    </>
+  ) : (
+    <>
+      <Input name="title" label="Title" defaultValue={editing?.title} required />
+      <Textarea name="subtitle" label="Subtitle" defaultValue={editing?.subtitle} />
+      <Input name="image" label="Image URL" defaultValue={editing?.image} required />
+      <Input name="ctaLabel" label="CTA label" defaultValue={editing?.ctaLabel} />
+      <Input name="ctaLink" label="CTA link" defaultValue={editing?.ctaLink} />
+      <Input name="order" type="number" label="Order" defaultValue={editing?.order || 0} />
+    </>
+  );
+
+  return (
+    <Page name={`${kind}s`} action={<Button leftIcon={<FiPlus />} onClick={() => setEditing({})}>Add {kind}</Button>}>
+      {isLoading ? (
+        <Loading />
+      ) : (
+        <>
+          <Table
+            columns={kind === 'Coupon' ? ['Code', 'Discount', 'Expires', 'Status', 'Actions'] : ['Title', 'Placement', 'Order', 'Status', 'Actions']}
+            rows={items}
+            render={(item) => (
+              <tr key={item._id}>
+                <td className="px-4 py-3 font-medium">{kind === 'Coupon' ? item.code : item.title}</td>
+                <td className="px-4 py-3">{kind === 'Coupon' ? `${item.value}${item.type === 'percentage' ? '%' : ''}` : item.placement}</td>
+                <td className="px-4 py-3">{kind === 'Coupon' ? formatDate(item.expiresAt) : item.order}</td>
+                <td className="px-4 py-3">{item.isActive ? 'Active' : 'Hidden'}</td>
+                <td className="flex gap-2 px-4 py-3">
+                  <Button size="icon" variant="ghost" aria-label="Edit" onClick={() => setEditing(item)}><FiEdit2 /></Button>
+                  <Button size="icon" variant="ghost" aria-label="Delete" onClick={() => handleRemove(item)}><FiTrash2 /></Button>
+                </td>
+              </tr>
+            )}
+          />
+          <Modal open={editing !== null} onClose={() => setEditing(null)} title={`${editing?._id ? 'Edit' : 'Add'} ${kind}`}>
+            <form onSubmit={submit} className="space-y-4">
+              {fields}
+              <label className="flex gap-2 text-sm"><input name="isActive" type="checkbox" defaultChecked={editing?.isActive !== false} /> Active</label>
+              <Button type="submit" fullWidth>Save {kind}</Button>
+            </form>
+          </Modal>
+        </>
+      )}
+    </Page>
+  );
+}
 export const CouponsPage = () => <SimpleResourcePage kind="Coupon" />;
 
 const toDateTimeLocal = (value) => {
@@ -119,16 +315,17 @@ export function BannersPage() {
       toast.success(`Banner ${isEditing ? 'updated' : 'added'}`);
       setEditing(null);
     } catch (error) {
-      toast.error(error.message);
+      toast.error(extractErrorMessage(error, 'Unable to save banner'));
     }
   };
 
   const remove = async (banner) => {
+    if (!window.confirm(`Delete banner "${banner.title || 'Untitled banner'}"? This cannot be undone.`)) return;
     try {
       await deleteBanner(banner._id).unwrap();
       toast.success('Banner deleted');
     } catch (error) {
-      toast.error(error.message);
+      toast.error(extractErrorMessage(error, 'Unable to delete banner'));
     }
   };
 
@@ -289,19 +486,54 @@ export function ReviewsPage() {
   const { data, isLoading } = useGetAdminReviewsQuery({ page: 1, limit: 30 });
   const [moderate] = useModerateReviewMutation();
   const rows = data?.items || [];
-  return <Page name="Reviews">{isLoading ? <Loading /> : <Table columns={['Customer', 'Product', 'Rating', 'Review', 'Status']} rows={rows} render={(r) => <tr key={r._id}><td className="px-4 py-3">{r.user?.name || 'Customer'}</td><td className="px-4 py-3">{r.product?.name || 'Product'}</td><td className="px-4 py-3">{r.rating}/5</td><td className="max-w-xs px-4 py-3 text-navy-600">{r.comment}</td><td className="px-4 py-3"><StatusSelect value={r.status} options={['pending', 'approved', 'rejected']} onChange={(status) => moderate({ id: r._id, status })} /></td></tr>} />}</Page>;
+  const toast = useToast();
+  const handleModerate = async (id, status) => {
+    try {
+      await moderate({ id, status }).unwrap();
+      toast.success(`Review ${status}`);
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Could not update review status'));
+    }
+  };
+  return <Page name="Reviews">{isLoading ? <Loading /> : <Table columns={['Customer', 'Product', 'Rating', 'Review', 'Status']} rows={rows} render={(r) => <tr key={r._id}><td className="px-4 py-3">{r.user?.name || 'Customer'}</td><td className="px-4 py-3">{r.product?.name || 'Product'}</td><td className="px-4 py-3">{r.rating}/5</td><td className="max-w-xs px-4 py-3 text-navy-600">{r.comment}</td><td className="px-4 py-3"><StatusSelect value={r.status} options={['pending', 'approved', 'rejected']} onChange={(status) => handleModerate(r._id, status)} /></td></tr>} />}</Page>;
 }
 export function ReturnsPage() {
   const { data, isLoading } = useGetAdminReturnsQuery({ page: 1, limit: 30 });
   const [update] = useUpdateAdminReturnMutation();
   const rows = data?.items || [];
-  return <Page name="Returns">{isLoading ? <Loading /> : <Table columns={['Order', 'Customer', 'Reason', 'Requested', 'Status']} rows={rows} render={(r) => <tr key={r._id}><td className="px-4 py-3 font-medium">{r.order?.orderNumber || '—'}</td><td className="px-4 py-3">{r.user?.name || 'Customer'}</td><td className="px-4 py-3">{r.reason}</td><td className="px-4 py-3">{formatDate(r.createdAt)}</td><td className="px-4 py-3"><StatusSelect value={r.status} options={['requested', 'approved', 'rejected', 'picked_up', 'refunded', 'completed']} onChange={(status) => update({ id: r._id, status })} /></td></tr>} />}</Page>;
+  const toast = useToast();
+  const handleStatusChange = async (id, status) => {
+    try {
+      await update({ id, status }).unwrap();
+      toast.success(`Return status updated to ${status.replace('_', ' ')}`);
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Could not update return status'));
+    }
+  };
+  return <Page name="Returns">{isLoading ? <Loading /> : <Table columns={['Order', 'Customer', 'Reason', 'Requested', 'Status']} rows={rows} render={(r) => <tr key={r._id}><td className="px-4 py-3 font-medium">{r.order?.orderNumber || '—'}</td><td className="px-4 py-3">{r.user?.name || 'Customer'}</td><td className="px-4 py-3">{r.reason}</td><td className="px-4 py-3">{formatDate(r.createdAt)}</td><td className="px-4 py-3"><StatusSelect value={r.status} options={['requested', 'approved', 'rejected', 'picked_up', 'refunded', 'completed']} onChange={(status) => handleStatusChange(r._id, status)} /></td></tr>} />}</Page>;
 }
 export function UsersPage() {
   const { data, isLoading } = useGetAdminUsersQuery({ page: 1, limit: 50 });
   const [setActive] = useSetUserActiveMutation();
   const [setRole] = useSetUserRoleMutation();
   const rows = data?.items || [];
+  const toast = useToast();
+  const handleRoleChange = async (id, role) => {
+    try {
+      await setRole({ id, role }).unwrap();
+      toast.success(`User role updated to ${role}`);
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Could not update user role'));
+    }
+  };
+  const handleToggleActive = async (id, currentActive) => {
+    try {
+      await setActive({ id, isActive: !currentActive }).unwrap();
+      toast.success(currentActive ? 'User account disabled' : 'User account enabled');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Could not update user status'));
+    }
+  };
   return (
     <Page name="Users">
       {isLoading ? <Loading /> : (
@@ -312,8 +544,8 @@ export function UsersPage() {
             <tr key={u._id}>
               <td className="px-4 py-3"><span className="font-medium">{u.name}</span><span className="block text-xs text-navy-400">{u.email}</span></td>
               <td className="px-4 py-3">{formatDate(u.createdAt)}</td>
-              <td className="px-4 py-3"><StatusSelect value={u.role} options={['user', 'admin']} onChange={(role) => setRole({ id: u._id, role })} /></td>
-              <td className="px-4 py-3"><button type="button" onClick={() => setActive({ id: u._id, isActive: !u.isActive })} className="text-sm font-semibold text-brand-600">{u.isActive ? 'Active' : 'Disabled'}</button></td>
+              <td className="px-4 py-3"><StatusSelect value={u.role} options={['user', 'admin']} onChange={(role) => handleRoleChange(u._id, role)} /></td>
+              <td className="px-4 py-3"><button type="button" onClick={() => handleToggleActive(u._id, u.isActive)} className="text-sm font-semibold text-brand-600">{u.isActive ? 'Active' : 'Disabled'}</button></td>
             </tr>
           )}
         />
@@ -400,21 +632,21 @@ export function SettingsPage() {
       body[key] = Number(body[key] || 0);
     });
     body.socialLinks = {
-      instagram: body.instagram,
-      facebook: body.facebook,
-      twitter: body.twitter,
-      youtube: body.youtube,
+      instagram: (body.instagram || '').trim(),
+      facebook: (body.facebook || '').trim(),
+      twitter: (body.twitter || '').trim(),
+      youtube: (body.youtube || '').trim(),
     };
     body.homeCategoryImages = {
       eyeglasses: {
-        men: body.eyeglassesMenImage,
-        women: body.eyeglassesWomenImage,
-        kids: body.eyeglassesKidsImage,
+        men: (body.eyeglassesMenImage || '').trim(),
+        women: (body.eyeglassesWomenImage || '').trim(),
+        kids: (body.eyeglassesKidsImage || '').trim(),
       },
       sunglasses: {
-        men: body.sunglassesMenImage,
-        women: body.sunglassesWomenImage,
-        kids: body.sunglassesKidsImage,
+        men: (body.sunglassesMenImage || '').trim(),
+        women: (body.sunglassesWomenImage || '').trim(),
+        kids: (body.sunglassesKidsImage || '').trim(),
       },
     };
     body.trustBenefits = trustBenefitItems.map(({ title: benefitTitle, subtitle }) => ({
@@ -439,7 +671,7 @@ export function SettingsPage() {
       await update(body).unwrap();
       toast.success('Store settings saved');
     } catch (error) {
-      toast.error(error.message);
+      toast.error(extractErrorMessage(error, 'Unable to save settings'));
     }
   };
 

@@ -26,16 +26,3 @@ jobs:
         if: ${{ env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != '' }}
         run: npx vercel deploy --prod --token "$VERCEL_TOKEN" --cwd frontend --yes
 
-  deploy-backend:
-    name: Deploy backend (Render)
-    runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    env:
-      RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-      - name: Trigger Render deploy hook
-        if: ${{ env.RENDER_DEPLOY_HOOK != '' }}
-        run: curl -fsSL -X POST "$RENDER_DEPLOY_HOOK"

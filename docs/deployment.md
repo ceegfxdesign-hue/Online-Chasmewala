@@ -11,15 +11,14 @@ Online Chasmewala is designed to deploy as three independent pieces: **database*
 4. Run the seed once against the cluster if you want demo data:
    `MONGODB_URI="<atlas-uri>" npm run seed`.
 
-## 1. Backend → Render / Railway / AWS
-
-**Render / Railway**
-
-- Create a new **Web Service** from the `backend/` directory.
-- Build command: `npm install`
-- Start command: `npm start`
-- Add all backend environment variables (see [`env.md`](env.md)). Set `NODE_ENV=production` and a
-  real `CLIENT_URL` (your deployed frontend origin).
+## 1. Backend → Hostinger / VPS / Cloud
+ 
+**Hostinger (Node.js)**
+ 
+- Create a Node.js application in Hostinger hPanel for your domain (`onlinechasmewala.com`).
+- Application root: `backend/`
+- Startup file: `src/server.js` (or run `npm start`)
+- Add all backend environment variables (see [`env.md`](env.md)). Set `NODE_ENV=production` and `CLIENT_URL=https://onlinechasmewala.com`.
 
 **AWS (EC2 / ECS)**
 
@@ -57,7 +56,6 @@ Brings up `mongo`, `backend`, and `frontend`. Override secrets via an `.env` fil
 | `VERCEL_TOKEN`         | Frontend deploy authentication   |
 | `VERCEL_ORG_ID`        | Vercel team/account target       |
 | `VERCEL_PROJECT_ID`    | Vercel frontend project target   |
-| `RENDER_DEPLOY_HOOK`   | Backend deploy (Render)          |
 
 The GitHub workflow runs only after the project is pushed to a GitHub
 repository's `main` branch and its CI workflow succeeds. The Vercel identifiers
