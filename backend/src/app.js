@@ -66,9 +66,10 @@ export function createApp() {
   // Admin product galleries are submitted as compressed data URLs. Keep the
   // request below MongoDB's 16 MB document ceiling while allowing a practical
   // multi-image edit payload.
-  // Admin product creation/updates and lens media are submitted as compressed data URLs.
-  // Scope the 12mb limit strictly to those routes. All other routes are capped at 200kb
-  // to protect against memory exhaustion attacks.
+  // Admin product creation/updates, lens media, cart prescriptions, and order submissions
+  // can contain compressed images and PDF data URLs. Scope the 12mb limit to those routes.
+  // Sensitive public routes (auth, coupons, contact) remain capped at 200kb to protect
+  // against memory exhaustion attacks.
   const largeJsonParser = express.json({ limit: '12mb' });
   app.use(`${env.API_PREFIX}/products`, (req, res, next) => {
     if (req.method === 'POST' || req.method === 'PATCH') {
@@ -77,6 +78,9 @@ export function createApp() {
     next();
   });
   app.use(`${env.API_PREFIX}/admin`, largeJsonParser);
+  app.use(`${env.API_PREFIX}/cart`, largeJsonParser);
+  app.use(`${env.API_PREFIX}/orders`, largeJsonParser);
+  app.use(`${env.API_PREFIX}/account`, largeJsonParser);
 
   // Global low limit for all other routes
   app.use(express.json({ limit: '200kb' }));

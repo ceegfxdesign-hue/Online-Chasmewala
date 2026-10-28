@@ -48,12 +48,13 @@ class RazorpayPaymentProvider {
   }
 
   getClient() {
+    const keyId = process.env.RAZORPAY_KEY_ID ?? env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET ?? env.RAZORPAY_KEY_SECRET;
+    if (!keyId || !keySecret) {
+      this.client = null;
+      throw new ApiError(503, 'Razorpay credentials are not configured.');
+    }
     if (!this.client) {
-      const keyId = env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID;
-      const keySecret = env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_KEY_SECRET;
-      if (!keyId || !keySecret) {
-        throw new ApiError(503, 'Razorpay credentials are not configured.');
-      }
       this.client = new Razorpay({
         key_id: keyId,
         key_secret: keySecret,
@@ -119,7 +120,7 @@ class RazorpayPaymentProvider {
     }
 
     // HMAC SHA-256 signature verification
-    const secret = env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_KEY_SECRET;
+    const secret = process.env.RAZORPAY_KEY_SECRET ?? env.RAZORPAY_KEY_SECRET;
     if (!secret) {
       throw new ApiError(503, 'Razorpay credentials are not configured.');
     }

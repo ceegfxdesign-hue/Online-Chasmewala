@@ -9,9 +9,12 @@ import { beforeAll, afterAll, afterEach } from '@jest/globals';
 
 let mongo;
 
-// Integration tests must never send real emails, even with a configured local .env.
+// Integration tests must never send real emails or charge real gateways, even with a configured local .env.
 process.env.SMTP_HOST = '';
 process.env.SMTP_USER = '';
+process.env.PAYMENT_PROVIDER = 'mock';
+process.env.RAZORPAY_KEY_ID = '';
+process.env.RAZORPAY_KEY_SECRET = '';
 
 beforeAll(async () => {
   mongo = await MongoMemoryServer.create();
