@@ -153,31 +153,55 @@ export const cartService = {
     return hydrate(cart);
   },
 
-  /** Merge a guest cart (from localStorage) into the user's server cart on login. */
+  /**
+   * Synchronize / merge client cart items into the user's server cart.
+   * Authoritatively updates line items to match the client's current cart selection,
+   * validating product existence, stock bounds, and lens options without accumulative duplication.
+   */
   async merge(userId, guestItems = []) {
-    if (!guestItems.length) return this.get(userId);
     const cart = await getOrCreate(userId);
+    const newItems = [];
+
     for (const gi of guestItems) {
       const product = await productRepository.findById(gi.productId).lean();
       if (!product || !product.isActive) continue;
-      const match = cart.items.find(
+
+      const lensOption = gi.lensOption
+        ? {
+            type: gi.lensOption.type,
+            baseType: gi.lensOption.baseType,
+            subtitle: gi.lensOption.subtitle,
+            packageId: gi.lensOption.packageId,
+            label: gi.lensOption.label || LENS_LABELS[gi.lensOption.type] || 'Lens',
+            price: Number(gi.lensOption.price || 0),
+          }
+        : undefined;
+
+      const qty = Math.max(1, Number(gi.quantity) || 1);
+
+      const existing = newItems.find(
         (i) =>
-          String(i.product) === String(gi.productId) &&
+          String(i.product) === String(product._id) &&
           String(i.variantId || '') === String(gi.variantId || '') &&
-          (i.lensOption?.type || '') === (gi.lensOption?.type || '')
+          (i.lensOption?.type || '') === (lensOption?.type || '')
       );
-      if (match) match.quantity = Math.min(match.quantity + (gi.quantity || 1), product.stock);
-      else
-        cart.items.push({
-          product: gi.productId,
+
+      if (existing) {
+        existing.quantity = Math.min(existing.quantity + qty, product.stock);
+      } else {
+        newItems.push({
+          product: product._id,
           variantId: gi.variantId,
           color: gi.color,
-          quantity: Math.min(gi.quantity || 1, product.stock),
+          quantity: Math.min(qty, product.stock),
           price: product.price,
-          lensOption: gi.lensOption,
+          lensOption,
           prescription: gi.prescription,
         });
+      }
     }
+
+    cart.items = newItems;
     await cart.save();
     return hydrate(cart);
   },

@@ -170,6 +170,34 @@ describe('Cart & checkout flow', () => {
     expect(after.body.data.stock).toBe(product.stock);
   });
 
+  it('synchronizes cart on merge without accumulating quantities on repeated calls', async () => {
+    const res1 = await request(app)
+      .post('/api/v1/cart/merge')
+      .set(auth())
+      .send({ items: [{ productId: product._id, quantity: 1 }] });
+    expect(res1.status).toBe(200);
+    expect(res1.body.data.items[0].quantity).toBe(1);
+    expect(res1.body.data.summary.subtotal).toBe(product.price);
+
+    const res2 = await request(app)
+      .post('/api/v1/cart/merge')
+      .set(auth())
+      .send({ items: [{ productId: product._id, quantity: 1 }] });
+    expect(res2.status).toBe(200);
+    expect(res2.body.data.items[0].quantity).toBe(1);
+    expect(res2.body.data.summary.subtotal).toBe(product.price);
+
+    for (let i = 0; i < 4; i++) {
+      await request(app)
+        .post('/api/v1/cart/merge')
+        .set(auth())
+        .send({ items: [{ productId: product._id, quantity: 1 }] });
+    }
+    const finalCart = await request(app).get('/api/v1/cart').set(auth());
+    expect(finalCart.body.data.items[0].quantity).toBe(1);
+    expect(finalCart.body.data.summary.subtotal).toBe(product.price);
+  });
+
   it('toggles the wishlist', async () => {
     const add = await request(app).post('/api/v1/wishlist/toggle').set(auth()).send({ productId: product._id });
     expect(add.body.data.added).toBe(true);
