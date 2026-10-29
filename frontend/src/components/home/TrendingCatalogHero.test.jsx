@@ -33,4 +33,10 @@ describe('TrendingCatalogHero', () => {
     expect(screen.getByAltText('Unlinked banner')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Open banner destination/ })).not.toBeInTheDocument();
   });
+
+  it('renders a neutral skeleton without flashing fallback slides while banners are loading and no cache exists', () => {
+    renderHero(undefined);
+    expect(screen.getByRole('region', { name: 'Featured banners' })).toBeInTheDocument();
+    expect(screen.queryByAltText(/Gold and transparent prescription eyeglasses/i)).not.toBeInTheDocument();
+  });
 });
