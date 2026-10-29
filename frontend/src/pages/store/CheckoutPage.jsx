@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -15,7 +15,9 @@ import {
   useMergeCartMutation,
   useCreatePaymentIntentMutation,
   usePlaceOrderMutation,
+  useQuoteOrderMutation,
 } from '@/features/cart/cartApi';
+import { useGetShippingSettingsQuery } from '@/features/settings/settingsApi';
 import { selectCartItems, selectCartSubtotal, selectCoupon, clearCart } from '@/features/cart/cartSlice';
 import { selectIsAuthenticated, selectUser } from '@/features/auth/authSlice';
 import { useToast } from '@/contexts/ToastContext';
@@ -24,8 +26,8 @@ import { loadRazorpayScript } from '@/lib/razorpay';
 import { ROUTES } from '@/constants/routes';
 import { cn } from '@/utils/cn';
 
-const FREE_SHIPPING = 999;
-const SHIPPING = { standard: 49, express: 129 };
+const DEFAULT_FREE_SHIPPING = 999;
+const DEFAULT_SHIPPING = { standard: 49, express: 129 };
 
 const addressSchema = z.object({
   fullName: z.string().min(2, 'Enter your full name'),
@@ -59,10 +61,38 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const { data: shippingSettings } = useGetShippingSettingsQuery();
+  const freeShippingThreshold = shippingSettings?.freeShippingThreshold ?? DEFAULT_FREE_SHIPPING;
+  const standardFee = shippingSettings?.standardShippingFee ?? DEFAULT_SHIPPING.standard;
+  const expressFee = shippingSettings?.expressShippingFee ?? DEFAULT_SHIPPING.express;
+  const taxPercent = shippingSettings?.taxPercent ?? 0;
+
   const [mergeCart] = useMergeCartMutation();
+  const [quoteOrder, { data: quoteData }] = useQuoteOrderMutation();
   const [createPaymentIntent, { isLoading: preparingPayment }] = useCreatePaymentIntentMutation();
   const [placeOrder, { isLoading: placing }] = usePlaceOrderMutation();
   const isSubmitting = placing || preparingPayment || isProcessing;
+
+  // Authoritatively sync client cart and request pricing quote from the server
+  useEffect(() => {
+    if (items.length > 0 && isAuth) {
+      mergeCart(
+        items.map((i) => ({
+          productId: i.productId,
+          variantId: i.variantId,
+          color: i.color,
+          quantity: i.quantity,
+          lensOption: i.lensOption,
+          prescription: i.prescription,
+        }))
+      )
+        .unwrap()
+        .then(() => {
+          quoteOrder({ deliveryMethod, couponCode: coupon?.code }).catch(() => {});
+        })
+        .catch(() => {});
+    }
+  }, [items, isAuth, deliveryMethod, coupon?.code, mergeCart, quoteOrder]);
 
   const defaultAddress = user?.addresses?.find((a) => a.isDefault) || user?.addresses?.[0];
   const {
@@ -87,11 +117,22 @@ export default function CheckoutPage() {
   if (!isAuth) return <Navigate to={ROUTES.login} replace state={{ from: ROUTES.checkout }} />;
   if (items.length === 0 && !hadCartItems.current) return <Navigate to={ROUTES.cart} replace />;
 
-  const discount = coupon?.discount || 0;
-  const afterDiscount = Math.max(0, subtotal - discount);
+  const discount = quoteData?.pricing ? quoteData.pricing.discount : (coupon?.discount || 0);
+  const calculatedSubtotal = quoteData?.pricing ? quoteData.pricing.subtotal : subtotal;
+  const afterDiscount = Math.max(0, calculatedSubtotal - discount);
   const shippingFee =
-    deliveryMethod === 'express' ? SHIPPING.express : afterDiscount >= FREE_SHIPPING ? 0 : SHIPPING.standard;
-  const total = afterDiscount + shippingFee;
+    quoteData?.pricing !== undefined
+      ? quoteData.pricing.shippingFee
+      : deliveryMethod === 'express'
+        ? expressFee
+        : afterDiscount >= freeShippingThreshold
+          ? 0
+          : standardFee;
+  const tax = quoteData?.pricing ? quoteData.pricing.tax : Math.round((afterDiscount * taxPercent) / 100);
+  const total =
+    quoteData?.pricing !== undefined
+      ? quoteData.pricing.total
+      : afterDiscount + shippingFee + tax;
 
   const handleOrderCompletion = (order) => {
     toast.success('Order placed successfully!');
@@ -258,8 +299,8 @@ export default function CheckoutPage() {
               </h2>
               <div className="grid gap-3 sm:grid-cols-2">
                 {[
-                  { value: 'standard', label: 'Standard', desc: '4–7 business days', fee: afterDiscount >= FREE_SHIPPING ? 'FREE' : formatPrice(SHIPPING.standard) },
-                  { value: 'express', label: 'Express', desc: '2–3 business days', fee: formatPrice(SHIPPING.express) },
+                  { value: 'standard', label: 'Standard', desc: '4–7 business days', fee: afterDiscount >= freeShippingThreshold ? 'FREE' : formatPrice(standardFee) },
+                  { value: 'express', label: 'Express', desc: '2–3 business days', fee: formatPrice(expressFee) },
                 ].map((opt) => (
                   <label
                     key={opt.value}
@@ -312,12 +353,13 @@ export default function CheckoutPage() {
           {/* Summary */}
           <div>
             <OrderSummary
-              subtotal={subtotal}
+              subtotal={calculatedSubtotal}
               discount={discount}
               couponCode={coupon?.code}
               shippingFee={shippingFee}
+              tax={tax}
               total={total}
-              freeShippingThreshold={FREE_SHIPPING}
+              freeShippingThreshold={freeShippingThreshold}
               className="sticky top-24"
             >
               <Button type="submit" fullWidth size="lg" className="mt-5" loading={isSubmitting} leftIcon={<FiLock />}>

@@ -42,6 +42,12 @@ export const settingsApi = baseApi.injectEndpoints({
       providesTags: ['Admin'],
       keepUnusedDataFor: 300,
     }),
+    getShippingSettings: builder.query({
+      query: () => ({ url: '/settings/shipping' }),
+      transformResponse: data,
+      providesTags: ['Admin'],
+      keepUnusedDataFor: 300,
+    }),
   }),
 });
 
@@ -52,4 +58,5 @@ export const {
   useGetTrustBenefitsQuery,
   useGetNavigationMenusQuery,
   useGetFrameLensConfigurationQuery,
+  useGetShippingSettingsQuery,
 } = settingsApi;

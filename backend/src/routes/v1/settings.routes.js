@@ -50,6 +50,22 @@ router.get(
 );
 
 router.get(
+  '/shipping',
+  asyncHandler(async (_req, res) => {
+    const settings = await settingsService.get();
+    res.set('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
+    return sendSuccess(res, {
+      data: {
+        freeShippingThreshold: settings.freeShippingThreshold ?? 999,
+        standardShippingFee: settings.standardShippingFee ?? 49,
+        expressShippingFee: settings.expressShippingFee ?? 129,
+        taxPercent: settings.taxPercent ?? 0,
+      },
+    });
+  })
+);
+
+router.get(
   '/frame-lenses',
   asyncHandler(async (_req, res) => {
     const settings = await settingsService.get();

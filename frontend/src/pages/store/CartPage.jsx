@@ -19,12 +19,13 @@ import {
   cartLineKey,
 } from '@/features/cart/cartSlice';
 import { selectIsAuthenticated } from '@/features/auth/authSlice';
+import { useGetShippingSettingsQuery } from '@/features/settings/settingsApi';
 import { formatPrice, discountPercent } from '@/lib/format';
 import { getOptimizedImageUrl } from '@/lib/images';
 import { ROUTES } from '@/constants/routes';
 
-const FREE_SHIPPING = 999;
-const STANDARD_SHIPPING = 49;
+const DEFAULT_FREE_SHIPPING = 999;
+const DEFAULT_STANDARD_SHIPPING = 49;
 
 export default function CartPage() {
   const dispatch = useDispatch();
@@ -33,6 +34,9 @@ export default function CartPage() {
   const subtotal = useSelector(selectCartSubtotal);
   const coupon = useSelector(selectCoupon);
   const isAuth = useSelector(selectIsAuthenticated);
+  const { data: shippingSettings } = useGetShippingSettingsQuery();
+  const freeShippingThreshold = shippingSettings?.freeShippingThreshold ?? DEFAULT_FREE_SHIPPING;
+  const standardShippingFee = shippingSettings?.standardShippingFee ?? DEFAULT_STANDARD_SHIPPING;
 
   const savings = useMemo(
     () => items.reduce((s, i) => s + Math.max(0, (i.mrp || i.price) - i.price) * i.quantity, 0),
@@ -40,7 +44,7 @@ export default function CartPage() {
   );
   const discount = coupon?.discount || 0;
   const afterDiscount = Math.max(0, subtotal - discount);
-  const shippingFee = afterDiscount >= FREE_SHIPPING ? 0 : STANDARD_SHIPPING;
+  const shippingFee = afterDiscount >= freeShippingThreshold ? 0 : standardShippingFee;
   const total = afterDiscount + shippingFee;
 
   const goToCheckout = () => {
@@ -155,7 +159,7 @@ export default function CartPage() {
 
             <div className="mt-4 flex items-center gap-2 rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-700">
               <FiTruck className="h-4 w-4" />
-              {shippingFee === 0 ? 'You’ve unlocked FREE delivery!' : `Add ${formatPrice(FREE_SHIPPING - afterDiscount)} more for FREE delivery`}
+              {shippingFee === 0 ? 'You’ve unlocked FREE delivery!' : `Add ${formatPrice(freeShippingThreshold - afterDiscount)} more for FREE delivery`}
             </div>
           </div>
 
@@ -174,7 +178,7 @@ export default function CartPage() {
               couponCode={coupon?.code}
               shippingFee={shippingFee}
               total={total}
-              freeShippingThreshold={FREE_SHIPPING}
+              freeShippingThreshold={freeShippingThreshold}
             >
               <Button fullWidth size="lg" className="mt-5" rightIcon={<FiArrowRight />} onClick={goToCheckout}>
                 Proceed to Checkout
