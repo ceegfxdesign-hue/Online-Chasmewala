@@ -26,8 +26,8 @@ import { loadRazorpayScript } from '@/lib/razorpay';
 import { ROUTES } from '@/constants/routes';
 import { cn } from '@/utils/cn';
 
-const DEFAULT_FREE_SHIPPING = 999;
-const DEFAULT_SHIPPING = { standard: 49, express: 129 };
+const DEFAULT_FREE_SHIPPING = 1800;
+const DEFAULT_SHIPPING = { standard: 79, express: 179 };
 
 const addressSchema = z.object({
   fullName: z.string().min(2, 'Enter your full name'),

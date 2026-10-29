@@ -24,8 +24,8 @@ import { formatPrice, discountPercent } from '@/lib/format';
 import { getOptimizedImageUrl } from '@/lib/images';
 import { ROUTES } from '@/constants/routes';
 
-const DEFAULT_FREE_SHIPPING = 999;
-const DEFAULT_STANDARD_SHIPPING = 49;
+const DEFAULT_FREE_SHIPPING = 1800;
+const DEFAULT_STANDARD_SHIPPING = 79;
 
 export default function CartPage() {
   const dispatch = useDispatch();

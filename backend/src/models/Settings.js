@@ -171,9 +171,9 @@ const settingsSchema = new mongoose.Schema(
     businessHoursText: { type: String, default: 'Customer support is available from 9:00 AM to 8:00 PM.' },
     whatsappNumber: { type: String, default: '+91 90000 00000' },
     currency: { type: String, default: 'INR' },
-    freeShippingThreshold: { type: Number, default: 999 },
-    standardShippingFee: { type: Number, default: 49 },
-    expressShippingFee: { type: Number, default: 129 },
+    freeShippingThreshold: { type: Number, default: 1800 },
+    standardShippingFee: { type: Number, default: 79 },
+    expressShippingFee: { type: Number, default: 179 },
     taxPercent: { type: Number, default: 0 }, // GST handled inclusive by default
     announcement: { type: String, default: 'Free shipping on orders above ₹999 · Easy 14-day returns' },
     // Small promotional messages shown above the storefront navigation. Admins

@@ -21,9 +21,9 @@ async function getSettings() {
   const doc = await settingsRepository.findOne({ key: 'global' });
   return (
     doc || {
-      freeShippingThreshold: 999,
-      standardShippingFee: 49,
-      expressShippingFee: 129,
+      freeShippingThreshold: 1800,
+      standardShippingFee: 79,
+      expressShippingFee: 179,
       taxPercent: 0,
     }
   );
